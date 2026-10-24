@@ -1,0 +1,299 @@
+// Schéma de la plateforme. Voir docs/DATABASE_SCHEMA.md.
+//
+// IMPORTANT :
+// - Les politiques RLS, fonctions, CHECK, déclencheurs et GRANT sont écrits en SQL dans les migrations
+//   (prisma/migrations/*/migration.sql). Prisma ne les modélise pas : relire le SQL généré par
+//   `prisma migrate dev` avant de l'appliquer.
+// - Toute table métier porte company_id NOT NULL (entreprise « plateforme » comprise).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Rôle applicatif (b2c_app) : soumis à la RLS
+  url       = env("DATABASE_URL")
+  // Rôle de migration (b2c_migrator) : propriétaire des tables, utilisé par Prisma Migrate
+  directUrl = env("DIRECT_URL")
+}
+
+enum CompanyStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum PaymentPolicy {
+  PAY_BEFORE_SHIPMENT
+  PAY_BEFORE_RELEASE
+}
+
+enum Locale {
+  fr
+  ht
+  en
+}
+
+enum UserKind {
+  PLATFORM
+  STAFF
+  CUSTOMER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  DISABLED
+}
+
+enum TokenPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+  INVITE
+}
+
+enum ScopeType {
+  COMPANY
+  WAREHOUSE
+  AGENCY
+  ROUTE
+}
+
+enum ActorType {
+  USER
+  SYSTEM
+  ANONYMOUS
+}
+
+enum IdempotencyStatus {
+  COMPLETED
+}
+
+model Company {
+  id                 String        @id @default(uuid(7)) @db.Uuid
+  name               String
+  slug               String        @unique
+  trackingPrefix     String?       @unique @map("tracking_prefix")
+  customerCodePrefix String?       @map("customer_code_prefix")
+  defaultCurrency    String        @default("USD") @map("default_currency") @db.Char(3)
+  defaultLocale      Locale        @default(fr) @map("default_locale")
+  paymentPolicy      PaymentPolicy @default(PAY_BEFORE_SHIPMENT) @map("payment_policy")
+  status             CompanyStatus @default(ACTIVE)
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  settings           CompanySetting[]
+  users              User[]
+  sessions           Session[]
+  verificationTokens VerificationToken[]
+  roles              Role[]
+  rolePermissions    RolePermission[]
+  userRoles          UserRole[]
+  auditLogs          AuditLog[]
+  idempotencyKeys    IdempotencyKey[]
+  counters           Counter[]
+
+  @@map("companies")
+}
+
+model CompanySetting {
+  companyId String   @map("company_id") @db.Uuid
+  key       String
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@id([companyId, key])
+  @@map("company_settings")
+}
+
+model User {
+  id                String     @id @default(uuid(7)) @db.Uuid
+  companyId         String     @map("company_id") @db.Uuid
+  kind              UserKind
+  email             String
+  phone             String?
+  firstName         String     @map("first_name")
+  lastName          String     @map("last_name")
+  businessName      String?    @map("business_name")
+  passwordHash      String?    @map("password_hash")
+  passwordChangedAt DateTime?  @map("password_changed_at") @db.Timestamptz(6)
+  locale            Locale     @default(fr)
+  status            UserStatus @default(PENDING)
+  emailVerifiedAt   DateTime?  @map("email_verified_at") @db.Timestamptz(6)
+  phoneVerifiedAt   DateTime?  @map("phone_verified_at") @db.Timestamptz(6)
+  // Réservé à l'authentification à deux facteurs du personnel (non implémentée en phase 3)
+  totpSecretEnc     String?    @map("totp_secret_enc")
+  lastLoginAt       DateTime?  @map("last_login_at") @db.Timestamptz(6)
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company            Company             @relation(fields: [companyId], references: [id])
+  sessions           Session[]
+  verificationTokens VerificationToken[]
+  userRoles          UserRole[]
+
+  @@unique([companyId, email])
+  @@unique([id, companyId])
+  @@index([companyId, status])
+  @@map("users")
+}
+
+model Session {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  companyId   String    @map("company_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  // Toutes les sessions issues d'une même connexion partagent la famille ; la réutilisation d'un
+  // jeton déjà tourné révoque toute la famille.
+  familyId    String    @map("family_id") @db.Uuid
+  refreshHash String    @map("refresh_hash")
+  ip          String?
+  userAgent   String?   @map("user_agent")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz(6)
+  rotatedAt   DateTime? @map("rotated_at") @db.Timestamptz(6)
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation(fields: [userId, companyId], references: [id, companyId])
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([companyId, expiresAt])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  id        String       @id @default(uuid(7)) @db.Uuid
+  companyId String       @map("company_id") @db.Uuid
+  userId    String       @map("user_id") @db.Uuid
+  purpose   TokenPurpose
+  // Seul le condensé SHA-256 du secret est conservé
+  tokenHash String       @unique @map("token_hash")
+  expiresAt DateTime     @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime?    @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation(fields: [userId, companyId], references: [id, companyId])
+
+  @@index([userId, purpose])
+  @@map("verification_tokens")
+}
+
+// Rôles système : company_id = entreprise « plateforme » (lisibles par toutes les entreprises).
+model Role {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  companyId   String   @map("company_id") @db.Uuid
+  code        String
+  name        String
+  description String?
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company     Company          @relation(fields: [companyId], references: [id])
+  permissions RolePermission[]
+  userRoles   UserRole[]
+
+  @@unique([companyId, code])
+  @@map("roles")
+}
+
+// Référentiel global défini par le code (packages/shared) ; synchronisé par `npm run db:seed`.
+model Permission {
+  code        String @id
+  description String
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId         String @map("role_id") @db.Uuid
+  permissionCode String @map("permission_code")
+  companyId      String @map("company_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionCode], references: [code])
+  company    Company    @relation(fields: [companyId], references: [id])
+
+  @@id([roleId, permissionCode])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  companyId String    @map("company_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  roleId    String    @map("role_id") @db.Uuid
+  scopeType ScopeType @default(COMPANY) @map("scope_type")
+  scopeId   String?   @map("scope_id") @db.Uuid
+  // 'COMPANY' ou '<TYPE>:<uuid>' : clé d'unicité sans valeur NULL
+  scopeKey  String    @map("scope_key")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?   @map("created_by") @db.Uuid
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation(fields: [userId, companyId], references: [id, companyId])
+  role    Role    @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId, scopeKey])
+  @@index([companyId, userId])
+  @@map("user_roles")
+}
+
+// Journal en ajout seul : le rôle applicatif n'a que INSERT et SELECT, et un déclencheur
+// refuse tout UPDATE / DELETE.
+model AuditLog {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  companyId   String    @map("company_id") @db.Uuid
+  actorUserId String?   @map("actor_user_id") @db.Uuid
+  actorType   ActorType @map("actor_type")
+  action      String
+  entityType  String?   @map("entity_type")
+  entityId    String?   @map("entity_id") @db.Uuid
+  before      Json?
+  after       Json?
+  ip          String?
+  requestId   String?   @map("request_id")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, entityType, entityId])
+  @@index([companyId, createdAt])
+  @@index([companyId, action])
+  @@map("audit_log")
+}
+
+model IdempotencyKey {
+  companyId      String            @map("company_id") @db.Uuid
+  scope          String
+  key            String
+  requestHash    String            @map("request_hash")
+  status         IdempotencyStatus @default(COMPLETED)
+  responseStatus Int?              @map("response_status")
+  response       Json?
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@id([companyId, scope, key])
+  @@map("idempotency_keys")
+}
+
+// Compteurs sans trou (factures, reçus, codes clients) ; incrément sous verrou de ligne.
+model Counter {
+  companyId String @map("company_id") @db.Uuid
+  name      String
+  year      Int    @default(0)
+  value     Int    @default(0)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@id([companyId, name, year])
+  @@map("counters")
+}

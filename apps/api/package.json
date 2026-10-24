@@ -1,0 +1,46 @@
+{
+  "name": "@b2c/api",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "docs:openapi": "node --env-file=../../.env dist/scripts/export-openapi.js",
+    "test": "jest --config jest.config.js --runInBand"
+  },
+  "dependencies": {
+    "@b2c/shared": "0.1.0",
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
+    "@nestjs/platform-express": "^11.1.0",
+    "@nestjs/swagger": "^11.2.0",
+    "@prisma/client": "6.19.3",
+    "argon2": "^0.44.0",
+    "cookie-parser": "^1.4.7",
+    "helmet": "^8.1.0",
+    "ioredis": "^5.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "nestjs-pino": "^4.4.0",
+    "nodemailer": "^10.2.1",
+    "pino": "^9.7.0",
+    "pino-http": "^10.5.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "uuid": "^11.1.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^11.1.0",
+    "@types/cookie-parser": "^1.4.9",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.0.0",
+    "@types/nodemailer": "^7.0.0",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.0.0",
+    "supertest": "^7.1.0",
+    "ts-jest": "^29.4.0"
+  }
+}

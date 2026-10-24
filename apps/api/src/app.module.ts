@@ -1,0 +1,55 @@
+import { DynamicModule, Module, RequestMethod } from '@nestjs/common';
+import { LoggerModule } from 'nestjs-pino';
+import { AuditModule } from './audit/audit.module';
+import { AuthModule } from './auth/auth.module';
+import { ConfigModule } from './config/config.module';
+import type { Env } from './config/env';
+import { DatabaseModule } from './database/database.module';
+import { HealthModule } from './health/health.module';
+import { IamModule } from './iam/iam.module';
+import { InfraModule } from './infra/infra.module';
+import { MailModule } from './mail/mail.module';
+import { PlatformModule } from './platform/platform.module';
+import { PlatformSharedModule } from './platform/platform-shared.module';
+import { RedisModule } from './redis/redis.module';
+import { SecurityModule } from './security/security.module';
+
+@Module({})
+export class AppModule {
+  static forRoot(env: Env): DynamicModule {
+    return {
+      module: AppModule,
+      imports: [
+        ConfigModule.forRoot(env),
+        LoggerModule.forRoot({
+          // Syntaxe de chemin d'Express 5 (le « * » historique déclenche un avertissement de conversion)
+          forRoutes: [{ path: '{*splat}', method: RequestMethod.ALL }],
+          pinoHttp: {
+            level: env.LOG_LEVEL,
+            // Jamais d'en-têtes d'authentification ni de cookies dans les journaux
+            redact: {
+              paths: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
+              censor: '[masqué]',
+            },
+            genReqId: (req) => String(req.headers['x-request-id']),
+            autoLogging: { ignore: (req) => (req.url ?? '').startsWith('/health') },
+            serializers: {
+              req: (req) => ({ id: req.id, method: req.method, url: String(req.url).split('?')[0] }),
+            },
+          },
+        }),
+        DatabaseModule,
+        RedisModule,
+        MailModule,
+        AuditModule,
+        SecurityModule,
+        InfraModule,
+        PlatformSharedModule,
+        AuthModule,
+        IamModule,
+        PlatformModule,
+        HealthModule,
+      ],
+    };
+  }
+}

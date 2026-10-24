@@ -1,0 +1,1075 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1/audit": {
+      "get": {
+        "operationId": "AuditController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "entityType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            }
+          },
+          {
+            "name": "entityId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "actorUserId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Journal d'audit de l'entreprise (lecture seule, pagination par curseur)",
+        "tags": [
+          "Audit"
+        ],
+        "x-permissions": [
+          "audit:read"
+        ]
+      }
+    },
+    "/v1/auth/register": {
+      "post": {
+        "description": "Répond toujours 202, que l'adresse soit déjà utilisée ou non : un e-mail de confirmation (ou d'information) est envoyé.",
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "companySlug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$"
+                  },
+                  "accountType": {
+                    "type": "string",
+                    "enum": [
+                      "INDIVIDUAL",
+                      "BUSINESS"
+                    ]
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 128
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+[1-9]\\d{7,14}$"
+                  },
+                  "businessName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "locale": {
+                    "default": "fr",
+                    "type": "string",
+                    "enum": [
+                      "fr",
+                      "ht",
+                      "en"
+                    ]
+                  },
+                  "acceptTerms": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "companySlug",
+                  "accountType",
+                  "email",
+                  "password",
+                  "firstName",
+                  "lastName",
+                  "acceptTerms"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "summary": "Inscription d'un client (individuel ou professionnel)",
+        "tags": [
+          "Authentification"
+        ]
+      }
+    },
+    "/v1/auth/verify-email": {
+      "post": {
+        "operationId": "AuthController_verifyEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "token"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Confirme l'adresse e-mail avec le jeton reçu par e-mail",
+        "tags": [
+          "Authentification"
+        ]
+      }
+    },
+    "/v1/auth/resend-verification": {
+      "post": {
+        "operationId": "AuthController_resend",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "companySlug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$"
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254
+                  }
+                },
+                "required": [
+                  "companySlug",
+                  "email"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "summary": "Renvoie l'e-mail de confirmation (réponse identique si le compte n'existe pas)",
+        "tags": [
+          "Authentification"
+        ]
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "description": "Renvoie un jeton d'accès (15 min). Le jeton de renouvellement est posé dans un cookie HttpOnly ; les clients mobiles (en-tête X-Client-Type: mobile) le reçoivent dans le corps.",
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "companySlug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$"
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Connexion",
+        "tags": [
+          "Authentification"
+        ]
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "description": "Avec le cookie, l'en-tête X-CSRF-Protection: 1 est obligatoire. Réutiliser un jeton déjà tourné révoque toutes les sessions de la famille.",
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 300
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Renouvelle les jetons (rotation du jeton de renouvellement)",
+        "tags": [
+          "Authentification"
+        ]
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "allSessions": {
+                    "default": false,
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Déconnexion (cette session, ou toutes avec allSessions=true)",
+        "tags": [
+          "Authentification"
+        ]
+      }
+    },
+    "/v1/auth/forgot-password": {
+      "post": {
+        "operationId": "AuthController_forgot",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "companySlug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$"
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254
+                  }
+                },
+                "required": [
+                  "email"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "summary": "Demande un lien de réinitialisation (réponse identique si le compte n'existe pas)",
+        "tags": [
+          "Authentification"
+        ]
+      }
+    },
+    "/v1/auth/reset-password": {
+      "post": {
+        "description": "Toutes les sessions existantes de l'utilisateur sont révoquées.",
+        "operationId": "AuthController_reset",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 300
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "token",
+                  "newPassword"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Définit un nouveau mot de passe (réinitialisation ou activation d'un compte invité)",
+        "tags": [
+          "Authentification"
+        ]
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Profil de l'utilisateur connecté, rôles et permissions",
+        "tags": [
+          "Authentification"
+        ]
+      }
+    },
+    "/v1/admin/users": {
+      "get": {
+        "operationId": "AdminUsersController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "STAFF",
+                "CUSTOMER",
+                "PLATFORM"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "ACTIVE",
+                "DISABLED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Liste les utilisateurs de l'entreprise (pagination par curseur)",
+        "tags": [
+          "Administration : utilisateurs"
+        ],
+        "x-permissions": [
+          "user:read"
+        ]
+      },
+      "post": {
+        "description": "Le compte est créé en attente ; un lien d'activation (72 h) est envoyé par e-mail. Anti-escalade : les rôles attribués ne doivent pas dépasser vos propres droits.",
+        "operationId": "AdminUsersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+[1-9]\\d{7,14}$"
+                  },
+                  "locale": {
+                    "default": "fr",
+                    "type": "string",
+                    "enum": [
+                      "fr",
+                      "ht",
+                      "en"
+                    ]
+                  },
+                  "roles": {
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "roleCode": {
+                          "type": "string",
+                          "enum": [
+                            "SUPER_ADMIN",
+                            "COMPANY_ADMIN",
+                            "LOGISTICS_MANAGER",
+                            "WAREHOUSE_MANAGER",
+                            "RECEPTION_AGENT",
+                            "BILLING_AGENT",
+                            "AGENCY_MANAGER",
+                            "CUSTOMER_SERVICE",
+                            "DRIVER",
+                            "CUSTOMER_INDIVIDUAL",
+                            "CUSTOMER_BUSINESS",
+                            "AUDITOR"
+                          ]
+                        },
+                        "scopeType": {
+                          "default": "COMPANY",
+                          "type": "string",
+                          "enum": [
+                            "COMPANY",
+                            "WAREHOUSE",
+                            "AGENCY",
+                            "ROUTE"
+                          ]
+                        },
+                        "scopeId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "roleCode"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "email",
+                  "firstName",
+                  "lastName",
+                  "roles"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Invite un membre du personnel",
+        "tags": [
+          "Administration : utilisateurs"
+        ],
+        "x-permissions": [
+          "user:create"
+        ]
+      }
+    },
+    "/v1/admin/users/{id}": {
+      "get": {
+        "operationId": "AdminUsersController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Détail d'un utilisateur de l'entreprise",
+        "tags": [
+          "Administration : utilisateurs"
+        ],
+        "x-permissions": [
+          "user:read"
+        ]
+      }
+    },
+    "/v1/admin/users/{id}/roles": {
+      "post": {
+        "operationId": "AdminUsersController_assign",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "roleCode": {
+                    "type": "string",
+                    "enum": [
+                      "SUPER_ADMIN",
+                      "COMPANY_ADMIN",
+                      "LOGISTICS_MANAGER",
+                      "WAREHOUSE_MANAGER",
+                      "RECEPTION_AGENT",
+                      "BILLING_AGENT",
+                      "AGENCY_MANAGER",
+                      "CUSTOMER_SERVICE",
+                      "DRIVER",
+                      "CUSTOMER_INDIVIDUAL",
+                      "CUSTOMER_BUSINESS",
+                      "AUDITOR"
+                    ]
+                  },
+                  "scopeType": {
+                    "default": "COMPANY",
+                    "type": "string",
+                    "enum": [
+                      "COMPANY",
+                      "WAREHOUSE",
+                      "AGENCY",
+                      "ROUTE"
+                    ]
+                  },
+                  "scopeId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "roleCode"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attribue un rôle (avec sa portée) à un utilisateur",
+        "tags": [
+          "Administration : utilisateurs"
+        ],
+        "x-permissions": [
+          "role:assign"
+        ]
+      }
+    },
+    "/v1/admin/users/{id}/roles/{userRoleId}": {
+      "delete": {
+        "operationId": "AdminUsersController_revoke",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retire une attribution de rôle",
+        "tags": [
+          "Administration : utilisateurs"
+        ],
+        "x-permissions": [
+          "role:assign"
+        ]
+      }
+    },
+    "/v1/admin/users/{id}/disable": {
+      "post": {
+        "operationId": "AdminUsersController_disable",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Désactive un compte et révoque ses sessions",
+        "tags": [
+          "Administration : utilisateurs"
+        ],
+        "x-permissions": [
+          "user:disable"
+        ]
+      }
+    },
+    "/v1/admin/users/{id}/enable": {
+      "post": {
+        "operationId": "AdminUsersController_enable",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Réactive un compte désactivé",
+        "tags": [
+          "Administration : utilisateurs"
+        ],
+        "x-permissions": [
+          "user:disable"
+        ]
+      }
+    },
+    "/v1/admin/roles": {
+      "get": {
+        "operationId": "RolesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rôles disponibles et leurs permissions",
+        "tags": [
+          "Administration : rôles"
+        ],
+        "x-permissions": [
+          "role:read"
+        ]
+      }
+    },
+    "/v1/platform/companies": {
+      "post": {
+        "description": "Réservé à l'équipe de la plateforme. L'administrateur reçoit un lien d'activation par e-mail.",
+        "operationId": "PlatformController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$"
+                  },
+                  "trackingPrefix": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2,4}$"
+                  },
+                  "customerCodePrefix": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2,4}$"
+                  },
+                  "defaultCurrency": {
+                    "default": "USD",
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "HTG"
+                    ]
+                  },
+                  "defaultLocale": {
+                    "default": "fr",
+                    "type": "string",
+                    "enum": [
+                      "fr",
+                      "ht",
+                      "en"
+                    ]
+                  },
+                  "paymentPolicy": {
+                    "default": "PAY_BEFORE_SHIPMENT",
+                    "type": "string",
+                    "enum": [
+                      "PAY_BEFORE_SHIPMENT",
+                      "PAY_BEFORE_RELEASE"
+                    ]
+                  },
+                  "adminEmail": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "adminFirstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "adminLastName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "name",
+                  "slug",
+                  "trackingPrefix",
+                  "customerCodePrefix",
+                  "adminEmail",
+                  "adminFirstName",
+                  "adminLastName"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crée une entreprise et invite son administrateur",
+        "tags": [
+          "Plateforme"
+        ],
+        "x-permissions": [
+          "company:manage"
+        ]
+      },
+      "get": {
+        "operationId": "PlatformController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Liste les entreprises (sans aucune donnée métier)",
+        "tags": [
+          "Plateforme"
+        ],
+        "x-permissions": [
+          "company:manage"
+        ]
+      }
+    },
+    "/v1/platform/companies/{id}/suspend": {
+      "post": {
+        "operationId": "PlatformController_suspend",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Suspend une entreprise : connexions et jetons existants refusés immédiatement",
+        "tags": [
+          "Plateforme"
+        ],
+        "x-permissions": [
+          "company:manage"
+        ]
+      }
+    },
+    "/v1/platform/companies/{id}/activate": {
+      "post": {
+        "operationId": "PlatformController_activate",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Réactive une entreprise suspendue",
+        "tags": [
+          "Plateforme"
+        ],
+        "x-permissions": [
+          "company:manage"
+        ]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "HealthController_live",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Le processus répond",
+        "tags": [
+          "Santé"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "HealthController_ready",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Les dépendances (PostgreSQL, Redis) répondent",
+        "tags": [
+          "Santé"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "API logistique (nom provisoire : TransitHaïti)",
+    "description": "Toutes les routes sont sous /v1. Erreurs : { error: { code, message, details?, requestId } }. Chaque route protégée indique ses permissions dans l'extension x-permissions.",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {}
+  }
+}

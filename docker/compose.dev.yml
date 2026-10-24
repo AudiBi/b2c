@@ -1,0 +1,62 @@
+# Services de développement. Lancer avec : npm run docker:up   (lit .env à la racine)
+name: b2c
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      # Super-utilisateur du conteneur = rôle de MIGRATION (propriétaire des tables)
+      POSTGRES_USER: b2c_migrator
+      POSTGRES_PASSWORD: ${POSTGRES_MIGRATOR_PASSWORD:?lancer npm run setup:env}
+      POSTGRES_DB: b2c_dev
+      # Mot de passe du rôle APPLICATIF b2c_app (créé par docker/postgres/init/01-roles.sh)
+      B2C_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?lancer npm run setup:env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5442}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U b2c_migrator -d b2c_dev"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6389}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${SMTP_PORT:-1035}:1025"
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8035}:8025"
+
+  # Optionnel (profil « storage »), nécessaire à partir de la phase 5 : docker compose --profile storage up -d
+  # Image non vérifiée : minio/minio n'est plus disponible sur Docker Hub, choisir une image S3 disponible.
+  minio:
+    profiles: ["storage"]
+    image: quay.io/minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?lancer npm run setup:env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?lancer npm run setup:env}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT:-9100}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9101}:9001"
+    volumes:
+      - miniodata:/data
+
+volumes:
+  pgdata:
+  miniodata:

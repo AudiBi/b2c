@@ -1,0 +1,29 @@
+{
+  "name": "b2c",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Plateforme de logistique et d'expédition (nom provisoire : TransitHaïti)",
+  "engines": { "node": ">=22.12.0" },
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "setup:env": "node scripts/init-env.mjs",
+    "docker:up": "docker compose -f docker/compose.dev.yml --env-file .env up -d --wait",
+    "docker:down": "docker compose -f docker/compose.dev.yml --env-file .env down",
+    "build:shared": "npm -w @b2c/shared run build",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "db:migrate": "prisma migrate deploy --schema prisma/schema.prisma",
+    "db:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed:demo": "tsx prisma/seed-demo.ts",
+    "build": "npm run build:shared && npm run prisma:generate && npm -w @b2c/api run build",
+    "start": "node --env-file=.env apps/api/dist/main.js",
+    "docs:openapi": "npm -w @b2c/api run docs:openapi",
+    "typecheck": "npm run build:shared && npm run prisma:generate && npm -w @b2c/api run typecheck",
+    "test": "npm run build:shared && npm run prisma:generate && npm -w @b2c/shared test && npm -w @b2c/api test"
+  },
+  "devDependencies": {
+    "prisma": "6.19.3",
+    "tsx": "^4.20.0",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,163 @@
+# Schéma de base de données (conception)
+
+Phase 2. **Aucune migration n'existe encore.** Ce document fixe le schéma cible ; le fichier `prisma/schema.prisma` et les migrations seront produits en phase 3 (identité, tenancy, audit) puis par phase. Toute divergence future est répercutée ici.
+
+## 0. État réellement migré (phase 3)
+
+Migrations appliquées et testées : `0001_platform_identity` et `0002_idempotency_update_grant` (dans `prisma/migrations/`). Tables existantes : `companies`, `company_settings`, `users`, `sessions`, `verification_tokens`, `roles`, `permissions`, `role_permissions`, `user_roles`, `audit_log`, `idempotency_keys`, `counters`. Tout le reste de ce document (clients, colis, finance…) reste une **conception** non migrée. Écarts par rapport à la conception initiale ci-dessous :
+
+| Sujet | Conception initiale | Réalisé |
+|---|---|---|
+| Comptes de la plateforme | `company_id` nul pour les super administrateurs et les rôles système | **Entreprise « plateforme » à identifiant fixe** `00000000-0000-7000-8000-000000000001` (insérée par la migration). `company_id` est donc `NOT NULL` partout, ce qui permet des index d'unicité simples et des politiques RLS uniformes. Un `CHECK` impose `kind = 'PLATFORM'` si et seulement si l'utilisateur appartient à cette entreprise |
+| Rôles système | `roles.company_id` nul | `company_id` = entreprise plateforme ; lisibles par toutes les entreprises (politique `system_roles_read`), non modifiables par elles |
+| `users` | colonnes de verrouillage de compte | Pas de compteur en base : le verrouillage (5 échecs / 15 min) est dans Redis, par (entreprise, e-mail), ce qui évite de révéler si un compte existe. Ajout de `kind` (PLATFORM / STAFF / CUSTOMER), `business_name`, `password_changed_at` |
+| `sessions` | une ligne par session | Une ligne par jeton de renouvellement émis ; `family_id` regroupe les rotations successives ; `rotated_at` et `revoked_at` |
+| `user_roles` | unicité sur (utilisateur, rôle, type de portée, id de portée) | Colonne `scope_key` (`COMPANY` ou `TYPE:uuid`) pour une unicité sans valeur NULL ; `CHECK` de cohérence portée/identifiant |
+| Intégrité entre entreprises | RLS seule | RLS **plus** clés étrangères composites `(user_id, company_id) → users(id, company_id)` pour `sessions`, `verification_tokens`, `user_roles` |
+| Journal d'audit | droits en ajout seul | Droits `SELECT, INSERT` **et** déclencheur refusant UPDATE/DELETE pour tous les rôles |
+| Droits du rôle applicatif | non précisés | Explicites par table (aucun `ALTER DEFAULT PRIVILEGES`) ; chaque migration doit accorder ses droits |
+| Contexte RLS | `SET LOCAL app.company_id` | Idem, plus `app.platform` (`on` pour la seule lecture/écriture de `companies` par la plateforme) ; fonctions SQL `app_company_id()`, `app_is_platform()`, `app_platform_company_id()` |
+| `customers`, `receiving_addresses`, `warehouses`, `agencies` | migration 0002 prévue en phase 3-4 | **Non créées** : phases 4 et 6 |
+
+À savoir en écrivant les prochaines migrations : Prisma ne modélise ni les politiques RLS, ni les `CHECK`, ni les déclencheurs, ni les `GRANT`. Générer le SQL avec `prisma migrate diff --from-url … --to-schema-datamodel …` (ou `migrate dev --create-only`), puis **ajouter à la main** RLS + droits pour chaque nouvelle table portant `company_id` ; relire le SQL avant de l'appliquer. Les tests `rls.spec.ts` échouent si une table portant `company_id` n'a pas RLS activée et forcée.
+
+## 1. Conventions
+
+- PostgreSQL 16+. Noms de tables et colonnes en `snake_case`, tables au pluriel.
+- Clé primaire `id uuid` (v7). Toutes les tables métier : `company_id uuid NOT NULL` (clé étrangère `companies`), `created_at`, `updated_at timestamptz`, et `created_by` si pertinent.
+- Montants : `numeric(14,2)`, avec colonne `currency char(3)`. Poids : `numeric(10,3)` en **kg** stocké ; l'unité d'affichage (lb) est une conversion. Dimensions : `numeric(8,2)` en **cm**.
+- Énumérations : types `ENUM` Prisma pour les listes fermées (statuts) ; tables de référence pour les listes configurables (catégories, services).
+- Suppression : pas de suppression physique des données comptables ou logistiques (statuts, `deleted_at` ou archivage). Données personnelles : anonymisation selon la politique de conservation.
+- Index : toute clé étrangère est indexée ; index composites commençant par `company_id`.
+- **RLS** activée sur toutes les tables portant `company_id` (voir ARCHITECTURE.md §5).
+- Colonnes `(…)` entre parenthèses : facultatives.
+
+## 2. Plateforme et identité (phase 3)
+
+| Table | Colonnes principales | Contraintes / index |
+|---|---|---|
+| `companies` | id, name, slug, tracking_prefix, customer_code_prefix, default_currency, default_locale, payment_policy, status | `slug` unique, `tracking_prefix` unique |
+| `company_settings` | company_id, key, value (jsonb) | PK (company_id, key) |
+| `users` | id, company_id (null pour plateforme), email, phone, password_hash, locale, status, email_verified_at, phone_verified_at, totp_secret_enc, last_login_at | unique (company_id, lower(email)) ; unique partiel pour plateforme |
+| `sessions` | id, user_id, family_id, refresh_hash, ip, user_agent, expires_at, revoked_at, rotated_from | index (user_id), (family_id) |
+| `verification_tokens` | id, user_id, purpose (EMAIL, PHONE, RESET), token_hash, expires_at, used_at | token_hash unique |
+| `roles` | id, company_id (null = rôle système), code, name | unique (company_id, code) |
+| `permissions` | code (PK), description | Défini par le code, synchronisé à la migration |
+| `role_permissions` | role_id, permission_code | PK composite |
+| `user_roles` | id, user_id, role_id, scope_type (COMPANY, WAREHOUSE, AGENCY, ROUTE), scope_id | unique (user_id, role_id, scope_type, scope_id) |
+| `audit_log` | id, company_id, actor_user_id, actor_type, action, entity_type, entity_id, before (jsonb), after (jsonb), ip, request_id, created_at | **Ajout seul** : le rôle applicatif n'a que `INSERT` et `SELECT`. Index (company_id, entity_type, entity_id), (company_id, created_at) |
+| `idempotency_keys` | company_id, key, scope, request_hash, response (jsonb), status, created_at | PK (company_id, scope, key) |
+| `counters` | company_id, name, year, value | PK (company_id, name, year) ; incrément sous `UPDATE … RETURNING` verrouillé |
+
+## 3. Clients (phase 3-4)
+
+| Table | Colonnes principales | Contraintes |
+|---|---|---|
+| `customers` | id, company_id, user_id, customer_type (INDIVIDUAL, BUSINESS), customer_code, display_name, business_name, tax_id, phone, status, parent_customer_id (pour sous-comptes) | unique (company_id, customer_code) |
+| `customer_addresses` | id, company_id, customer_id, kind (PERSONAL, DELIVERY), label, line1, line2, city, region, country, postal_code, instructions, is_default | index (customer_id) |
+| `beneficiaries` | id, company_id, customer_id, full_name, id_document_type, id_document_last4, phone, valid_from, valid_to, status | Numéro de pièce non stocké en clair (seulement les 4 derniers caractères) |
+| `receiving_addresses` | id, company_id, customer_id, warehouse_id, transport_mode, formatted_lines (jsonb), generated_at | unique (customer_id, warehouse_id, transport_mode) |
+
+## 4. Entrepôts, agences, référentiels (phase 3 et 6)
+
+| Table | Colonnes principales | Contraintes |
+|---|---|---|
+| `countries`, `cities` | code ISO, nom (fr/ht/en) | Référentiel global |
+| `warehouses` | id, company_id, reference, name, country, city, address, address_template (jsonb), timezone, status | unique (company_id, reference) |
+| `warehouse_locations` | id, company_id, warehouse_id, code, kind (SHELF, BIN, ZONE), status | unique (warehouse_id, code) |
+| `agencies` | id, company_id, code, name, country, city, address, kind (AGENCY, PICKUP_POINT), phone, hours (jsonb), status | unique (company_id, code) |
+| `delivery_zones` | id, company_id, agency_id, name, areas (jsonb), delivery_fee (nullable) | |
+| `carriers` | id, company_id, name, mode (AIR, SEA, LAND), contact (jsonb), status | |
+| `package_categories` | id, company_id, code, name (jsonb par langue), restricted, requires_declaration | unique (company_id, code) |
+| `services` | id, company_id, code, name (jsonb), price_rule (jsonb), active | Services additionnels (assurance, emballage…) |
+| `taxes` | id, company_id, code, name, rate or fixed_amount, applies_to, valid_from, valid_to | |
+
+## 5. Préalertes et colis (phase 5)
+
+| Table | Colonnes principales | Contraintes / index |
+|---|---|---|
+| `prealerts` | id, company_id, customer_id, store_name, order_number, supplier_tracking, warehouse_id, transport_mode, purchase_amount, currency, description, status, matched_package_id, matched_by, matched_at | index (company_id, supplier_tracking), unique (matched_package_id) si renseigné |
+| `packages` | id, company_id, tracking_number, customer_id (null si non identifié), customer_ref, sender_name, recipient_name, recipient_phone, recipient_address_id, origin_warehouse_id, origin_country, origin_city, destination_country, destination_city, destination_agency_id, transport_mode, supplier_tracking, status, previous_status (pour reprise après blocage), actual_weight_kg, length_cm, width_cm, height_cm, volumetric_weight_kg, billable_weight_kg, rate_card_id, rate_card_version, content_description, declared_value, declared_currency, insured, shipping_fee, extra_fees, location_id, shipment_id (lot actif), group_id, received_at, shipped_at, delivered_at, version (verrou optimiste) | **unique (tracking_number) global** ; index (company_id, status), (company_id, customer_id), (company_id, supplier_tracking) ; CHECK poids > 0 si statut ≥ REGISTERED_WEIGHED ; déclencheur « statut ⇒ événement » |
+| `package_events` | id, company_id, package_id, from_status, to_status, event_type, actor_user_id, reason, location_ref, occurred_at, visibility (PUBLIC, PRIVATE), data (jsonb) | Ajout seul. Index (package_id, occurred_at) |
+| `package_items` | id, package_id, description, quantity, unit_value, hs_code (nullable) | |
+| `package_groups` | id, company_id, customer_id, kind (CONSOLIDATION, SPLIT), reference | |
+| `package_holds` | id, company_id, package_id, reason_code, note, opened_by, opened_at, released_by, released_at | Anomalies et blocages |
+| `file_objects` | id, company_id, owner_type, owner_id, kind (PHOTO, INVOICE, DOCUMENT, SIGNATURE, MANIFEST), storage_key, original_name, mime_type, size_bytes, sha256, scan_status (PENDING, CLEAN, REJECTED), uploaded_by | `storage_key` commence par `companies/<company_id>/` (CHECK) |
+
+## 6. Tarification (phase 5)
+
+| Table | Colonnes principales | Contraintes |
+|---|---|---|
+| `rate_cards` | id, company_id, name, transport_mode, origin_zone, destination_zone, currency, weight_unit, dimension_unit, volumetric_divisor, min_billable_weight, rounding_mode (UP, NEAREST, STEP), rounding_step, valid_from, valid_to, version, status (DRAFT, ACTIVE, RETIRED) | Pas de chevauchement de périodes actives pour une même clé : contrainte d'exclusion `EXCLUDE USING gist` |
+| `rate_rules` | id, rate_card_id, category_id (nullable), weight_from, weight_to, price_per_unit, flat_fee, min_charge | Tranches de poids sans chevauchement (exclusion) |
+| `rate_surcharges` | id, rate_card_id, kind (INSURANCE_PCT, HANDLING, FUEL…), amount_or_rate, basis | |
+| `quotes` | id, company_id, customer_id (nullable), input (jsonb), result (jsonb), rate_card_id, rate_card_version, is_estimate (true), expires_at | Conserve l'entrée et la version utilisée |
+
+## 7. Transport et livraison (phase 6, 8)
+
+| Table | Colonnes principales | Contraintes |
+|---|---|---|
+| `shipments` | id, company_id, reference, transport_mode, origin_warehouse_id, destination_country, destination_city, destination_agency_id, carrier_id, transport_ref (connaissement), departure_at, eta_at, arrived_at, status | unique (company_id, reference) |
+| `shipment_packages` | shipment_id, package_id, loaded_at, loaded_by, removed_at | Unique partiel (package_id) WHERE removed_at IS NULL (I13) |
+| `shipment_events` | id, company_id, shipment_id, status, actor_user_id, occurred_at, source (MANUAL, CARRIER_API), data | Ajout seul |
+| `manifests` | id, company_id, shipment_id, file_object_id, generated_at, totals (jsonb) | |
+| `warehouse_movements` | id, company_id, package_id, from_location_id, to_location_id, kind (IN, MOVE, OUT), actor_user_id, occurred_at | Ajout seul |
+| `scan_sessions` | id, company_id, warehouse_id/agency_id, user_id, purpose, started_at, ended_at | |
+| `routes` | id, company_id, agency_id, driver_user_id, planned_date, status | |
+| `route_stops` | id, route_id, package_id, sequence, address_snapshot (jsonb), status | |
+| `delivery_attempts` | id, company_id, package_id, route_stop_id, attempted_at, outcome (SUCCEEDED, FAILED, RESCHEDULED), failure_reason, recipient_name, id_document_last4, otp_verified, signature_file_id, photo_file_id, actor_user_id | |
+| `delivery_otps` | id, package_id, code_hash, expires_at, attempts, used_at | Code haché, nombre d'essais limité |
+
+## 8. Finance (phase 7)
+
+| Table | Colonnes principales | Contraintes |
+|---|---|---|
+| `invoices` | id, company_id, number, customer_id, status, currency, subtotal, tax_total, discount_total, total, issued_at, due_at, voided_at | unique (company_id, number) ; modification interdite hors `DRAFT` (déclencheur) |
+| `invoice_lines` | id, invoice_id, package_id (nullable), kind (FREIGHT, STORAGE, HANDLING, INSURANCE, TAX, CUSTOMS, DISCOUNT, OTHER), description, quantity, unit_price, amount | |
+| `credit_notes` | id, company_id, number, invoice_id, amount, reason | |
+| `payments` | id, company_id, customer_id, method (CASH, BANK_TRANSFER, CARD_ONLINE, MOBILE_MONEY), provider, provider_ref, amount, currency, status, idempotency_key, confirmed_at, recorded_by, agency_id, cash_session_id | unique (company_id, idempotency_key) ; unique (provider, provider_ref) |
+| `payment_allocations` | payment_id, invoice_id, amount | Somme ≤ montant du paiement (déclencheur) |
+| `refunds` | id, company_id, payment_id, amount, reason, status, provider_ref, approved_by | |
+| `receipts` | id, company_id, number, payment_id, issued_at, file_object_id | unique (company_id, number) |
+| `cash_sessions` | id, company_id, agency_id, opened_by, opened_at, closed_at, counted_amount, expected_amount | Clôture de caisse |
+| `provider_webhook_events` | id, provider, event_id, received_at, payload_hash, status | unique (provider, event_id) : empêche le rejeu |
+
+Aucun champ ne stocke un numéro de carte, un cryptogramme ou un jeton réutilisable de carte hors du prestataire.
+
+## 9. Notifications et support (phase 7, 8)
+
+| Table | Colonnes principales | Contraintes |
+|---|---|---|
+| `notification_templates` | id, company_id, event_code, channel (EMAIL, SMS, WHATSAPP, IN_APP), locale, subject, body, active | unique (company_id, event_code, channel, locale) |
+| `notifications` | id, company_id, user_id/customer_id, event_code, channel, locale, payload (jsonb), dedupe_key, status, attempts, last_error, next_attempt_at, sent_at, provider_message_id | unique (company_id, dedupe_key) |
+| `outbox_events` | id, company_id, event_code, aggregate_type, aggregate_id, payload (jsonb), created_at, published_at | Index sur `published_at IS NULL` |
+| `claims` | id, company_id, customer_id, package_id (nullable), kind, status, assigned_to, opened_at, resolved_at | |
+| `claim_messages` | id, claim_id, author_id, body, file_object_id, created_at | |
+| `integration_configs` | id, company_id, provider_code, channel, status (ACTIVE, DISABLED, NOT_CONFIGURED), secret_ref | Les secrets ne sont pas dans la table, seulement une référence au gestionnaire de secrets |
+
+## 10. Rétention (par défaut, configurable)
+
+| Donnée | Conservation proposée |
+|---|---|
+| Journal d'audit | 7 ans |
+| Factures, paiements, reçus | 10 ans (obligations comptables à vérifier avec un juriste haïtien) |
+| Photos de colis | 12 mois après livraison |
+| Preuves de livraison | 24 mois |
+| Jetons de session / vérification | Suppression à l'expiration |
+| Compte client supprimé | Anonymisation des données personnelles, conservation des écritures comptables |
+
+Ces durées sont des **valeurs proposées**, non des exigences légales vérifiées.
+
+## 11. Migrations prévues
+
+| Migration | Contenu | Phase |
+|---|---|---|
+| `0001_platform_identity` | companies, users, sessions, tokens, roles, permissions, user_roles, audit_log, idempotency_keys, counters + RLS | 3 |
+| `0002_customers_refs` | customers, adresses, bénéficiaires, pays/villes, entrepôts, agences, catégories | 3-4 |
+| `0003_packages` | packages, events, items, holds, file_objects, prealerts + déclencheurs | 5 |
+| `0004_pricing` | rate_cards, rules, surcharges, quotes | 5 |
+| `0005_logistics` | shipments, manifests, movements, scan_sessions | 6 |
+| `0006_delivery` | routes, stops, attempts, otps | 6/8 |
+| `0007_finance` | invoices, payments, refunds, receipts, cash_sessions, webhook events | 7 |
+| `0008_notifications` | templates, notifications, outbox | 7 |
+| `0009_claims_reports` | claims, vues de rapports | 8 |
