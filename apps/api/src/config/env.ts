@@ -43,6 +43,9 @@ export const envSchema = z
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
     COOKIE_SECURE: bool,
     ARGON2_MEMORY_KIB: z.coerce.number().int().min(1024).default(65536),
+
+    /** Dossier des pièces jointes (stockage disque local). Hors du dossier public ; à sauvegarder avec la base. */
+    FILES_DIR: z.string().min(1).default('./.data/files'),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;

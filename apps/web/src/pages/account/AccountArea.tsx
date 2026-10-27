@@ -3,6 +3,8 @@ import { AccountLayout } from './AccountLayout';
 import { AddressesPage } from './AddressesPage';
 import { BeneficiariesPage } from './BeneficiariesPage';
 import { DashboardPage } from './DashboardPage';
+import { PackageDetailPage, PackagesPage } from './PackagesPage';
+import { PrealertsPage } from './PrealertsPage';
 import { ProfilePage } from './ProfilePage';
 import { ReceivingPage } from './ReceivingPage';
 import { SecurityPage } from './SecurityPage';
@@ -17,6 +19,9 @@ export default function AccountArea() {
         <Route path="addresses" element={<AddressesPage />} />
         <Route path="beneficiaries" element={<BeneficiariesPage />} />
         <Route path="receiving-addresses" element={<ReceivingPage />} />
+        <Route path="prealerts" element={<PrealertsPage />} />
+        <Route path="packages" element={<PackagesPage />} />
+        <Route path="packages/:id" element={<PackageDetailPage />} />
         <Route path="security" element={<SecurityPage />} />
       </Route>
     </Routes>

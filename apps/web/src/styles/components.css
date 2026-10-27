@@ -288,3 +288,19 @@
 .stack > * + * { margin-top: 16px; }
 .muted { color: var(--muted); }
 .center { text-align: center; }
+
+/* ---------- Calculateur, suivi, colis (phase 5) ---------- */
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.03em; overflow-wrap: anywhere; }
+.badge-warning { background: var(--warning-bg); color: var(--warning); border-color: #f5c77e; }
+.badge-danger { background: var(--danger-bg); color: #7a1a10; border-color: #f5b5ae; }
+.calc-layout { display: grid; gap: 24px; align-items: start; }
+@media (min-width: 900px) { .calc-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; }
+.table th, .table td { padding: 8px 4px; border-bottom: 1px solid var(--border); text-align: left; font-weight: 500; }
+.table tfoot th, .table tfoot td { font-weight: 800; border-bottom: 0; border-top: 2px solid var(--border-strong); }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.timeline { list-style: none; margin: 12px 0 0; padding: 0 0 0 20px; border-left: 3px solid var(--border-strong); display: grid; gap: 14px; }
+.timeline li { position: relative; }
+.timeline li::before { content: ''; position: absolute; left: -29px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid var(--border-strong); }
+.timeline li[aria-current='step']::before { border-color: var(--navy-900); background: var(--navy-900); }
+.files-panel { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }

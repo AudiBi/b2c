@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { AppException } from '../common/errors';
 import type { CompanyStatus } from '@prisma/client';
 import { PLATFORM_COMPANY_ID } from '@b2c/shared';
 import { DbService } from '../database/db.service';
@@ -22,5 +23,14 @@ export class CompanyDirectory {
     return this.db.run({ companyId: PLATFORM_COMPANY_ID, platform: true }, (tx) =>
       tx.company.findUnique({ where: { slug }, select: { id: true, slug: true, name: true, status: true } }),
     );
+  }
+
+  /** Entreprise visible publiquement (pas la plateforme, pas une entreprise suspendue) ; sinon 404. */
+  async requirePublic(slug: string): Promise<CompanyRef> {
+    const company = await this.findBySlug(slug);
+    if (!company || company.id === PLATFORM_COMPANY_ID || company.status !== 'ACTIVE') {
+      throw AppException.notFound('COMPANY_NOT_FOUND', 'Entreprise introuvable');
+    }
+    return company;
   }
 }

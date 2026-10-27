@@ -24,12 +24,8 @@ export class PublicController {
     private readonly companies: CompanyDirectory,
   ) {}
 
-  private async resolve(slug: string) {
-    const company = await this.companies.findBySlug(slug);
-    if (!company || company.id === PLATFORM_COMPANY_ID || company.status !== 'ACTIVE') {
-      throw AppException.notFound('COMPANY_NOT_FOUND', 'Entreprise introuvable');
-    }
-    return company;
+  private resolve(slug: string) {
+    return this.companies.requirePublic(slug);
   }
 
   @Get(':slug')

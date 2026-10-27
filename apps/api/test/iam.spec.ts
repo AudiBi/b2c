@@ -449,7 +449,7 @@ describe('Rôles, permissions et administration des utilisateurs', () => {
 
     // Préfixe de suivi unique (2 à 4 lettres) : la base impose l'unicité entre entreprises
     const randomPrefix = () =>
-      Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+      Array.from({ length: 4 }, () => 'ABCDEFGHJKMNPQRSTVWXYZ'[Math.floor(Math.random() * 22)]).join('');
     const companyBody = () => ({
       name: 'Transport Test SA',
       slug: uniq('co'),

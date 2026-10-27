@@ -68,7 +68,7 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
     audience: 'STAFF',
     allowedScopes: ['COMPANY'],
     permissions: [
-      'customer:read', 'package:read', 'package:hold', 'package:release_hold', 'package:return',
+      'customer:read', 'package:read', 'package:hold', 'package:release_hold', 'package:return', 'package:authorize_shipment',
       'shipment:read', 'shipment:manage', 'shipment:dispatch', 'shipment:receive',
       'warehouse:read', 'agency:read', 'rate:read', 'quote:create',
       'delivery:read', 'delivery:assign', 'report:read', 'prealert:read',
@@ -107,7 +107,7 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
     audience: 'STAFF',
     allowedScopes: ['COMPANY'],
     permissions: [
-      'customer:read', 'package:read', 'rate:read', 'quote:create',
+      'customer:read', 'package:read', 'package:authorize_shipment', 'rate:read', 'quote:create',
       'invoice:read', 'invoice:create', 'invoice:void', 'discount:apply',
       'payment:read', 'payment:record_cash', 'payment:refund', 'payment:reconcile', 'payment:export',
     ],

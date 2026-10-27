@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { chromium, defineConfig, devices } from '@playwright/test';
 
 // Recette navigateur : API compilée + site pré-rendu, sur la base de TEST (jamais celle de développement).
@@ -43,6 +44,7 @@ const apiEnv = {
   LOG_LEVEL: 'warn',
   ENABLE_DOCS: 'false',
   COOKIE_SECURE: 'false',
+  FILES_DIR: join(tmpdir(), 'b2c-e2e-files'), // jamais le dossier de développement
 };
 
 export default defineConfig({

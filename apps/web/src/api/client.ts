@@ -61,7 +61,7 @@ const notify = (signedIn: boolean) => listeners.forEach((listener) => listener(s
 async function send(path: string, init: RequestInit & { token?: string | null }): Promise<Response> {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
-  if (init.body !== undefined) headers.set('Content-Type', 'application/json');
+  if (init.body !== undefined && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   if (init.token) headers.set('Authorization', `Bearer ${init.token}`);
   try {
     return await fetch(`${config.apiBase}${path}`, { ...init, headers, credentials: 'include' });
@@ -133,5 +133,20 @@ export async function api<T = unknown>(path: string, options: RequestOptions = {
   }
   if (!response.ok) throw await toError(response);
   if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
+}
+
+/**
+ * Envoie un fichier (corps binaire brut, type MIME du fichier) avec renouvellement automatique du jeton.
+ * Le serveur détermine le vrai type d'après le contenu : le type annoncé n'est qu'une indication.
+ */
+export async function apiUpload<T = unknown>(path: string, file: File): Promise<T> {
+  const init = { method: 'POST', body: file, headers: { 'Content-Type': file.type || 'application/octet-stream' } };
+  let response = await send(path, { ...init, token: accessToken });
+  if (response.status === 401) {
+    if (await refreshSession()) response = await send(path, { ...init, token: accessToken });
+    else notify(false);
+  }
+  if (!response.ok) throw await toError(response);
   return (await response.json()) as T;
 }

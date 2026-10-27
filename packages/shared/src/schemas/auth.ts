@@ -103,7 +103,8 @@ export type CreateStaffInput = z.infer<typeof createStaffSchema>;
 export const createCompanySchema = z.strictObject({
   name: z.string().trim().min(2).max(120),
   slug: companySlugSchema.refine((s) => s !== PLATFORM_COMPANY_SLUG, 'reserved_slug'),
-  trackingPrefix: z.string().trim().toUpperCase().regex(/^[A-Z]{2,4}$/),
+  // Lettres de l'alphabet des numéros de suivi (sans I, L, O, U)
+  trackingPrefix: z.string().trim().toUpperCase().regex(/^[A-HJKMNP-TV-Z]{2,4}$/),
   customerCodePrefix: z.string().trim().toUpperCase().regex(/^[A-Z]{2,4}$/),
   defaultCurrency: z.enum(['USD', 'HTG']).default('USD'),
   defaultLocale: z.enum(LOCALES).default('fr'),

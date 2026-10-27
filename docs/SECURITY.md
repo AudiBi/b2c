@@ -6,7 +6,7 @@ Phase 3. Décrit ce qui est **en place et testé**, puis ce qui **manque**. Une 
 
 | Domaine | Mesure | Où / test |
 |---|---|---|
-| Isolation des entreprises | `company_id` NOT NULL partout ; Row-Level Security activée **et forcée** sur 11 tables ; le rôle de l'API n'est ni superutilisateur, ni `BYPASSRLS`, ni propriétaire ; sans contexte, aucune ligne n'est visible ; contexte posé par `SET LOCAL` dans la transaction (pas de fuite entre requêtes sur le pool) ; clés étrangères composites (une session ne peut pas relier un utilisateur à une autre entreprise) | migration 0001, `DbService`, `rls.spec.ts` |
+| Isolation des entreprises | `company_id` NOT NULL partout ; Row-Level Security activée **et forcée** sur 27 tables (celles qui portent `company_id`, plus `companies`) ; le rôle de l'API n'est ni superutilisateur, ni `BYPASSRLS`, ni propriétaire ; sans contexte, aucune ligne n'est visible ; contexte posé par `SET LOCAL` dans la transaction (pas de fuite entre requêtes sur le pool) ; clés étrangères composites (une session ne peut pas relier un utilisateur à une autre entreprise) | migration 0001, `DbService`, `rls.spec.ts` |
 | Mode plateforme | Un seul drapeau (`app.platform`) ouvre la table `companies` ; il ne donne accès à aucune donnée métier ; seuls 2 fichiers peuvent l'utiliser (un test le vérifie en lisant le code source) | `iam.spec.ts` |
 | Mots de passe | argon2id (mémoire 64 Mio par défaut, 3 itérations) ; longueur 10-128 ; liste de mots de passe courants (courte) ; refus si contenant l'adresse e-mail ; vérification factice pour les comptes inconnus (temps de réponse comparable) | `PasswordService`, `auth.spec.ts` |
 | Sessions | jeton d'accès JWT HS256 15 min (algorithme, émetteur, audience imposés) ; droits relus en base à chaque requête ; jeton de renouvellement opaque (256 bits, seul le condensé SHA-256 est stocké) à rotation ; réutilisation = révocation de la famille ; cookie HttpOnly + SameSite=Lax + chemin restreint + en-tête anti-CSRF | `auth.spec.ts` |
@@ -21,6 +21,10 @@ Phase 3. Décrit ce qui est **en place et testé**, puis ce qui **manque**. Une 
 | Secrets | aucun dans le dépôt ; `.env` ignoré ; générés localement ; la configuration de production refuse les valeurs de substitution, les cookies non sécurisés et un coût argon2 trop faible | `app.spec.ts` |
 | Site web | Jeton d'accès en mémoire (jamais dans localStorage ; un test le vérifie) ; cookie de renouvellement HttpOnly ; redirection après connexion limitée aux pages de l'espace client du même site ; CSP de référence sans script ni style en ligne (la recette navigateur échoue sur toute violation) ; liens externes en `rel=noopener` ; aucune donnée personnelle dans l'URL hormis les jetons à usage unique des e-mails | `e2e/` |
 | Espace client | Chaque route ne manipule que les données de l'utilisateur du jeton ; l'identifiant d'un autre client donne 404 ; bénéficiaires : seuls 4 caractères de la pièce conservés ; entrepôts : le modèle d'adresse des clients n'est jamais public ; coordonnées publiques : URL `https` uniquement | `customers.spec.ts` |
+| Colis et historique | Statut modifiable par un seul chemin (verrou de ligne, table de transitions, permission + portée d'entrepôt, motif) ; la base refuse tout changement de statut sans événement et toute modification de l'historique, même pour le propriétaire des tables ; un colis hors portée ou d'une autre entreprise est présenté comme inexistant | `packages.spec.ts` |
+| Suivi public | Numéro à 50 bits aléatoires (secret) + caractère de contrôle ; recherche par fonction SQL `SECURITY DEFINER` qui ne renvoie que l'entreprise ; réponse 404 identique pour inconnu, mal formé ou contrôle erroné ; limite 30/min/IP, `no-store` ; **aucun** nom, téléphone, adresse, valeur, document, acteur ni texte libre ; motifs de retenue sensibles masqués | `packages.spec.ts`, `e2e/parcels.spec.ts` |
+| Tarifs | Grille active immuable (API **et** déclencheurs) ; périodes sans chevauchement (contrainte d'exclusion) ; calcul en décimal exact ; jamais de prix par défaut (422 `TARIFF_UNAVAILABLE`) ; l'estimation publique ne révèle aucune tranche | `pricing.spec.ts`, `calculator.spec.ts` |
+| Pièces jointes | Type réel lu dans le contenu (le type annoncé n'est qu'une indication) ; JPEG/PNG/WebP/PDF, 8 Mo, 10 par objet ; PDF à contenu actif (`/JavaScript`, `/Launch`, `/EmbeddedFile`…) refusé ; nom assaini ; clé de stockage construite par le serveur (CHECK en base) ; accès vérifié selon le propriétaire (client : ses objets ; personnel : portée d'entrepôt) ; liens HMAC de 5 minutes liés à l'entreprise ; contenu servi avec `nosniff` et CSP `sandbox` | `files.spec.ts` |
 | Journaux | JSON structuré (pino) ; en-têtes `Authorization`, `Cookie`, `Set-Cookie` masqués ; chaîne de requête non journalisée | configuration |
 
 ## Ce qui manque ou reste fragile
@@ -41,7 +45,10 @@ _Phase 4 : le cookie `b2c_session` est lisible par JavaScript par conception ; i
 | Contrôle de l'existence des portées | `WAREHOUSE` / `AGENCY` : l'identifiant n'est pas vérifié (les tables n'existent pas encore) | 6 |
 | Sauvegardes, rétention, chiffrement au repos | Non traités | 10 |
 | `/docs` | Exposé si `ENABLE_DOCS=true` : à désactiver ou protéger en production | 10 |
-| MinIO / stockage de fichiers | Pas encore utilisé ; l'image Docker de MinIO n'a pas pu être récupérée (profil `storage` non vérifié) | 5 |
+| Stockage de fichiers | Écriture sur **disque local** (`FILES_DIR`) ; adaptateur S3 non écrit (image MinIO inaccessible) ; chiffrement au repos et sauvegarde du dossier à prévoir | 10 |
+| Antivirus | Aucun ; seules la vérification du type réel et l'heuristique PDF existent. Ne pas présenter les fichiers comme « analysés » | 9 |
+| `SECURITY DEFINER` | `app_package_company` suppose un propriétaire de fonction qui contourne la RLS : vérifier le rôle de migration en production | 10 |
+| Numéros de suivi devinables | 50 bits : l'énumération est limitée par le débit (30/min/IP) mais pas par un compteur global ; surveiller les 404 en production | 9 |
 
 ## Vulnérabilités connues des dépendances (`npm audit`, 7 restantes : 2 modérées, 5 élevées)
 

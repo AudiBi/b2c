@@ -12,7 +12,7 @@ Légende : ☐ à faire · ◐ en cours · ☑ terminé et testé
 | 2 | Spécifications, architecture, modèle de domaine, schéma, backlog | ☑ validée par l'utilisateur |
 | 3 | Monorepo, Docker, auth, utilisateurs, rôles, tenancy + RLS, audit | ☑ 156 tests réussis ([TEST_PLAN.md](TEST_PLAN.md)) ; réserves ci-dessous |
 | 4 | Site public (17 pages) et portail client | ☑ 391 tests au total ; réserves ci-dessous |
-| 5 | Colis, préalertes, suivi, calculateur | ☐ |
+| 5 | Colis, préalertes, suivi, calculateur | ☑ 579 tests au total ; réserves ci-dessous |
 | 6 | Entrepôts, lots, manifestes, agences | ☐ |
 | 7 | Facturation, paiements, notifications | ☐ |
 | 8 | Livraisons, réclamations, tableaux de bord | ☐ |
@@ -60,7 +60,7 @@ Critère de sortie : tests verts exécutés, migration appliquée à une base vi
 **Réserves de la phase 4 (reportées)** :
 - Le **créole** n'a pas été relu par un locuteur natif ; les **textes légaux** sont des projets à faire valider par un juriste ; le contenu éditorial doit être adapté à l'entreprise (marque, entrepôts, délais, moyens de paiement).
 - Accessibilité : contrôle automatique (axe) seulement ; **audit manuel et test avec lecteur d'écran à faire** avant d'annoncer une conformité.
-- Le suivi public et le calculateur expliquent leur principe mais **ne sont pas actifs** (phase 5) ; la liste des agences est vide (phase 6) ; pas de préalertes ni de suivi des colis dans l'espace client (phase 5).
+- ~~Le suivi public et le calculateur ne sont pas actifs~~ : **activés en phase 5**. La liste des agences est vide (phase 6).
 - Compte professionnel : sous-utilisateurs non réalisés (CLI-11) ; vérification du téléphone non réalisée (CLI-03).
 - Poids du JavaScript (~235 Ko compressés) à réduire (voir WEB.md) ; pas de mesure de performance sur réseau mobile.
 - Un site = une entreprise (une construction par entreprise) ; pas de bascule par nom de domaine.
@@ -78,6 +78,17 @@ Critère de sortie : tests verts exécutés, migration appliquée à une base vi
 | 5.7 | Suivi public + portail + limitation de débit | TRK-01 à 06 |
 | 5.8 | Colis non identifiés, anomalies, regroupements | PKG-08, 09 |
 | 5.9 | Tests : parcours 2, 3, 4, 5, 7, 8, 13 ; doublons de suivi ; transitions interdites | – |
+
+**Réalisé en phase 5** : 5.1 à 5.9. Détail : machine d'états de **40 règles** dans le package partagé (utilisée par l'API et l'interface) avec test exhaustif des 289 paires ; verrou de ligne + déclencheur différé en base (« pas de changement de statut sans événement ») ; numéro de suivi à contrôle (erreur de saisie détectée) ; préalerte → colis attendu → rapprochement (numéro du marchand exact, code client unique, choix manuel) ; colis non identifiés avec fusion dans le colis attendu ; regroupement ; retenue/reprise ; grilles tarifaires versionnées et immuables une fois actives (déclencheurs + contraintes d'exclusion), calculateur en décimal exact ; suivi public sans donnée personnelle ; pièces jointes (contenu vérifié, liens signés de 5 min) ; calculateur, suivi, préalertes, « Mes colis » dans le site ; données DEMO étiquetées (entrepôt, catégorie, grille fictifs).
+
+**Réserves de la phase 5 (reportées)** :
+- **Pas d'écran pour le personnel** (réception, pesée, identification, retenue) : ces opérations n'existent qu'en API (la recette navigateur les appelle par l'API). Écran d'entrepôt avec lecteur de codes : phase 6.
+- L'API générique de changement de statut n'accepte que les transitions pilotées par les colis et la facturation ; transport, agence et livraison viendront avec les phases 6 et 8 (réponse 409 `TRANSITION_NOT_AVAILABLE`). Les gardes de paiement (`AWAITING_PAYMENT` → `READY_TO_SHIP`) sont **manuelles** (permission + motif) jusqu'à la phase 7.
+- **Division** d'un colis en plusieurs : non réalisée (regroupement seulement).
+- **Stockage des pièces jointes sur disque local** (`FILES_DIR`) : l'adaptateur S3 n'est pas écrit ni testé (image MinIO toujours inaccessible). Pas d'antivirus : seule une vérification du type réel et un refus des PDF à contenu actif sont faits.
+- Les frais calculés à la pesée sont **provisoires** (la facture, phase 7, fait foi) ; aucune date de livraison n'est annoncée (aucune donnée réelle).
+- Le calculateur ne gère pas de tarif négocié par client ni de conversion de devise.
+- Le créole des nouveaux écrans n'a pas été relu par un locuteur natif.
 
 ### Phase 6 : entrepôts, lots, agences
 | # | Tâche | Exigences |

@@ -121,13 +121,13 @@ test('FAQ : les questions s’ouvrent au clavier', async ({ page }) => {
   await expect(page.getByText('Cliquez sur « Créer un compte »')).toBeVisible();
 });
 
-test('suivi et calculateur : explication honnête, aucun faux formulaire', async ({ page }) => {
-  for (const [path, notice] of [['/fr/tracking', 'Suivi public : pas encore activé'], ['/fr/calculator', 'Estimation en ligne : pas encore activée']] as const) {
-    await page.goto(path);
-    await expect(page.getByText(notice)).toBeVisible();
-    await expect(page.locator('main form')).toHaveCount(0);
-    await expect(page.locator('main input')).toHaveCount(0);
-  }
+test('suivi et calculateur : formulaires réels alimentés par l’API (grille de recette)', async ({ page }) => {
+  await page.goto('/fr/tracking');
+  await expect(page.getByLabel('Numéro de suivi')).toBeVisible();
+  await expect(page.getByText('Suivi public : pas encore activé')).toHaveCount(0);
+  await page.goto('/fr/calculator');
+  await expect(page.getByLabel('Poids du colis')).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Trajet et mode de transport' })).toContainText('Avion');
 });
 
 test('entrepôts : la liste vient de l’API ; contact : coordonnées configurées par l’administrateur', async ({ page, request, browser }) => {

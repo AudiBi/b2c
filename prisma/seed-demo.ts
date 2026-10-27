@@ -2,7 +2,8 @@
  * Données de DÉMONSTRATION (jamais en production) : une entreprise « demo » avec un compte par rôle.
  * Tout est étiqueté DEMO (nom de l'entreprise, prénoms) et utilise des adresses en @demo.invalid.
  * Le mot de passe commun vient de DEMO_PASSWORD : aucun mot de passe n'est écrit dans le dépôt.
- * Les rôles liés à un entrepôt ou une agence sont ignorés tant que ces objets n'existent pas (phase 6).
+ * Un entrepôt, une catégorie et une grille tarifaire FICTIFS sont ajoutés pour que le calculateur et les préalertes fonctionnent en démonstration.
+ * Les rôles liés à un entrepôt ou une agence restent ignorés (portée par entrepôt : création par l'administrateur).
  * Usage : DEMO_PASSWORD=... npm run db:seed:demo
  */
 import { existsSync } from 'node:fs';
@@ -76,6 +77,62 @@ async function main(): Promise<void> {
       });
       created += 1;
     }
+    // Entrepôt, catégorie et grille de DÉMONSTRATION. Toutes les valeurs sont fictives (étiquetées DEMO) :
+    // l'entreprise réelle publie ses propres tarifs, jamais ceux-ci.
+    await prisma.warehouse.upsert({
+      where: { companyId_reference: { companyId: company.id, reference: 'DEMO-MIA' } },
+      update: {},
+      create: {
+        companyId: company.id,
+        reference: 'DEMO-MIA',
+        name: 'DEMO : entrepôt fictif',
+        country: 'US',
+        city: 'Miami',
+        addressLine: 'Adresse fictive : 1 rue de la Démonstration',
+        addressTemplate: ['{customerName}', '{customerCode} {mode}', 'Adresse fictive : 1 rue de la Démonstration', 'Miami (DEMO)'],
+      },
+    });
+    await prisma.packageCategory.upsert({
+      where: { companyId_code: { companyId: company.id, code: 'DEMO_GENERAL' } },
+      update: {},
+      create: { companyId: company.id, code: 'DEMO_GENERAL', name: { fr: 'DEMO : marchandise générale', ht: 'DEMO : machandiz jeneral', en: 'DEMO: general goods' } },
+    });
+    const activeCard = await prisma.rateCard.findFirst({
+      where: { companyId: company.id, status: 'ACTIVE', transportMode: 'AIR', originCountry: 'US', destinationCountry: 'HT' },
+    });
+    if (!activeCard) {
+      const card = await prisma.rateCard.create({
+        data: {
+          companyId: company.id,
+          name: 'DEMO : grille fictive (ne reflète aucun tarif réel)',
+          transportMode: 'AIR',
+          originCountry: 'US',
+          destinationCountry: 'HT',
+          currency: 'USD',
+          weightUnit: 'KG',
+          dimensionUnit: 'CM',
+          volumetricDivisor: 5000,
+          minBillableWeight: 0.5,
+          roundingMode: 'UP',
+          roundingStep: 0.5,
+          validFrom: new Date('2020-01-01'),
+        },
+      });
+      await prisma.rateRule.createMany({
+        data: [
+          { companyId: company.id, rateCardId: card.id, weightFrom: 0, weightTo: 5, pricePerUnit: 4, minCharge: 3 },
+          { companyId: company.id, rateCardId: card.id, weightFrom: 5, pricePerUnit: 3.5 },
+        ],
+      });
+      await prisma.rateSurcharge.createMany({
+        data: [
+          { companyId: company.id, rateCardId: card.id, code: 'HANDLING', name: { fr: 'DEMO : manutention', ht: 'DEMO : manitansyon', en: 'DEMO: handling' }, kind: 'SURCHARGE', method: 'FLAT', value: 1.5 },
+          { companyId: company.id, rateCardId: card.id, code: 'INSURANCE', name: { fr: 'DEMO : assurance', ht: 'DEMO : asirans', en: 'DEMO: insurance' }, kind: 'INSURANCE', method: 'PERCENT_OF_DECLARED_VALUE', value: 2, optional: true },
+        ],
+      });
+      await prisma.rateCard.update({ where: { id: card.id }, data: { status: 'ACTIVE' } });
+    }
+
     console.log(`Entreprise « demo » prête ; ${created} compte(s) de démonstration créé(s).`);
     if (skipped.length > 0) console.log(`Rôles ignorés (portée entrepôt/agence, phase 6) : ${skipped.join(', ')}`);
   } finally {

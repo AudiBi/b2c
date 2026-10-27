@@ -40,6 +40,7 @@ export const PERMISSIONS = {
   'package:release_hold': "Lever la retenue d'un colis",
   'package:return': 'Retourner un colis',
   'package:cancel': 'Annuler un colis',
+  'package:authorize_shipment': "Autoriser l'expédition d'un colis (en attente de paiement ou prêt à expédier)",
   // Entrepôts, expéditions, agences
   'warehouse:read': 'Lire les entrepôts',
   'warehouse:manage': 'Gérer les entrepôts',

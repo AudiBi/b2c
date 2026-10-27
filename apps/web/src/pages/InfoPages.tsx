@@ -1,4 +1,3 @@
-import { config } from '../config';
 import { useI18n } from '../i18n';
 import { usePageMeta } from '../seo';
 import { LocLink } from '../components/LocLink';
@@ -153,70 +152,6 @@ export function FaqPage() {
           <p className="lead">{f.stillText}</p>
           <ButtonLink page="contact">{f.stillCta}</ButtonLink>
         </div>
-      </Section>
-    </>
-  );
-}
-
-export function CalculatorPage() {
-  const { m } = useI18n();
-  const c = m.calculator;
-  usePageMeta('calculator');
-  return (
-    <>
-      <PageHero title={c.title} lead={c.lead} />
-      <Section>
-        {!config.features.calculator ? (
-          <Alert tone="info" title={c.noticeTitle}>
-            {c.notice}
-          </Alert>
-        ) : null}
-        <h2>{c.principlesTitle}</h2>
-        <div className="grid grid-2">
-          {c.principles.map((item) => (
-            <Card key={item.title} title={item.title}>
-              <p>{item.text}</p>
-            </Card>
-          ))}
-        </div>
-      </Section>
-      <Section title={c.exampleTitle} alt>
-        <p className="prose lead">{c.example}</p>
-      </Section>
-      <Section>
-        <CtaBand title={c.cta} text={c.ctaText} primary={{ page: 'register', label: c.cta }} secondary={{ page: 'faq', label: m.nav.faq }} />
-      </Section>
-    </>
-  );
-}
-
-export function TrackingPage() {
-  const { m } = useI18n();
-  const t = m.tracking;
-  usePageMeta('tracking');
-  return (
-    <>
-      <PageHero title={t.title} lead={t.lead} />
-      <Section>
-        {!config.features.publicTracking ? (
-          <Alert tone="info" title={t.noticeTitle}>
-            {t.notice}
-          </Alert>
-        ) : null}
-        <h2>{t.statusesTitle}</h2>
-        <ol className="grid grid-3 list-plain" style={{ counterReset: 'status' }}>
-          {t.statuses.map((status) => (
-            <li key={status} className="card" style={{ padding: 16 }}>
-              {status}
-            </li>
-          ))}
-        </ol>
-        <h3 style={{ marginTop: 32 }}>{t.otherTitle}</h3>
-        <p>{t.other}</p>
-        <p className="muted">{t.privacy}</p>
-        <p>
-          <ButtonLink page="register">{t.cta}</ButtonLink>
-        </p>
       </Section>
     </>
   );

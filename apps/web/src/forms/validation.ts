@@ -23,6 +23,10 @@ function fromCode(code: string, m: Messages): string | undefined {
     case 'date_format': return v.dateFormat;
     case 'date_order': return v.dateOrder;
     case 'id_last4_format': return v.idLast4;
+    case 'money_decimals': return v.moneyDecimals;
+    case 'weight_decimals': return v.weightDecimals;
+    case 'dimension_decimals': return v.dimensionDecimals;
+    case 'reference_format': return v.referenceFormat;
     default: return undefined;
   }
 }

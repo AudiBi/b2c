@@ -6,12 +6,4 @@ export const config = {
   companySlug: import.meta.env.VITE_COMPANY_SLUG ?? 'demo',
   /** Vide = même origine (proxy en développement, reverse proxy en production). */
   apiBase: import.meta.env.VITE_API_URL ?? '',
-  /**
-   * Fonctions dont l'API n'existe pas encore. Elles restent à false jusqu'à leur livraison (phase 5) :
-   * le site affiche alors une explication honnête plutôt qu'un formulaire qui ne ferait rien.
-   */
-  features: {
-    publicTracking: false,
-    calculator: false,
-  },
 } as const;

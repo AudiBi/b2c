@@ -1,5 +1,4 @@
 import { useI18n } from '../i18n';
-import { config } from '../config';
 import { usePageMeta } from '../seo';
 import { LocLink } from '../components/LocLink';
 import { Alert } from '../components/ui/Alert';
@@ -64,11 +63,6 @@ export function HomePage() {
             <p style={{ margin: 0 }} className="muted">
               {h.track.text}
             </p>
-            {!config.features.publicTracking ? (
-              <p style={{ margin: '8px 0 0' }}>
-                <span className="badge">{m.common.comingSoon}</span>
-              </p>
-            ) : null}
           </div>
           <ButtonLink page="tracking" variant="outline">
             {h.track.cta}

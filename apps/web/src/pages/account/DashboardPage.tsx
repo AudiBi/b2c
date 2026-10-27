@@ -6,6 +6,8 @@ import { Alert } from '../../components/ui/Alert';
 import { useProfile } from './queries';
 
 const cardPages: Record<string, PageKey> = {
+  prealerts: 'accountPrealerts',
+  packages: 'accountPackages',
   receiving: 'accountReceiving',
   addresses: 'accountAddresses',
   beneficiaries: 'accountBeneficiaries',

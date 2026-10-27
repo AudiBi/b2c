@@ -8,7 +8,7 @@ import { LocNavLink } from '../../components/LocLink';
 /** Zone réservée : redirige vers la connexion sans session, puis revient à la page demandée. */
 export function AccountLayout() {
   const { m, lang } = useI18n();
-  const { status, user } = useAuth();
+  const { status, user, loggedOut } = useAuth();
   const location = useLocation();
   usePageMeta('account');
 
@@ -20,6 +20,8 @@ export function AccountLayout() {
     );
   }
   if (status === 'anonymous') {
+    // Déconnexion volontaire depuis l'espace client : retour à l'accueil (sans course avec la navigation du bouton)
+    if (loggedOut) return <Navigate to={localized(lang, 'home')} replace />;
     const next = encodeURIComponent(`${location.pathname}${location.search}`);
     return <Navigate to={`${localized(lang, 'login')}?next=${next}`} replace />;
   }
@@ -37,6 +39,12 @@ export function AccountLayout() {
             </li>
             {isCustomer ? (
               <>
+                <li>
+                  <LocNavLink page="accountPrealerts">{m.account.nav.prealerts}</LocNavLink>
+                </li>
+                <li>
+                  <LocNavLink page="accountPackages">{m.account.nav.packages}</LocNavLink>
+                </li>
                 <li>
                   <LocNavLink page="accountReceiving">{m.account.nav.receiving}</LocNavLink>
                 </li>

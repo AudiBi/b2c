@@ -11,3 +11,6 @@ Thumbs.db
 dist-esm/
 test-results/
 playwright-report/
+
+# Pièces jointes locales (développement)
+.data/

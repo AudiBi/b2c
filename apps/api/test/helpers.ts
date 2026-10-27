@@ -180,3 +180,117 @@ export async function platformAdmin(t: TestApp): Promise<TestUser> {
     kind: 'PLATFORM',
   });
 }
+
+// ---------------------------------------------------------------------------------------------
+// Aides pour les colis, tarifs et fichiers (phase 5)
+// ---------------------------------------------------------------------------------------------
+
+export interface Company {
+  id: string;
+  slug: string;
+}
+
+const PREFIX_LETTERS = 'ABCDEFGHJKMNPQRSTVWXYZ';
+/** Préfixe de suivi valide (alphabet sans I, L, O, U) et unique avec une probabilité écrasante : 4 lettres aléatoires. */
+const randomTrackingPrefix = () => Array.from({ length: 4 }, () => PREFIX_LETTERS[randomBytes(1)[0] % PREFIX_LETTERS.length]).join('');
+
+/** Entreprise de test (préfixe de suivi propre, code client « TT-… ») avec un administrateur connecté. */
+export async function makeTenant(t: TestApp, trackingPrefix = randomTrackingPrefix()) {
+  const slug = uniq('t');
+  const created = await t.admin.company.create({ data: { name: `Tenant ${slug}`, slug, trackingPrefix, customerCodePrefix: 'TT' } });
+  const company: Company = { id: created.id, slug };
+  const admin = await makeUser(t, { company, roleCode: 'COMPANY_ADMIN' });
+  const token = (await login(t, admin)).accessToken;
+  return { company, admin, token };
+}
+
+export async function makeWarehouse(t: TestApp, token: string, overrides: Record<string, unknown> = {}) {
+  const res = await api(t)
+    .post('/v1/admin/warehouses')
+    .set(bearer(token))
+    .send({
+      reference: `W${randomBytes(4).toString('hex').toUpperCase()}`,
+      name: 'Entrepôt de test',
+      country: 'us',
+      city: 'Miami',
+      addressLine: '1 Test Street',
+      addressTemplate: ['{customerName}', '{customerCode} {mode}', '1 Test Street'],
+      ...overrides,
+    });
+  if (res.status !== 201) throw new Error(`Entrepôt refusé : ${JSON.stringify(res.body)}`);
+  return res.body as { id: string; reference: string; city: string };
+}
+
+/** Grille de test : AIR US→HT en USD, kg/cm, diviseur 5000, arrondi au demi-kilo supérieur. */
+export const cardBody = (overrides: Record<string, unknown> = {}) => ({
+  name: 'Grille de test',
+  transportMode: 'AIR',
+  originCountry: 'US',
+  destinationCountry: 'HT',
+  currency: 'USD',
+  weightUnit: 'KG',
+  dimensionUnit: 'CM',
+  volumetricDivisor: 5000,
+  minBillableWeight: 0.5,
+  roundingMode: 'UP',
+  roundingStep: 0.5,
+  validFrom: '2020-01-01',
+  rules: [
+    { weightFrom: 0, weightTo: 5, pricePerUnit: 4, flatFee: 0, minCharge: 3 },
+    { weightFrom: 5, pricePerUnit: 3.5, flatFee: 0, minCharge: 0 },
+  ],
+  surcharges: [
+    { code: 'HANDLING', name: { fr: 'Manutention', ht: 'Manitansyon', en: 'Handling' }, kind: 'SURCHARGE', method: 'FLAT', value: 1.5, optional: false },
+    { code: 'INSURANCE', name: { fr: 'Assurance', ht: 'Asirans', en: 'Insurance' }, kind: 'INSURANCE', method: 'PERCENT_OF_DECLARED_VALUE', value: 2, optional: true },
+  ],
+  ...overrides,
+});
+
+export async function activateRateCard(t: TestApp, token: string, overrides: Record<string, unknown> = {}) {
+  const created = await api(t).post('/v1/admin/rate-cards').set(bearer(token)).send(cardBody(overrides));
+  if (created.status !== 201) throw new Error(`Grille refusée : ${JSON.stringify(created.body)}`);
+  const activated = await api(t).post(`/v1/admin/rate-cards/${created.body.id}/activate`).set(bearer(token));
+  if (activated.status !== 200) throw new Error(`Activation refusée : ${JSON.stringify(activated.body)}`);
+  return activated.body as { id: string };
+}
+
+export interface CustomerSession {
+  user: TestUser;
+  token: string;
+  customerCode: string;
+}
+
+/** Client prêt à l'emploi (compte actif, profil et code client créés). */
+export async function makeCustomer(t: TestApp, company: Company): Promise<CustomerSession> {
+  const user = await makeUser(t, { company, roleCode: 'CUSTOMER_INDIVIDUAL' });
+  const { accessToken } = await login(t, user);
+  const profile = await api(t).get('/v1/me/profile').set(bearer(accessToken));
+  return { user, token: accessToken, customerCode: profile.body.customer.customerCode };
+}
+
+export const prealertBody = (warehouseId: string, overrides: Record<string, unknown> = {}) => ({
+  storeName: 'Boutique Test',
+  orderNumber: `ORD-${randomBytes(3).toString('hex')}`,
+  supplierTracking: `1Z${randomBytes(6).toString('hex').toUpperCase()}`,
+  warehouseId,
+  transportMode: 'AIR',
+  purchaseAmount: 59.9,
+  purchaseCurrency: 'USD',
+  description: 'Chaussures de sport',
+  ...overrides,
+});
+
+export async function makePrealert(t: TestApp, customer: CustomerSession, warehouseId: string, overrides: Record<string, unknown> = {}) {
+  const res = await api(t).post('/v1/me/prealerts').set(bearer(customer.token)).send(prealertBody(warehouseId, overrides));
+  if (res.status !== 201) throw new Error(`Préalerte refusée : ${JSON.stringify(res.body)}`);
+  return res.body as { id: string; supplierTracking: string; package: { id: string; trackingNumber: string; status: string } };
+}
+
+/** Octets minimaux reconnus comme JPEG, PNG, WebP et PDF (signature réelle suivie de remplissage). */
+export const fixtures = {
+  jpeg: () => Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01]), Buffer.alloc(64, 7)]),
+  png: () => Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 3)]),
+  webp: () => Buffer.concat([Buffer.from('RIFF'), Buffer.from([0x24, 0, 0, 0]), Buffer.from('WEBPVP8 '), Buffer.alloc(32, 1)]),
+  pdf: () => Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n'),
+  pdfWithScript: () => Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog /OpenAction << /S /JavaScript /JS (app.alert(1)) >> >>\nendobj\n%%EOF\n'),
+};

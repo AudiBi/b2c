@@ -122,6 +122,17 @@ model Company {
   beneficiaries      Beneficiary[]
   warehouses         Warehouse[]
   receivingAddresses ReceivingAddress[]
+  packageCategories  PackageCategory[]
+  packageGroups      PackageGroup[]
+  packages           Package[]
+  packageEvents      PackageEvent[]
+  packageHolds       PackageHold[]
+  prealerts          Prealert[]
+  rateCards          RateCard[]
+  rateRules          RateRule[]
+  rateSurcharges     RateSurcharge[]
+  quotes             Quote[]
+  fileObjects        FileObject[]
 
   @@map("companies")
 }
@@ -346,6 +357,10 @@ model Customer {
   addresses          CustomerAddress[]
   beneficiaries      Beneficiary[]
   receivingAddresses ReceivingAddress[]
+  packages           Package[]
+  packageGroups      PackageGroup[]
+  prealerts          Prealert[]
+  quotes             Quote[]
 
   @@unique([companyId, customerCode])
   @@unique([id, companyId])
@@ -422,6 +437,8 @@ model Warehouse {
 
   company            Company            @relation(fields: [companyId], references: [id])
   receivingAddresses ReceivingAddress[]
+  packages           Package[]
+  prealerts          Prealert[]
 
   @@unique([companyId, reference])
   @@unique([id, companyId])
@@ -446,4 +463,381 @@ model ReceivingAddress {
   @@unique([customerId, warehouseId, transportMode])
   @@index([companyId, warehouseId])
   @@map("receiving_addresses")
+}
+
+// =====================================================================================
+// Phase 5 : colis, préalertes, tarification, fichiers
+// =====================================================================================
+
+enum PackageStatus {
+  PREALERT_CREATED
+  AWAITING_RECEIPT
+  RECEIVED_AT_WAREHOUSE
+  UNDER_INSPECTION
+  REGISTERED_WEIGHED
+  AWAITING_PAYMENT
+  READY_TO_SHIP
+  IN_TRANSIT
+  ARRIVED_DESTINATION
+  IN_CUSTOMS
+  RECEIVED_AT_AGENCY
+  READY_FOR_PICKUP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  ON_HOLD
+  RETURNED
+  CANCELLED
+}
+
+enum EventVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum PrealertStatus {
+  OPEN
+  MATCHED_AUTO
+  MATCHED_MANUAL
+  CANCELLED
+}
+
+enum HoldReasonCode {
+  DAMAGED
+  UNIDENTIFIED
+  SUSPICIOUS_CONTENT
+  PROHIBITED_ITEM
+  CUSTOMS
+  OTHER
+}
+
+enum RoundingMode {
+  NONE
+  UP
+  NEAREST
+}
+
+enum RateCardStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum WeightUnit {
+  KG
+  LB
+}
+
+enum DimensionUnit {
+  CM
+  IN
+}
+
+enum SurchargeKind {
+  SURCHARGE
+  TAX
+  INSURANCE
+}
+
+enum SurchargeMethod {
+  FLAT
+  PERCENT_OF_FREIGHT
+  PERCENT_OF_DECLARED_VALUE
+  PERCENT_OF_SUBTOTAL
+}
+
+enum FileOwnerType {
+  PREALERT
+  PACKAGE
+}
+
+enum FileKind {
+  PHOTO
+  INVOICE
+  DOCUMENT
+}
+
+model PackageCategory {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  companyId  String   @map("company_id") @db.Uuid
+  code       String
+  name       Json
+  restricted Boolean  @default(false)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company   Company    @relation(fields: [companyId], references: [id])
+  packages  Package[]
+  rateRules RateRule[]
+
+  @@unique([companyId, code])
+  @@unique([id, companyId])
+  @@map("package_categories")
+}
+
+model PackageGroup {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  companyId  String   @map("company_id") @db.Uuid
+  customerId String   @map("customer_id") @db.Uuid
+  reference  String
+  createdBy  String?  @map("created_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  customer Customer  @relation(fields: [customerId, companyId], references: [id, companyId])
+  packages Package[]
+
+  @@unique([companyId, reference])
+  @@unique([id, companyId])
+  @@map("package_groups")
+}
+
+model Package {
+  id                 String         @id @default(uuid(7)) @db.Uuid
+  companyId          String         @map("company_id") @db.Uuid
+  // Unique dans TOUTE la plateforme : le suivi public n'a pas besoin de connaître l'entreprise
+  trackingNumber     String         @unique @map("tracking_number")
+  // Absent tant que le colis n'est pas identifié
+  customerId         String?        @map("customer_id") @db.Uuid
+  senderName         String?        @map("sender_name")
+  recipientName      String?        @map("recipient_name")
+  originWarehouseId  String         @map("origin_warehouse_id") @db.Uuid
+  originCountry      String         @map("origin_country") @db.Char(2)
+  originCity         String         @map("origin_city")
+  destinationCountry String         @map("destination_country") @db.Char(2)
+  destinationCity    String?        @map("destination_city")
+  transportMode      TransportMode? @map("transport_mode")
+  // Forme normalisée (majuscules, sans espaces) pour le rapprochement
+  supplierTracking   String?        @map("supplier_tracking")
+  status             PackageStatus
+  previousStatus     PackageStatus? @map("previous_status")
+  // Mesures réelles, stockées en unités canoniques (kg, cm)
+  actualWeightKg     Decimal?       @map("actual_weight_kg") @db.Decimal(10, 3)
+  lengthCm           Decimal?       @map("length_cm") @db.Decimal(8, 2)
+  widthCm            Decimal?       @map("width_cm") @db.Decimal(8, 2)
+  heightCm           Decimal?       @map("height_cm") @db.Decimal(8, 2)
+  // Poids calculés selon la grille appliquée, dans l'unité de cette grille
+  volumetricWeight   Decimal?       @map("volumetric_weight") @db.Decimal(12, 3)
+  billableWeight     Decimal?       @map("billable_weight") @db.Decimal(12, 3)
+  weightUnit         WeightUnit?    @map("weight_unit")
+  rateCardId         String?        @map("rate_card_id") @db.Uuid
+  // Détail du calcul au moment de la pesée (grille, étapes, lignes) : montant DÉFINITIF issu des mesures réelles
+  pricingSnapshot    Json?          @map("pricing_snapshot")
+  shippingFee        Decimal?       @map("shipping_fee") @db.Decimal(14, 2)
+  extraFees          Decimal?       @map("extra_fees") @db.Decimal(14, 2)
+  feeCurrency        String?        @map("fee_currency") @db.Char(3)
+  contentDescription String?        @map("content_description")
+  declaredValue      Decimal?       @map("declared_value") @db.Decimal(14, 2)
+  declaredCurrency   String?        @map("declared_currency") @db.Char(3)
+  insured            Boolean        @default(false)
+  categoryId         String?        @map("category_id") @db.Uuid
+  groupId            String?        @map("group_id") @db.Uuid
+  receivedAt         DateTime?      @map("received_at") @db.Timestamptz(6)
+  registeredAt       DateTime?      @map("registered_at") @db.Timestamptz(6)
+  // Incrémenté à chaque changement : détection des modifications concurrentes
+  version            Int            @default(1)
+  createdBy          String?        @map("created_by") @db.Uuid
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company   Company          @relation(fields: [companyId], references: [id])
+  customer  Customer?        @relation(fields: [customerId, companyId], references: [id, companyId])
+  warehouse Warehouse        @relation(fields: [originWarehouseId, companyId], references: [id, companyId])
+  category  PackageCategory? @relation(fields: [categoryId, companyId], references: [id, companyId])
+  group     PackageGroup?    @relation(fields: [groupId, companyId], references: [id, companyId])
+  events    PackageEvent[]
+  holds     PackageHold[]
+  prealert  Prealert?
+
+  @@unique([id, companyId])
+  @@index([companyId, status])
+  @@index([companyId, customerId])
+  @@index([companyId, supplierTracking])
+  @@index([companyId, originWarehouseId, status])
+  @@map("packages")
+}
+
+// Historique en ajout seul ; chaque changement de statut y laisse une ligne dans la MÊME transaction
+// (un déclencheur différé le vérifie).
+model PackageEvent {
+  id            String          @id @default(uuid(7)) @db.Uuid
+  companyId     String          @map("company_id") @db.Uuid
+  packageId     String          @map("package_id") @db.Uuid
+  fromStatus    PackageStatus?  @map("from_status")
+  toStatus      PackageStatus?  @map("to_status")
+  eventType     String          @map("event_type")
+  actorUserId   String?         @map("actor_user_id") @db.Uuid
+  reason        String?
+  visibility    EventVisibility @default(PUBLIC)
+  // Ville de l'entrepôt ou de l'agence au moment de l'événement (affichable publiquement)
+  locationLabel String?         @map("location_label")
+  data          Json?
+  txid          BigInt          @default(dbgenerated("txid_current()"))
+  occurredAt    DateTime        @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+  package Package @relation(fields: [packageId, companyId], references: [id, companyId])
+
+  @@index([packageId, occurredAt])
+  @@index([packageId, txid])
+  @@map("package_events")
+}
+
+model PackageHold {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  companyId  String         @map("company_id") @db.Uuid
+  packageId  String         @map("package_id") @db.Uuid
+  reasonCode HoldReasonCode @map("reason_code")
+  note       String?
+  openedBy   String?        @map("opened_by") @db.Uuid
+  openedAt   DateTime       @default(now()) @map("opened_at") @db.Timestamptz(6)
+  releasedBy String?        @map("released_by") @db.Uuid
+  releasedAt DateTime?      @map("released_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+  package Package @relation(fields: [packageId, companyId], references: [id, companyId])
+
+  @@index([packageId])
+  @@map("package_holds")
+}
+
+// Achat déclaré par le client. Crée un colis « attendu » (PREALERT_CREATED puis AWAITING_RECEIPT).
+model Prealert {
+  id               String         @id @default(uuid(7)) @db.Uuid
+  companyId        String         @map("company_id") @db.Uuid
+  customerId       String         @map("customer_id") @db.Uuid
+  packageId        String         @unique @map("package_id") @db.Uuid
+  storeName        String         @map("store_name")
+  orderNumber      String?        @map("order_number")
+  supplierTracking String?        @map("supplier_tracking")
+  warehouseId      String         @map("warehouse_id") @db.Uuid
+  transportMode    TransportMode  @map("transport_mode")
+  purchaseAmount   Decimal        @map("purchase_amount") @db.Decimal(14, 2)
+  purchaseCurrency String         @map("purchase_currency") @db.Char(3)
+  description      String
+  status           PrealertStatus @default(OPEN)
+  matchedByUserId  String?        @map("matched_by_user_id") @db.Uuid
+  matchedAt        DateTime?      @map("matched_at") @db.Timestamptz(6)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  customer  Customer  @relation(fields: [customerId, companyId], references: [id, companyId])
+  package   Package   @relation(fields: [packageId, companyId], references: [id, companyId])
+  warehouse Warehouse @relation(fields: [warehouseId, companyId], references: [id, companyId])
+
+  @@unique([packageId, companyId])
+  @@index([companyId, customerId, status])
+  @@index([companyId, supplierTracking])
+  @@map("prealerts")
+}
+
+// Grille tarifaire. Une fois ACTIVE elle est immuable ; modifier = créer une nouvelle grille.
+model RateCard {
+  id                 String         @id @default(uuid(7)) @db.Uuid
+  companyId          String         @map("company_id") @db.Uuid
+  name               String
+  transportMode      TransportMode  @map("transport_mode")
+  originCountry      String         @map("origin_country") @db.Char(2)
+  destinationCountry String         @map("destination_country") @db.Char(2)
+  currency           String         @db.Char(3)
+  weightUnit         WeightUnit     @map("weight_unit")
+  dimensionUnit      DimensionUnit  @map("dimension_unit")
+  volumetricDivisor  Decimal        @map("volumetric_divisor") @db.Decimal(12, 4)
+  minBillableWeight  Decimal        @default(0) @map("min_billable_weight") @db.Decimal(12, 3)
+  roundingMode       RoundingMode   @default(NONE) @map("rounding_mode")
+  roundingStep       Decimal        @default(1) @map("rounding_step") @db.Decimal(12, 3)
+  validFrom          DateTime       @map("valid_from") @db.Date
+  validTo            DateTime?      @map("valid_to") @db.Date
+  status             RateCardStatus @default(DRAFT)
+  version            Int            @default(1)
+  createdBy          String?        @map("created_by") @db.Uuid
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company    Company         @relation(fields: [companyId], references: [id])
+  rules      RateRule[]
+  surcharges RateSurcharge[]
+  quotes     Quote[]
+
+  @@unique([id, companyId])
+  @@index([companyId, status, transportMode, originCountry, destinationCountry])
+  @@map("rate_cards")
+}
+
+model RateRule {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  companyId    String   @map("company_id") @db.Uuid
+  rateCardId   String   @map("rate_card_id") @db.Uuid
+  categoryId   String?  @map("category_id") @db.Uuid
+  weightFrom   Decimal  @map("weight_from") @db.Decimal(12, 3)
+  weightTo     Decimal? @map("weight_to") @db.Decimal(12, 3)
+  pricePerUnit Decimal  @map("price_per_unit") @db.Decimal(14, 4)
+  flatFee      Decimal  @default(0) @map("flat_fee") @db.Decimal(14, 2)
+  minCharge    Decimal  @default(0) @map("min_charge") @db.Decimal(14, 2)
+
+  company  Company          @relation(fields: [companyId], references: [id])
+  rateCard RateCard         @relation(fields: [rateCardId, companyId], references: [id, companyId])
+  category PackageCategory? @relation(fields: [categoryId, companyId], references: [id, companyId])
+
+  @@index([rateCardId])
+  @@map("rate_rules")
+}
+
+model RateSurcharge {
+  id         String          @id @default(uuid(7)) @db.Uuid
+  companyId  String          @map("company_id") @db.Uuid
+  rateCardId String          @map("rate_card_id") @db.Uuid
+  code       String
+  name       Json
+  kind       SurchargeKind
+  method     SurchargeMethod
+  value      Decimal         @db.Decimal(14, 4)
+  optional   Boolean         @default(false)
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  rateCard RateCard @relation(fields: [rateCardId, companyId], references: [id, companyId])
+
+  @@unique([rateCardId, code])
+  @@map("rate_surcharges")
+}
+
+// Estimations enregistrées pour les clients connectés (jamais pour les visiteurs anonymes).
+model Quote {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  companyId  String   @map("company_id") @db.Uuid
+  customerId String?  @map("customer_id") @db.Uuid
+  rateCardId String   @map("rate_card_id") @db.Uuid
+  input      Json
+  result     Json
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  customer Customer? @relation(fields: [customerId, companyId], references: [id, companyId])
+  rateCard RateCard  @relation(fields: [rateCardId, companyId], references: [id, companyId])
+
+  @@index([companyId, customerId, createdAt])
+  @@map("quotes")
+}
+
+// Pièces jointes (photos, factures). Le contenu est vérifié avant enregistrement ; la clé de stockage
+// commence toujours par companies/<entreprise>/.
+model FileObject {
+  id           String        @id @default(uuid(7)) @db.Uuid
+  companyId    String        @map("company_id") @db.Uuid
+  ownerType    FileOwnerType @map("owner_type")
+  ownerId      String        @map("owner_id") @db.Uuid
+  kind         FileKind
+  storageKey   String        @unique @map("storage_key")
+  originalName String        @map("original_name")
+  mimeType     String        @map("mime_type")
+  sizeBytes    Int           @map("size_bytes")
+  sha256       String
+  uploadedBy   String?       @map("uploaded_by") @db.Uuid
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, ownerType, ownerId])
+  @@map("file_objects")
 }

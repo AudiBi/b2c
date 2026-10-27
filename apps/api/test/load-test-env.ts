@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 /**
  * Prépare l'environnement des tests : lit .env, puis bascule sur la base de TEST (jamais la base de développement),
@@ -27,5 +28,7 @@ export function loadTestEnv(): void {
     // Autorise les tests à simuler des adresses IP distinctes avec X-Forwarded-For
     TRUST_PROXY: 'true',
     COOKIE_SECURE: 'false',
+    // Pièces jointes des tests : dossier temporaire, jamais celui du développement
+    FILES_DIR: join(tmpdir(), 'b2c-test-files'),
   });
 }

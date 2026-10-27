@@ -10,6 +10,8 @@ type Status = 'loading' | 'anonymous' | 'authenticated';
 interface AuthValue {
   status: Status;
   user: SessionUser | null;
+  /** Vrai après une déconnexion demandée par la personne (et jusqu'à la prochaine connexion) : on retourne alors à l'accueil, pas à la connexion. */
+  loggedOut: boolean;
   login(email: string, password: string): Promise<SessionUser>;
   logout(options?: { allSessions?: boolean }): Promise<void>;
   reload(): Promise<void>;
@@ -20,6 +22,7 @@ const AuthContext = createContext<AuthValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading');
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [loggedOut, setLoggedOut] = useState(false);
 
   const loadUser = useCallback(async () => {
     const me = await api<SessionUser>('/v1/auth/me');
@@ -68,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: { companySlug: config.companySlug, email, password },
       });
       setAccessToken(result.accessToken);
+      setLoggedOut(false);
       return loadUser();
     },
     [loadUser],
@@ -80,13 +84,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       /* la session locale est quand même fermée */
     }
     setAccessToken(null);
+    setLoggedOut(true);
     setUser(null);
     setStatus('anonymous');
   }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({ status, user, login, logout, reload: async () => void (await loadUser()) }),
-    [status, user, login, logout, loadUser],
+    () => ({ status, user, loggedOut, login, logout, reload: async () => void (await loadUser()) }),
+    [status, user, loggedOut, login, logout, loadUser],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

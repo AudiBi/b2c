@@ -2,9 +2,9 @@
 
 Phase 2. **Aucune migration n'existe encore.** Ce document fixe le schéma cible ; le fichier `prisma/schema.prisma` et les migrations seront produits en phase 3 (identité, tenancy, audit) puis par phase. Toute divergence future est répercutée ici.
 
-## 0. État réellement migré (phase 3)
+## 0. État réellement migré (phases 3 à 5)
 
-Migrations appliquées et testées (dans `prisma/migrations/`) : `0001_platform_identity`, `0002_idempotency_update_grant`, `0003_customers_warehouses`. Tables existantes : `companies`, `company_settings`, `users`, `sessions`, `verification_tokens`, `roles`, `permissions`, `role_permissions`, `user_roles`, `audit_log`, `idempotency_keys`, `counters` (phase 3) ; `customers`, `customer_addresses`, `beneficiaries`, `warehouses`, `receiving_addresses` (phase 4). Tout le reste de ce document (clients, colis, finance…) reste une **conception** non migrée. Écarts par rapport à la conception initiale ci-dessous :
+Migrations appliquées et testées (dans `prisma/migrations/`) : `0001_platform_identity`, `0002_idempotency_update_grant`, `0003_customers_warehouses`, `0004_packages_pricing`, `0005_file_owner_update_grant`. Tables existantes : `companies`, `company_settings`, `users`, `sessions`, `verification_tokens`, `roles`, `permissions`, `role_permissions`, `user_roles`, `audit_log`, `idempotency_keys`, `counters` (phase 3) ; `customers`, `customer_addresses`, `beneficiaries`, `warehouses`, `receiving_addresses` (phase 4). Phase 5 : `package_categories`, `packages`, `package_events`, `package_holds`, `package_groups`, `prealerts`, `rate_cards`, `rate_rules`, `rate_surcharges`, `quotes`, `file_objects`. Tout le reste de ce document (lots, finance…) reste une **conception** non migrée. Écarts par rapport à la conception initiale ci-dessous :
 
 | Sujet | Conception initiale | Réalisé |
 |---|---|---|
@@ -21,7 +21,11 @@ Migrations appliquées et testées (dans `prisma/migrations/`) : `0001_platform_
 | `customers` | `customer_type`, `customer_code` | + `notification_prefs` (JSON : e-mail, SMS, WhatsApp, dans l'espace) ; `customer_code` = `<préfixe>-<6 chiffres>` issu du compteur `customer-code` de l'entreprise (CHECK de format) ; clé étrangère composite vers `users(id, company_id)` |
 | `beneficiaries` | numéro de pièce | **Seuls les 4 derniers caractères** sont conservés (`id_document_last4`) ; révocation par `status`, pas de suppression physique |
 | `receiving_addresses` | `formatted_lines` | `lines` (JSON) + `warehouse_version` ; une ligne par (client, entrepôt, mode), écrite par `INSERT … ON CONFLICT DO UPDATE` (pas de doublon sous concurrence), régénérée quand les lignes changent (modèle de l'entrepôt ou nom du client) |
-| Fichiers photo, documents | `file_objects` | Pas encore créée (phase 5) |
+| Fichiers photo, documents | `file_objects` | **Créée en 0004** : propriétaire polymorphe (préalerte ou colis), empreinte SHA-256, clé de stockage imposée sous `companies/<entreprise>/` (CHECK), types MIME limités. Droits `SELECT, INSERT, DELETE` + `UPDATE(owner_id)` seulement (0005, pour la fusion de colis) |
+| `packages` | tables « colis » de la conception | Statut modifiable **uniquement** avec un événement dans la même transaction (déclencheur différé `packages_status_needs_event`) ; `package_events` en ajout seul (droits + déclencheur) ; numéro de suivi **unique sur toute la plateforme** ; mode de transport nullable (colis sans préalerte) ; mesures stockées en kg et cm |
+| `prealerts` | idem | Un colis attendu est créé avec la préalerte (relation 1-1, clé composite `(package_id, company_id)`) ; numéro de suivi marchand normalisé en majuscules (CHECK) |
+| `rate_cards`, `rate_rules`, `rate_surcharges` | grilles versionnées | **Immuables hors brouillon** (déclencheurs `rate_cards_guard`, `rate_children_guard`) ; deux grilles ACTIVES ne couvrent jamais la même période pour un même trajet/mode (contrainte d'exclusion `rate_cards_no_active_overlap`) ; tranches sans chevauchement par catégorie (`rate_rules_no_overlap`) |
+| Recherche publique par numéro de suivi | non prévue | Fonction `app_package_company(text)` en **SECURITY DEFINER** : ne renvoie que l'identifiant de l'entreprise. Elle exige que son propriétaire contourne la RLS (superutilisateur ou `BYPASSRLS`) : à vérifier en production |
 
 À savoir en écrivant les prochaines migrations : Prisma ne modélise ni les politiques RLS, ni les `CHECK`, ni les déclencheurs, ni les `GRANT`. Générer le SQL avec `prisma migrate diff --from-url … --to-schema-datamodel …` (ou `migrate dev --create-only`), puis **ajouter à la main** RLS + droits pour chaque nouvelle table portant `company_id` ; relire le SQL avant de l'appliquer. Les tests `rls.spec.ts` échouent si une table portant `company_id` n'a pas RLS activée et forcée.
 

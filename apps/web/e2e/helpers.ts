@@ -79,3 +79,19 @@ export async function loginThroughUi(
 
 /** Navigation latérale de l'espace client (les cartes du tableau de bord portent les mêmes libellés). */
 export const accountNav = (page: Page) => page.getByRole('navigation', { name: 'Navigation de votre espace' });
+
+/** Session d'administration (API) : les opérations du personnel n'ont pas encore d'interface, la recette les fait par l'API. */
+export async function adminApi(request: APIRequestContext) {
+  const ip = fakeIp();
+  const login = await request.post('/v1/auth/login', {
+    headers: { 'X-Forwarded-For': ip },
+    data: { companySlug: 'e2e', email: process.env.E2E_ADMIN_EMAIL, password: process.env.E2E_ADMIN_PASSWORD },
+  });
+  expect(login.status()).toBe(200);
+  const { accessToken } = await login.json();
+  const headers = { Authorization: `Bearer ${accessToken}`, 'X-Forwarded-For': ip };
+  return {
+    get: (path: string) => request.get(path, { headers }),
+    post: (path: string, data?: unknown) => request.post(path, { headers, data }),
+  };
+}

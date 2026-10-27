@@ -6,12 +6,15 @@ import { ConfigModule } from './config/config.module';
 import type { Env } from './config/env';
 import { CustomersModule } from './customers/customers.module';
 import { DatabaseModule } from './database/database.module';
+import { FilesModule } from './files/files.module';
 import { HealthModule } from './health/health.module';
 import { IamModule } from './iam/iam.module';
 import { InfraModule } from './infra/infra.module';
 import { MailModule } from './mail/mail.module';
+import { PackagesModule } from './packages/packages.module';
 import { PlatformModule } from './platform/platform.module';
 import { PlatformSharedModule } from './platform/platform-shared.module';
+import { PricingModule } from './pricing/pricing.module';
 import { RedisModule } from './redis/redis.module';
 import { SecurityModule } from './security/security.module';
 
@@ -49,6 +52,9 @@ export class AppModule {
         AuthModule,
         IamModule,
         CustomersModule,
+        PricingModule,
+        PackagesModule,
+        FilesModule,
         PlatformModule,
         HealthModule,
       ],

@@ -130,6 +130,10 @@ Transitions autorisées (toute paire absente est **refusée**) :
 | `ON_HOLD` | statut précédent | `package:release_hold` (reprise) |
 | `ON_HOLD` | `RETURNED`, `CANCELLED` | Permission spécifique, motif |
 
+**Réalisé en phase 5** : la table du paquet partagé (`packages/shared/src/package-status.ts`) compte **40 règles** (26 « normales », 12 vers `ON_HOLD`, 2 sorties de `ON_HOLD`). Ajouts par rapport à ce tableau : `RECEIVED_AT_WAREHOUSE` et `UNDER_INSPECTION` → `CANCELLED` (réception saisie par erreur, ou colis fusionné dans le colis attendu d'un client ; motif obligatoire, `package:cancel`). Chaque règle porte un **module propriétaire** (`SYSTEM`, `PACKAGES`, `BILLING`, `SHIPMENTS`, `DELIVERY`) : l'API générique n'accepte que `PACKAGES` et `BILLING`. Tant que la facturation n'existe pas, `AWAITING_PAYMENT` et `READY_TO_SHIP` se décident à la main (`package:authorize_shipment`, motif exigé pour `READY_TO_SHIP`).
+
+**Préalerte et rapprochement** : créer une préalerte crée le colis attendu (`PREALERT_CREATED` puis `AWAITING_RECEIPT` automatiquement) et émet tout de suite son numéro de suivi. À la réception : (1) choix manuel de l'agent ; (2) numéro de suivi du marchand **identique** (insensible à la casse et aux espaces ; une correspondance partielle ne rapproche rien) ; (3) code client lu sur l'étiquette avec **un seul** colis attendu ; plusieurs candidats = refus avec la liste ; (4) sinon nouveau colis, rattaché au code client ou « non identifié ». Un colis non identifié se rattache ensuite à un client, éventuellement en **fusionnant** dans son colis attendu (le colis physique est annulé, le client garde son numéro de suivi, les photos suivent).
+
 `DELIVERED`, `RETURNED` et `CANCELLED` sont terminaux. Annuler après `READY_TO_SHIP` demande une permission élevée et la correction de la facture (avoir).
 
 La politique de paiement est une option de l'entreprise : `PAY_BEFORE_SHIPMENT` (le colis attend en `AWAITING_PAYMENT`) ou `PAY_BEFORE_RELEASE` (paiement à la remise ; `READY_TO_SHIP` directement, et I15 bloque la remise tant que le solde n'est pas nul).
@@ -156,7 +160,7 @@ Les 12 événements de notification du cahier §13 correspondent un à un à cet
 | Identifiant | Format | Garanties |
 |---|---|---|
 | Clé interne | UUID v7 | Jamais affiché |
-| Numéro de suivi | `<préfixe entreprise 2-4 car.>` + 10 caractères Crockford base32 aléatoires + 1 chiffre de contrôle | Unique global (contrainte), non séquentiel, saisie tolérante (O/0, I/1) |
+| Numéro de suivi | `<préfixe entreprise 2-4 lettres>` + 10 caractères Crockford base32 aléatoires + 1 caractère de contrôle (poids impairs : détecte toute erreur sur un caractère) ; affiché `EE-XXXXX-XXXXX-C` | Unique global (contrainte + vérification préalable), non séquentiel, saisie tolérante (casse, tirets, O/0, I/L→1) ; un numéro au contrôle erroné reçoit la même réponse qu'un numéro inconnu |
 | Code client | `<préfixe>-<séquence>` ex. `TH-000123` | Séquence par entreprise obtenue sous verrou ; jamais réattribuée |
 | N° de facture / reçu | `INV-2026-000045`, `RCT-2026-000012` | Sans trou, par entreprise et année (table de compteurs verrouillée) |
 | Référence de lot | `<entrepôt>-<mode>-<AAAAMMJJ>-<n>` | Unique par entreprise |

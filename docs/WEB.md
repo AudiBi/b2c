@@ -61,9 +61,13 @@ Derrière ce proxy, l'API doit avoir `TRUST_PROXY=true` (voir SECURITY.md). Le s
 1. Modifier `src/i18n/fr.ts`. 2. `npm run typecheck` signale les clés à ajouter dans `en.ts` et `ht.ts`. 3. Les tests `tests/i18n.test.ts` contrôlent : mêmes clés et mêmes variables `{…}` partout, aucune valeur vide, longueurs des balises `<title>`/description, absence de prix ou de numéro de téléphone inventés.
 **Le créole a été rédigé sans relecture par un locuteur natif : à faire relire avant publication.** Les pages légales sont des **projets à valider par un juriste** (bandeau visible sur la page).
 
-## Fonctions volontairement non activées
+## Calculateur, suivi et colis (phase 5)
 
-Le suivi public et le calculateur ne sont pas branchés : leur API n'existe pas (phase 5). Les pages expliquent le principe et affichent « pas encore activé » **sans formulaire** (aucun bouton qui ne ferait rien, aucun prix inventé). L'activation passe par `config.features` dans `src/config.ts`. La liste des agences est vide tant que le module agences (phase 6) n'existe pas.
+- **Calculateur** (`/calculator`) : lit `GET /rates` (trajets, services facultatifs, catégories) puis `POST /quote`. Sans grille publiée, la page l'explique et n'affiche **aucun formulaire ni prix**. Un client connecté enregistre ses estimations. Les deux poids (réel, volumétrique) et le poids facturable sont montrés ; le résultat est marqué « estimation indicative ».
+- **Suivi** (`/tracking?n=…`) : le numéro est dans l'adresse (lien partageable) ; relancer la recherche relit le serveur ; numéro inconnu = message neutre. Aucune date de livraison n'est affichée (aucune donnée réelle).
+- **Espace client** : « Mes préalertes » (déclaration, modification, annulation en deux temps, facture jointe), « Mes colis » (filtre, recherche, détail, historique, frais provisoires, pièces jointes). Les pièces s'ouvrent par un lien signé de courte durée.
+- Les montants, poids et dates sont formatés par `src/lib/format.ts` (le créole se formate comme le français, faute de données de locale fiables). Les libellés des 17 statuts et des motifs de retenue sont dans les trois catalogues (un test vérifie qu'aucun statut n'en manque).
+- Tout ce qui concerne le **personnel** (réception, pesée…) n'a pas d'écran : voir [ROADMAP.md](ROADMAP.md).
 
 ## Limites connues
 

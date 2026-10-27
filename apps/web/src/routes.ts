@@ -28,6 +28,8 @@ export const paths = {
   accountAddresses: '/account/addresses',
   accountBeneficiaries: '/account/beneficiaries',
   accountReceiving: '/account/receiving-addresses',
+  accountPrealerts: '/account/prealerts',
+  accountPackages: '/account/packages',
   accountSecurity: '/account/security',
 } as const;
 

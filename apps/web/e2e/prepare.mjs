@@ -71,6 +71,48 @@ export async function prepare() {
       });
     }
 
+    // Catégorie de marchandise et grille aérienne États-Unis → Haïti (valeurs de RECETTE, étiquetées comme telles)
+    await prisma.packageCategory.upsert({
+      where: { companyId_code: { companyId: company.id, code: 'ELEC' } },
+      update: {},
+      create: { companyId: company.id, code: 'ELEC', name: { fr: 'Électronique', ht: 'Elektwonik', en: 'Electronics' } },
+    });
+    const activeCard = await prisma.rateCard.findFirst({
+      where: { companyId: company.id, status: 'ACTIVE', transportMode: 'AIR', originCountry: 'US', destinationCountry: 'HT' },
+    });
+    if (!activeCard) {
+      const card = await prisma.rateCard.create({
+        data: {
+          companyId: company.id,
+          name: 'Grille de recette (aérien)',
+          transportMode: 'AIR',
+          originCountry: 'US',
+          destinationCountry: 'HT',
+          currency: 'USD',
+          weightUnit: 'KG',
+          dimensionUnit: 'CM',
+          volumetricDivisor: 5000,
+          minBillableWeight: 0.5,
+          roundingMode: 'UP',
+          roundingStep: 0.5,
+          validFrom: new Date('2020-01-01'),
+        },
+      });
+      await prisma.rateRule.createMany({
+        data: [
+          { companyId: company.id, rateCardId: card.id, weightFrom: 0, weightTo: 5, pricePerUnit: 4, minCharge: 3 },
+          { companyId: company.id, rateCardId: card.id, weightFrom: 5, pricePerUnit: 3.5 },
+        ],
+      });
+      await prisma.rateSurcharge.createMany({
+        data: [
+          { companyId: company.id, rateCardId: card.id, code: 'HANDLING', name: { fr: 'Manutention', ht: 'Manitansyon', en: 'Handling' }, kind: 'SURCHARGE', method: 'FLAT', value: 1.5 },
+          { companyId: company.id, rateCardId: card.id, code: 'INSURANCE', name: { fr: 'Assurance', ht: 'Asirans', en: 'Insurance' }, kind: 'INSURANCE', method: 'PERCENT_OF_DECLARED_VALUE', value: 2, optional: true },
+        ],
+      });
+      await prisma.rateCard.update({ where: { id: card.id }, data: { status: 'ACTIVE' } });
+    }
+
     const email = process.env.E2E_ADMIN_EMAIL;
     const password = process.env.E2E_ADMIN_PASSWORD;
     if (email && password) {

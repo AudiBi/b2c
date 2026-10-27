@@ -1,6 +1,6 @@
 # API
 
-Phase 3. Spécification machine : [openapi.json](openapi.json) (régénérée par `npm run docs:openapi`) ; interface interactive : `/docs` quand `ENABLE_DOCS=true`. Les routes métier (colis, tarifs, paiements…) seront ajoutées avec leurs phases.
+Phases 3 à 5. Spécification machine : [openapi.json](openapi.json) (régénérée par `npm run docs:openapi`) ; interface interactive : `/docs` quand `ENABLE_DOCS=true`. Les routes de facturation, de lots et de livraison seront ajoutées avec leurs phases.
 
 ## Conventions
 
@@ -19,6 +19,8 @@ Phase 3. Spécification machine : [openapi.json](openapi.json) (régénérée pa
 ```
 
 Codes ajoutés en phase 4 : `INVALID_CURRENT_PASSWORD`, `PASSWORD_UNCHANGED`, `NOT_A_BUSINESS_ACCOUNT`, `ADDRESS_LIMIT`, `BENEFICIARY_LIMIT` (422), `ADDRESS_NOT_FOUND`, `BENEFICIARY_NOT_FOUND`, `WAREHOUSE_NOT_FOUND`, `CUSTOMER_NOT_FOUND`, `WAREHOUSE_REFERENCE_USED`.
+
+Codes ajoutés en phase 5 : `TARIFF_UNAVAILABLE`, `CATEGORY_RESTRICTED`, `INVALID_STATE`… (422/409) — tarifs : `CATEGORY_UNKNOWN`, `RULES_OVERLAP`, `INVALID_SURCHARGE`, `MISSING_DECLARED_VALUE`, `UNKNOWN_SURCHARGE`, `RATE_CARD_NOT_FOUND`, `RATE_CARD_IMMUTABLE`, `RATE_CARD_NOT_DRAFT`, `RATE_CARD_NOT_ACTIVE`, `RATE_CARD_PERIOD_OVERLAP`, `CATEGORY_CODE_USED` ; colis : `INVALID_TRANSITION`, `TRANSITION_NOT_AVAILABLE`, `REASON_REQUIRED`, `AMBIGUOUS_MATCH` (avec la liste des candidats), `NOT_EXPECTED`, `ALREADY_IDENTIFIED`, `CUSTOMER_REQUIRED`, `TRANSPORT_MODE_REQUIRED`, `INSURANCE_UNAVAILABLE`, `GROUP_CUSTOMER_MISMATCH`, `ALREADY_GROUPED`, `DUPLICATE_PACKAGES`, `PACKAGE_NOT_FOUND`, `GROUP_NOT_FOUND`, `DUPLICATE_PREALERT`, `PREALERT_LOCKED`, `PREALERT_NOT_FOUND`, `CUSTOMER_ONLY`, `TRACKING_NOT_FOUND` ; fichiers : `UNSUPPORTED_FILE` (415), `FILE_CONTENT_MISMATCH`, `FILE_REJECTED`, `FILE_KIND_NOT_ALLOWED`, `FILE_LIMIT` (422), `PAYLOAD_TOO_LARGE` (413), `LINK_INVALID`, `LINK_EXPIRED` (403), `FILE_NOT_FOUND`, `FILE_OWNER_NOT_FOUND`.
 
 Les messages de `details` d'une `VALIDATION_ERROR` pour les règles propres à l'application sont des **codes stables** (`password_common`, `phone_format`, `terms_required`, `country_format`, `date_order`…) que l'interface traduit ; les autres sont les messages bruts de zod.
 
@@ -59,6 +61,23 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 | `GET/POST /v1/admin/warehouses` · `PATCH /v1/admin/warehouses/{id}` | `warehouse:read` · `warehouse:manage` | Entrepôts. **Portées respectées** : un droit limité à un entrepôt ne permet ni d'en créer, ni de modifier un autre |
 | `GET/PUT /v1/admin/settings/public-contact` | `settings:read` · `settings:update` | Coordonnées publiques (page Contact) |
 | `GET /v1/public/companies/{slug}` · `GET /v1/public/companies/{slug}/warehouses` | public, 120/min/IP, `Cache-Control: public, max-age=60` | Nom, langue, devise, coordonnées ; entrepôts actifs et visibles. Le modèle d'adresse des clients n'est jamais exposé ; entreprise inconnue, suspendue ou « platform » : 404 |
+| `GET/POST /v1/admin/rate-cards` · `GET/PUT/DELETE /v1/admin/rate-cards/{id}` | `rate:read` · `rate:manage` | Grilles tarifaires (tranches de poids, suppléments, taxes). Création **en brouillon** ; `PUT`/`DELETE` réservés aux brouillons |
+| `POST /v1/admin/rate-cards/{id}/activate` · `/retire` · `/duplicate` | `rate:manage` | Active (409 si une autre grille active couvre le même trajet, mode et période), retire (fin de validité = aujourd'hui), copie en brouillon de version suivante. Une grille active est **immuable** (API et base) |
+| `GET/POST /v1/admin/categories` · `PATCH /v1/admin/categories/{id}` | `rate:read` · `rate:manage` | Catégories de marchandises (une catégorie « restreinte » est refusée par le calculateur) |
+| `GET /v1/public/companies/{slug}/rates` | public, 120/min/IP, cache 60 s | Trajets/modes tarifés aujourd'hui, services facultatifs, catégories. **Aucun prix** |
+| `POST /v1/public/companies/{slug}/quote` | public, 60/min/IP | Estimation (`isEstimate: true`), rien n'est enregistré. **422 `TARIFF_UNAVAILABLE`** sans grille ou sans tranche : aucun prix n'est jamais inventé |
+| `POST/GET /v1/me/quotes` | `quote:create`, comptes clients | Estimation enregistrée dans l'historique du client / 20 dernières |
+| `GET/POST /v1/me/prealerts` · `GET/PATCH/DELETE /v1/me/prealerts/{id}` | `prealert:read_own` · `prealert:create_own` | Déclaration d'achat : crée le colis attendu et son numéro de suivi. Un numéro de suivi marchand = une préalerte active par entreprise (409). Modification/annulation tant que le colis n'est pas arrivé (409 `PREALERT_LOCKED`) |
+| `GET /v1/me/packages` · `GET /v1/me/packages/{id}` | `package:read_own` | Mes colis (filtres `status`, `q`, curseur) et détail avec historique **public** ; frais « provisoires » ; colis d'autrui = 404 |
+| `GET /v1/admin/packages` · `/expected` · `/{id}` | `package:read` · `package:receive` | Liste (limitée aux entrepôts de la portée), colis attendus, détail complet (historique interne, retenues, préalerte) |
+| `POST /v1/admin/packages/receive` | `package:receive` (portée entrepôt) | Réception et rapprochement : numéro du marchand **exact**, sinon code client avec un seul colis attendu, sinon `expectedPackageId` ; plusieurs candidats : 409 `AMBIGUOUS_MATCH` ; sans correspondance : nouveau colis rattaché au code client ou « non identifié » |
+| `POST /v1/admin/packages/{id}/identify` · `/register` · `/notes` | `package:update` · `package:register` | Rattache un colis non identifié (fusion possible dans le colis attendu) ; pèse et calcule les frais avec la grille active (sans grille : enregistré **sans montant**) ; note interne |
+| `POST /v1/admin/packages/{id}/transitions` | selon la transition (table partagée) + portée | Changement de statut : toute paire hors table = 409 `INVALID_TRANSITION` ; transitions des autres modules = 409 `TRANSITION_NOT_AVAILABLE` ; motif obligatoire pour retenir, retourner, annuler |
+| `POST /v1/admin/package-groups` · `DELETE /v1/admin/package-groups/{id}` | `package:update` | Regroupe / dégroupe des colis du même client |
+| `GET /v1/public/tracking/{numéro}` | public, 30/min/IP, `Cache-Control: no-store` | Statut et événements **publics** (aucun nom, adresse, valeur, document, acteur, texte libre ; motifs sensibles masqués). Numéro inconnu, mal formé ou au contrôle erroné : **même réponse 404** |
+| `POST /v1/files?ownerType&ownerId&kind&filename` | tout connecté, autorisé selon le propriétaire, 60/10 min | Dépôt (corps binaire brut : JPEG, PNG, WebP, PDF ; 8 Mo ; 10 par objet). Type réel déterminé par le contenu |
+| `GET /v1/files` · `GET /v1/files/{id}/link` · `DELETE /v1/files/{id}` | idem | Liste, lien signé de 5 minutes, suppression |
+| `GET /v1/files/{id}/content?c&exp&sig` | public (signature HMAC) | Contenu ; en-têtes `nosniff` et CSP `sandbox` |
 | `GET /health/live`, `GET /health/ready` | public, sans limite | Sondes (la seconde teste PostgreSQL et Redis, 503 sinon) |
 
 ## Règles à connaître
@@ -70,3 +89,10 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 - **Liens des e-mails** : `<WEB_PUBLIC_URL>/<langue>/<page>?token=…` (langue du destinataire).
 - **Cookies** : `b2c_refresh` (HttpOnly, chemin `/v1/auth`, jeton de renouvellement) et `b2c_session=1` (lisible, chemin `/`, sans secret, simple indice qu'une session peut être restaurée). Les deux sont supprimés à la déconnexion.
 - **Portées** : `RECEPTION_AGENT` et `WAREHOUSE_MANAGER` exigent une portée `WAREHOUSE`, `AGENCY_MANAGER` une portée `AGENCY`. L'existence de l'entrepôt ou de l'agence n'est **pas encore vérifiée** (ces objets arrivent en phase 6).
+
+## Règles ajoutées en phase 5
+
+- **Un seul point d'écriture du statut** : `PackagesService.transition`. Il verrouille la ligne, vérifie la table de transitions, le module propriétaire, la permission (et la portée d'entrepôt), le motif, puis écrit l'événement et le journal d'audit dans la même transaction. La base refuse en plus tout changement de statut sans événement dans la même transaction.
+- **Droits par entrepôt** : un agent limité à un entrepôt ne reçoit, ne pèse ni ne voit rien ailleurs ; un colis hors portée est présenté comme inexistant (404).
+- **Montants** : toujours en décimal exact (pas de flottant), deux décimales, arrondi « 0,5 vers le haut » ; le total est la somme exacte des lignes affichées.
+- **Corps binaire** : seule `/v1/files` accepte du binaire (les autres routes restent limitées au JSON de 100 Ko).
