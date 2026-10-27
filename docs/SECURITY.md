@@ -19,9 +19,13 @@ Phase 3. Décrit ce qui est **en place et testé**, puis ce qui **manque**. Une 
 | Erreurs | format unique ; aucune trace ni message interne dans les 500 | `app.spec.ts` |
 | En-têtes et CORS | Helmet (HSTS, nosniff, CSP…), origines CORS en liste blanche, `X-Powered-By` retiré | `app.spec.ts` |
 | Secrets | aucun dans le dépôt ; `.env` ignoré ; générés localement ; la configuration de production refuse les valeurs de substitution, les cookies non sécurisés et un coût argon2 trop faible | `app.spec.ts` |
+| Site web | Jeton d'accès en mémoire (jamais dans localStorage ; un test le vérifie) ; cookie de renouvellement HttpOnly ; redirection après connexion limitée aux pages de l'espace client du même site ; CSP de référence sans script ni style en ligne (la recette navigateur échoue sur toute violation) ; liens externes en `rel=noopener` ; aucune donnée personnelle dans l'URL hormis les jetons à usage unique des e-mails | `e2e/` |
+| Espace client | Chaque route ne manipule que les données de l'utilisateur du jeton ; l'identifiant d'un autre client donne 404 ; bénéficiaires : seuls 4 caractères de la pièce conservés ; entrepôts : le modèle d'adresse des clients n'est jamais public ; coordonnées publiques : URL `https` uniquement | `customers.spec.ts` |
 | Journaux | JSON structuré (pino) ; en-têtes `Authorization`, `Cookie`, `Set-Cookie` masqués ; chaîne de requête non journalisée | configuration |
 
 ## Ce qui manque ou reste fragile
+
+_Phase 4 : le cookie `b2c_session` est lisible par JavaScript par conception ; il ne contient aucun secret. Un script malveillant (XSS) pourrait toutefois agir au nom de l'utilisateur tant que la page est ouverte : d'où la CSP stricte._
 
 | Sujet | Détail | Phase prévue |
 |---|---|---|

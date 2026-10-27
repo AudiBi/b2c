@@ -1,0 +1,39 @@
+/* Identité visuelle PROVISOIRE et originale (aucun élément de marque tiers). Contrastes vérifiés AA. */
+:root {
+  --navy-900: #0b2545;
+  --navy-800: #102f57;
+  --navy-700: #13315c;
+  --blue-600: #1d4e89;
+  --teal-700: #0b6b6a;
+  --teal-600: #0e7c7b;
+  --amber-500: #f2a541;
+  --amber-600: #d98a1f;
+
+  --bg: #f6f8fb;
+  --surface: #ffffff;
+  --surface-alt: #eef3f9;
+  --text: #14213d;
+  --muted: #475467;
+  --border: #d5dce8;
+  --border-strong: #98a5b8;
+
+  --primary: var(--navy-900);
+  --primary-contrast: #ffffff;
+  --link: #14548f;
+  --focus: #1d4ed8;
+  --danger: #b42318;
+  --danger-bg: #fef3f2;
+  --success: #067647;
+  --success-bg: #ecfdf3;
+  --warning: #8a4b00;
+  --warning-bg: #fff6e5;
+  --info: #14548f;
+  --info-bg: #eef6ff;
+
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 4px 12px rgb(16 24 40 / 0.06);
+  --gutter: 16px;
+  --max: 1120px;
+}

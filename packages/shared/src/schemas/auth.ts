@@ -18,18 +18,18 @@ export const emailSchema = z
 
 export const passwordSchema = z
   .string()
-  .min(10, 'Au moins 10 caractères')
-  .max(128, 'Au plus 128 caractères')
-  .refine((value) => !COMMON_PASSWORDS.has(value.toLowerCase()), 'Mot de passe trop courant');
+  .min(10, 'password_min')
+  .max(128, 'password_max')
+  .refine((value) => !COMMON_PASSWORDS.has(value.toLowerCase()), 'password_common');
 
 /** Numéro au format international E.164, par exemple +50937000000. */
-export const phoneSchema = z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Format attendu : +50937000000');
+export const phoneSchema = z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'phone_format');
 
 export const companySlugSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .regex(/^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/, 'Identifiant d\'entreprise invalide');
+  .regex(/^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/, 'slug_format');
 
 const nameSchema = z.string().trim().min(1).max(80);
 const tokenSchema = z.string().trim().min(20).max(300);
@@ -46,15 +46,15 @@ export const registerSchema = z
     phone: phoneSchema.optional(),
     businessName: z.string().trim().min(1).max(120).optional(),
     locale: z.enum(LOCALES).default('fr'),
-    acceptTerms: z.literal(true, { error: 'Les conditions générales doivent être acceptées' }),
+    acceptTerms: z.literal(true, { error: 'terms_required' }),
   })
   .superRefine((value, ctx) => {
     if (value.accountType === 'BUSINESS' && !value.businessName) {
-      ctx.addIssue({ code: 'custom', path: ['businessName'], message: 'Raison sociale obligatoire' });
+      ctx.addIssue({ code: 'custom', path: ['businessName'], message: 'required' });
     }
     if (value.password.toLowerCase().includes(value.email.split('@')[0])) {
       if (value.email.split('@')[0].length >= 4) {
-        ctx.addIssue({ code: 'custom', path: ['password'], message: 'Le mot de passe ne doit pas contenir l\'adresse e-mail' });
+        ctx.addIssue({ code: 'custom', path: ['password'], message: 'password_contains_email' });
       }
     }
   });
@@ -82,10 +82,10 @@ export const roleAssignmentSchema = z
   })
   .superRefine((value, ctx) => {
     if (value.scopeType === 'COMPANY' && value.scopeId) {
-      ctx.addIssue({ code: 'custom', path: ['scopeId'], message: 'Pas d\'identifiant pour la portée COMPANY' });
+      ctx.addIssue({ code: 'custom', path: ['scopeId'], message: 'scope_id_forbidden' });
     }
     if (value.scopeType !== 'COMPANY' && !value.scopeId) {
-      ctx.addIssue({ code: 'custom', path: ['scopeId'], message: 'Identifiant de portée obligatoire' });
+      ctx.addIssue({ code: 'custom', path: ['scopeId'], message: 'required' });
     }
   });
 export type RoleAssignmentInput = z.infer<typeof roleAssignmentSchema>;
@@ -102,7 +102,7 @@ export type CreateStaffInput = z.infer<typeof createStaffSchema>;
 
 export const createCompanySchema = z.strictObject({
   name: z.string().trim().min(2).max(120),
-  slug: companySlugSchema.refine((s) => s !== PLATFORM_COMPANY_SLUG, 'Identifiant réservé'),
+  slug: companySlugSchema.refine((s) => s !== PLATFORM_COMPANY_SLUG, 'reserved_slug'),
   trackingPrefix: z.string().trim().toUpperCase().regex(/^[A-Z]{2,4}$/),
   customerCodePrefix: z.string().trim().toUpperCase().regex(/^[A-Z]{2,4}$/),
   defaultCurrency: z.enum(['USD', 'HTG']).default('USD'),

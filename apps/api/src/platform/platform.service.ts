@@ -90,7 +90,7 @@ export class PlatformService {
 
     await this.mail.sendAuthMail('invite', input.adminEmail, input.defaultLocale, {
       firstName: input.adminFirstName,
-      url: `${this.config.env.WEB_PUBLIC_URL}/accept-invite?token=${encodeURIComponent(created.rawToken)}`,
+      url: `${this.config.env.WEB_PUBLIC_URL}/${input.defaultLocale}/accept-invite?token=${encodeURIComponent(created.rawToken)}`,
     });
     return this.toDto(created.company);
   }

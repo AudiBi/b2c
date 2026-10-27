@@ -11,7 +11,7 @@ Légende : ☐ à faire · ◐ en cours · ☑ terminé et testé
 | 1 | Audit du dépôt et de la référence | ☑ [PROJECT_AUDIT.md](PROJECT_AUDIT.md) |
 | 2 | Spécifications, architecture, modèle de domaine, schéma, backlog | ☑ validée par l'utilisateur |
 | 3 | Monorepo, Docker, auth, utilisateurs, rôles, tenancy + RLS, audit | ☑ 156 tests réussis ([TEST_PLAN.md](TEST_PLAN.md)) ; réserves ci-dessous |
-| 4 | Site public (17 pages) et portail client | ☐ |
+| 4 | Site public (17 pages) et portail client | ☑ 391 tests au total ; réserves ci-dessous |
 | 5 | Colis, préalertes, suivi, calculateur | ☐ |
 | 6 | Entrepôts, lots, manifestes, agences | ☐ |
 | 7 | Facturation, paiements, notifications | ☐ |
@@ -54,6 +54,17 @@ Critère de sortie : tests verts exécutés, migration appliquée à une base vi
 | 4.4 | Profil, préférences, carnet d'adresses, bénéficiaires | CLI-06, 07, 10 |
 | 4.5 | Code client et adresses de réception (dépend d'au moins un entrepôt) | CLI-08, 09 |
 | 4.6 | Accessibilité (axe) et responsive (tests Playwright) | NFR-16 |
+
+**Réalisé en phase 4** : 4.1 à 4.6 (voir [WEB.md](WEB.md)) ; en plus : changement de mot de passe, consultation des clients par le personnel, gestion minimale des entrepôts, coordonnées publiques de l'entreprise.
+
+**Réserves de la phase 4 (reportées)** :
+- Le **créole** n'a pas été relu par un locuteur natif ; les **textes légaux** sont des projets à faire valider par un juriste ; le contenu éditorial doit être adapté à l'entreprise (marque, entrepôts, délais, moyens de paiement).
+- Accessibilité : contrôle automatique (axe) seulement ; **audit manuel et test avec lecteur d'écran à faire** avant d'annoncer une conformité.
+- Le suivi public et le calculateur expliquent leur principe mais **ne sont pas actifs** (phase 5) ; la liste des agences est vide (phase 6) ; pas de préalertes ni de suivi des colis dans l'espace client (phase 5).
+- Compte professionnel : sous-utilisateurs non réalisés (CLI-11) ; vérification du téléphone non réalisée (CLI-03).
+- Poids du JavaScript (~235 Ko compressés) à réduire (voir WEB.md) ; pas de mesure de performance sur réseau mobile.
+- Un site = une entreprise (une construction par entreprise) ; pas de bascule par nom de domaine.
+- Déploiement du site non testé sur un vrai serveur nginx/Apache (exemple de configuration fourni dans WEB.md).
 
 ### Phase 5 : colis, préalertes, suivi, calculateur
 | # | Tâche | Exigences |

@@ -49,8 +49,21 @@ export const freshIp = () => `10.${randomBytes(1)[0]}.${randomBytes(1)[0]}.${1 +
 
 export const strongPassword = () => `Tr0ub4dor-${randomBytes(6).toString('hex')}`;
 
+/**
+ * Client HTTP de test. Chaque requête reçoit une adresse IP fictive distincte (X-Forwarded-For) pour que les
+ * limites de débit par IP ne s'accumulent pas entre tests ; un test peut la fixer avec .set('X-Forwarded-For', …).
+ */
 export function api(t: TestApp) {
-  return request(t.app.getHttpServer());
+  const agent = request(t.app.getHttpServer());
+  const withIp = <M extends 'get' | 'post' | 'put' | 'patch' | 'delete'>(method: M) =>
+    (url: string) => agent[method](url).set('X-Forwarded-For', freshIp());
+  return {
+    get: withIp('get'),
+    post: withIp('post'),
+    put: withIp('put'),
+    patch: withIp('patch'),
+    delete: withIp('delete'),
+  };
 }
 
 export async function makeCompany(t: TestApp, status: 'ACTIVE' | 'SUSPENDED' = 'ACTIVE') {

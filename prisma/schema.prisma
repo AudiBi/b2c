@@ -65,6 +65,31 @@ enum ActorType {
   ANONYMOUS
 }
 
+enum CustomerType {
+  INDIVIDUAL
+  BUSINESS
+}
+
+enum AddressKind {
+  PERSONAL
+  DELIVERY
+}
+
+enum BeneficiaryStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum WarehouseStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TransportMode {
+  AIR
+  SEA
+}
+
 enum IdempotencyStatus {
   COMPLETED
 }
@@ -92,6 +117,11 @@ model Company {
   auditLogs          AuditLog[]
   idempotencyKeys    IdempotencyKey[]
   counters           Counter[]
+  customers          Customer[]
+  customerAddresses  CustomerAddress[]
+  beneficiaries      Beneficiary[]
+  warehouses         Warehouse[]
+  receivingAddresses ReceivingAddress[]
 
   @@map("companies")
 }
@@ -133,6 +163,7 @@ model User {
   sessions           Session[]
   verificationTokens VerificationToken[]
   userRoles          UserRole[]
+  customer           Customer?
 
   @@unique([companyId, email])
   @@unique([id, companyId])
@@ -296,4 +327,123 @@ model Counter {
 
   @@id([companyId, name, year])
   @@map("counters")
+}
+
+// Profil client d'un utilisateur de type CUSTOMER. Le code client identifie les colis reçus en entrepôt.
+model Customer {
+  id                String       @id @default(uuid(7)) @db.Uuid
+  companyId         String       @map("company_id") @db.Uuid
+  userId            String       @unique @map("user_id") @db.Uuid
+  customerType      CustomerType @map("customer_type")
+  customerCode      String       @map("customer_code")
+  // Canaux de notification souhaités : { email, sms, whatsapp, inApp }
+  notificationPrefs Json         @default("{\"email\": true, \"sms\": false, \"whatsapp\": false, \"inApp\": true}") @map("notification_prefs")
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company            Company            @relation(fields: [companyId], references: [id])
+  user               User               @relation(fields: [userId, companyId], references: [id, companyId])
+  addresses          CustomerAddress[]
+  beneficiaries      Beneficiary[]
+  receivingAddresses ReceivingAddress[]
+
+  @@unique([companyId, customerCode])
+  @@unique([id, companyId])
+  @@unique([userId, companyId])
+  @@map("customers")
+}
+
+model CustomerAddress {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  companyId     String      @map("company_id") @db.Uuid
+  customerId    String      @map("customer_id") @db.Uuid
+  kind          AddressKind
+  label         String
+  recipientName String      @map("recipient_name")
+  phone         String?
+  line1         String
+  line2         String?
+  city          String
+  region        String?
+  country       String      @db.Char(2)
+  postalCode    String?     @map("postal_code")
+  instructions  String?
+  isDefault     Boolean     @default(false) @map("is_default")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  customer Customer @relation(fields: [customerId, companyId], references: [id, companyId])
+
+  @@index([customerId])
+  @@map("customer_addresses")
+}
+
+// Personne autorisée à retirer un colis pour le client. Seuls les 4 derniers caractères de la pièce d'identité sont conservés.
+model Beneficiary {
+  id              String            @id @default(uuid(7)) @db.Uuid
+  companyId       String            @map("company_id") @db.Uuid
+  customerId      String            @map("customer_id") @db.Uuid
+  fullName        String            @map("full_name")
+  idDocumentType  String?           @map("id_document_type")
+  idDocumentLast4 String?           @map("id_document_last4")
+  phone           String?
+  validFrom       DateTime?         @map("valid_from") @db.Date
+  validTo         DateTime?         @map("valid_to") @db.Date
+  status          BeneficiaryStatus @default(ACTIVE)
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  customer Customer @relation(fields: [customerId, companyId], references: [id, companyId])
+
+  @@index([customerId, status])
+  @@map("beneficiaries")
+}
+
+// Entrepôt de réception. addressTemplate : lignes avec {customerName}, {customerCode}, {mode}.
+model Warehouse {
+  id              String          @id @default(uuid(7)) @db.Uuid
+  companyId       String          @map("company_id") @db.Uuid
+  reference       String
+  name            String
+  country         String          @db.Char(2)
+  city            String
+  addressLine     String          @map("address_line")
+  // Rendre l'adresse physique visible sur le site public
+  publicVisible   Boolean         @default(true) @map("public_visible")
+  addressTemplate Json            @map("address_template")
+  // Incrémentée quand le modèle d'adresse change : les adresses clients sont régénérées à la demande
+  version         Int             @default(1)
+  timezone        String          @default("UTC")
+  status          WarehouseStatus @default(ACTIVE)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company            Company            @relation(fields: [companyId], references: [id])
+  receivingAddresses ReceivingAddress[]
+
+  @@unique([companyId, reference])
+  @@unique([id, companyId])
+  @@map("warehouses")
+}
+
+// Adresse de réception personnalisée : une par (client, entrepôt, mode de transport).
+model ReceivingAddress {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  companyId        String        @map("company_id") @db.Uuid
+  customerId       String        @map("customer_id") @db.Uuid
+  warehouseId      String        @map("warehouse_id") @db.Uuid
+  transportMode    TransportMode @map("transport_mode")
+  lines            Json
+  warehouseVersion Int           @map("warehouse_version")
+  generatedAt      DateTime      @default(now()) @map("generated_at") @db.Timestamptz(6)
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  customer  Customer  @relation(fields: [customerId, companyId], references: [id, companyId])
+  warehouse Warehouse @relation(fields: [warehouseId, companyId], references: [id, companyId])
+
+  @@unique([customerId, warehouseId, transportMode])
+  @@index([companyId, warehouseId])
+  @@map("receiving_addresses")
 }

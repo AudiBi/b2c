@@ -4,7 +4,7 @@ Phase 2. **Aucune migration n'existe encore.** Ce document fixe le schéma cible
 
 ## 0. État réellement migré (phase 3)
 
-Migrations appliquées et testées : `0001_platform_identity` et `0002_idempotency_update_grant` (dans `prisma/migrations/`). Tables existantes : `companies`, `company_settings`, `users`, `sessions`, `verification_tokens`, `roles`, `permissions`, `role_permissions`, `user_roles`, `audit_log`, `idempotency_keys`, `counters`. Tout le reste de ce document (clients, colis, finance…) reste une **conception** non migrée. Écarts par rapport à la conception initiale ci-dessous :
+Migrations appliquées et testées (dans `prisma/migrations/`) : `0001_platform_identity`, `0002_idempotency_update_grant`, `0003_customers_warehouses`. Tables existantes : `companies`, `company_settings`, `users`, `sessions`, `verification_tokens`, `roles`, `permissions`, `role_permissions`, `user_roles`, `audit_log`, `idempotency_keys`, `counters` (phase 3) ; `customers`, `customer_addresses`, `beneficiaries`, `warehouses`, `receiving_addresses` (phase 4). Tout le reste de ce document (clients, colis, finance…) reste une **conception** non migrée. Écarts par rapport à la conception initiale ci-dessous :
 
 | Sujet | Conception initiale | Réalisé |
 |---|---|---|
@@ -17,7 +17,11 @@ Migrations appliquées et testées : `0001_platform_identity` et `0002_idempoten
 | Journal d'audit | droits en ajout seul | Droits `SELECT, INSERT` **et** déclencheur refusant UPDATE/DELETE pour tous les rôles |
 | Droits du rôle applicatif | non précisés | Explicites par table (aucun `ALTER DEFAULT PRIVILEGES`) ; chaque migration doit accorder ses droits |
 | Contexte RLS | `SET LOCAL app.company_id` | Idem, plus `app.platform` (`on` pour la seule lecture/écriture de `companies` par la plateforme) ; fonctions SQL `app_company_id()`, `app_is_platform()`, `app_platform_company_id()` |
-| `customers`, `receiving_addresses`, `warehouses`, `agencies` | migration 0002 prévue en phase 3-4 | **Non créées** : phases 4 et 6 |
+| `customers`, `customer_addresses`, `beneficiaries`, `receiving_addresses`, `warehouses` | migration « 0002_customers_refs » | **Créées en `0003_customers_warehouses`** (la 0002 est le droit UPDATE sur `idempotency_keys`). `warehouses` est minimale (référence, adresse, modèle d'adresse client, version, visibilité publique) ; emplacements, mouvements et scans arrivent en phase 6. `agencies` : phase 6 |
+| `customers` | `customer_type`, `customer_code` | + `notification_prefs` (JSON : e-mail, SMS, WhatsApp, dans l'espace) ; `customer_code` = `<préfixe>-<6 chiffres>` issu du compteur `customer-code` de l'entreprise (CHECK de format) ; clé étrangère composite vers `users(id, company_id)` |
+| `beneficiaries` | numéro de pièce | **Seuls les 4 derniers caractères** sont conservés (`id_document_last4`) ; révocation par `status`, pas de suppression physique |
+| `receiving_addresses` | `formatted_lines` | `lines` (JSON) + `warehouse_version` ; une ligne par (client, entrepôt, mode), écrite par `INSERT … ON CONFLICT DO UPDATE` (pas de doublon sous concurrence), régénérée quand les lignes changent (modèle de l'entrepôt ou nom du client) |
+| Fichiers photo, documents | `file_objects` | Pas encore créée (phase 5) |
 
 À savoir en écrivant les prochaines migrations : Prisma ne modélise ni les politiques RLS, ni les `CHECK`, ni les déclencheurs, ni les `GRANT`. Générer le SQL avec `prisma migrate diff --from-url … --to-schema-datamodel …` (ou `migrate dev --create-only`), puis **ajouter à la main** RLS + droits pour chaque nouvelle table portant `company_id` ; relire le SQL avant de l'appliquer. Les tests `rls.spec.ts` échouent si une table portant `company_id` n'a pas RLS activée et forcée.
 

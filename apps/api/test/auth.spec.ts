@@ -62,7 +62,7 @@ describe('Authentification', () => {
       // L'e-mail est en créole (langue choisie) et contient le lien
       const mail = lastMailTo(t, body.email as string);
       expect(mail.subject).toContain('konfime');
-      expect(mail.text).toContain('/verify-email?token=');
+      expect(mail.text).toContain('/ht/verify-email?token=');
 
       // Connexion impossible tant que l'adresse n'est pas confirmée
       const early = await api(t)
@@ -539,7 +539,7 @@ describe('Authentification', () => {
 
       const rows = await t.admin.auditLog.findMany({ where: { companyId: own.id }, orderBy: { id: 'asc' } });
       expect(rows.map((r) => r.action)).toEqual([
-        'auth.registered', 'auth.email_verified', 'auth.login_failed', 'auth.login', 'auth.logout',
+        'customer.created', 'auth.registered', 'auth.email_verified', 'auth.login_failed', 'auth.login', 'auth.logout',
       ]);
       expect(rows[0].ip).toBe(ip);
       expect(rows.every((r) => !!r.requestId)).toBe(true);

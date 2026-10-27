@@ -18,6 +18,10 @@ Phase 3. Spécification machine : [openapi.json](openapi.json) (régénérée pa
 { "error": { "code": "VALIDATION_ERROR", "message": "Données invalides", "details": [{ "in": "body", "path": "email", "message": "…" }], "requestId": "…" } }
 ```
 
+Codes ajoutés en phase 4 : `INVALID_CURRENT_PASSWORD`, `PASSWORD_UNCHANGED`, `NOT_A_BUSINESS_ACCOUNT`, `ADDRESS_LIMIT`, `BENEFICIARY_LIMIT` (422), `ADDRESS_NOT_FOUND`, `BENEFICIARY_NOT_FOUND`, `WAREHOUSE_NOT_FOUND`, `CUSTOMER_NOT_FOUND`, `WAREHOUSE_REFERENCE_USED`.
+
+Les messages de `details` d'une `VALIDATION_ERROR` pour les règles propres à l'application sont des **codes stables** (`password_common`, `phone_format`, `terms_required`, `country_format`, `date_order`…) que l'interface traduit ; les autres sont les messages bruts de zod.
+
 Codes principaux : `VALIDATION_ERROR` (400), `UNAUTHENTICATED`, `INVALID_TOKEN`, `SESSION_ENDED`, `INVALID_CREDENTIALS` (401), `FORBIDDEN`, `EMAIL_NOT_VERIFIED`, `ACCOUNT_DISABLED`, `COMPANY_SUSPENDED`, `PRIVILEGE_ESCALATION`, `CSRF_HEADER_REQUIRED` (403), `NOT_FOUND`, `USER_NOT_FOUND`, `COMPANY_NOT_FOUND` (404), `CONFLICT`, `EMAIL_ALREADY_USED`, `ROLE_ALREADY_ASSIGNED`, `LAST_ADMINISTRATOR`, `COMPANY_ALREADY_EXISTS` (409), `IDEMPOTENCY_KEY_REUSED` (422), `RATE_LIMITED`, `ACCOUNT_LOCKED` (429), `SECURITY_BACKEND_UNAVAILABLE`, `RATE_LIMITER_UNAVAILABLE` (503), `INTERNAL_ERROR` (500, sans détail).
 
 Une route qui ne déclare ni accès public, ni accès « tout utilisateur connecté », ni permissions, est refusée par défaut (`ROUTE_NOT_CONFIGURED`) ; un test vérifie que cela n'arrive pour aucune route.
@@ -46,6 +50,15 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 | `POST /v1/platform/companies` | `company:manage` | Crée une entreprise et invite son administrateur |
 | `GET /v1/platform/companies` | `company:manage` | Liste des entreprises (aucune donnée métier) |
 | `POST /v1/platform/companies/{id}/suspend` · `/activate` | `company:manage` | Suspension immédiate / réactivation |
+| `POST /v1/auth/change-password` | connecté, 20/h/IP + 5 échecs/15 min/utilisateur | Change le mot de passe (actuel exigé) ; les AUTRES sessions sont révoquées |
+| `GET /v1/me/profile` · `PATCH /v1/me/profile` | `profile:read_own` · `profile:update_own` | Profil, **code client**, préférences de notification ; nom, téléphone (revérifié s'il change), langue, raison sociale (compte professionnel) |
+| `GET/POST /v1/me/addresses` · `PATCH/DELETE /v1/me/addresses/{id}` | `profile:*_own` | Adresses personnelles et de livraison (20 max ; une adresse par défaut par type) |
+| `GET/POST /v1/me/beneficiaries` · `PATCH/DELETE /v1/me/beneficiaries/{id}` | `profile:*_own` | Bénéficiaires autorisés (10 actifs max ; 4 derniers caractères de la pièce seulement ; DELETE = révocation, l'historique est conservé) |
+| `GET /v1/me/receiving-addresses` | `profile:read_own` | Adresses de réception générées par entrepôt actif et par mode (AIR/SEA) à partir du code client |
+| `GET /v1/admin/customers` · `GET /v1/admin/customers/{id}` | `customer:read` | Recherche (code, nom, raison sociale, e-mail), pagination par curseur |
+| `GET/POST /v1/admin/warehouses` · `PATCH /v1/admin/warehouses/{id}` | `warehouse:read` · `warehouse:manage` | Entrepôts. **Portées respectées** : un droit limité à un entrepôt ne permet ni d'en créer, ni de modifier un autre |
+| `GET/PUT /v1/admin/settings/public-contact` | `settings:read` · `settings:update` | Coordonnées publiques (page Contact) |
+| `GET /v1/public/companies/{slug}` · `GET /v1/public/companies/{slug}/warehouses` | public, 120/min/IP, `Cache-Control: public, max-age=60` | Nom, langue, devise, coordonnées ; entrepôts actifs et visibles. Le modèle d'adresse des clients n'est jamais exposé ; entreprise inconnue, suspendue ou « platform » : 404 |
 | `GET /health/live`, `GET /health/ready` | public, sans limite | Sondes (la seconde teste PostgreSQL et Redis, 503 sinon) |
 
 ## Règles à connaître
@@ -54,4 +67,6 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 - **Anti-escalade** : on ne peut attribuer qu'un rôle dont toutes les permissions sont détenues par soi-même sur toute l'entreprise.
 - **Dernier administrateur** : on ne peut ni retirer le rôle, ni désactiver le dernier `COMPANY_ADMIN` actif d'une entreprise (ni le dernier `SUPER_ADMIN`).
 - **Rôles clients** : ils ne s'attribuent que par l'inscription. Les rôles du personnel ne conviennent qu'aux comptes du personnel.
+- **Liens des e-mails** : `<WEB_PUBLIC_URL>/<langue>/<page>?token=…` (langue du destinataire).
+- **Cookies** : `b2c_refresh` (HttpOnly, chemin `/v1/auth`, jeton de renouvellement) et `b2c_session=1` (lisible, chemin `/`, sans secret, simple indice qu'une session peut être restaurée). Les deux sont supprimés à la déconnexion.
 - **Portées** : `RECEPTION_AGENT` et `WAREHOUSE_MANAGER` exigent une portée `WAREHOUSE`, `AGENCY_MANAGER` une portée `AGENCY`. L'existence de l'entrepôt ou de l'agence n'est **pas encore vérifiée** (ces objets arrivent en phase 6).

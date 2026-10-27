@@ -9,6 +9,7 @@ import {
 } from '@b2c/shared';
 import { v7 as uuidv7 } from 'uuid';
 import { AuditService } from '../audit/audit.service';
+import { CustomersService } from '../customers/customers.service';
 import { AppException, isUniqueViolation } from '../common/errors';
 import { ConfigService } from '../config/config.module';
 import { DbService, type Tx } from '../database/db.service';
@@ -77,6 +78,7 @@ export class AuthService {
     private readonly oneTime: OneTimeTokenService,
     private readonly limiter: RateLimiter,
     private readonly companies: CompanyDirectory,
+    private readonly customers: CustomersService,
   ) {}
 
   // ---------------------------------------------------------------------------------------------
@@ -123,6 +125,7 @@ export class AuthService {
         await tx.userRole.create({
           data: { companyId: company.id, userId: user.id, roleId: role.id, scopeType: 'COMPANY', scopeKey: 'COMPANY' },
         });
+        await this.customers.ensureCustomer(tx, user, input.accountType);
         const rawToken = await this.oneTime.issue(tx, { companyId: company.id, userId: user.id, purpose: 'EMAIL_VERIFY' });
         await this.audit.record(tx, {
           companyId: company.id,
@@ -143,7 +146,7 @@ export class AuthService {
     if (outcome.created) {
       await this.mail.sendAuthMail('verify-email', input.email, input.locale, {
         firstName: input.firstName,
-        url: this.link('verify-email', outcome.rawToken),
+        url: this.link('verify-email', outcome.rawToken, input.locale),
       });
     } else {
       await this.mail.sendAuthMail('already-registered', input.email, outcome.locale, { firstName: outcome.firstName });
@@ -187,7 +190,7 @@ export class AuthService {
     if (prepared) {
       await this.mail.sendAuthMail('verify-email', prepared.user.email, prepared.user.locale as Locale, {
         firstName: prepared.user.firstName,
-        url: this.link('verify-email', prepared.rawToken),
+        url: this.link('verify-email', prepared.rawToken, prepared.user.locale as Locale),
       });
     }
   }
@@ -339,7 +342,7 @@ export class AuthService {
     if (prepared) {
       await this.mail.sendAuthMail('reset-password', prepared.user.email, prepared.user.locale as Locale, {
         firstName: prepared.user.firstName,
-        url: this.link('reset-password', prepared.rawToken),
+        url: this.link('reset-password', prepared.rawToken, prepared.user.locale as Locale),
       });
     }
   }
@@ -386,6 +389,42 @@ export class AuthService {
       return true;
     });
     if (!ok) throw this.invalidToken();
+  }
+
+  /**
+   * Change le mot de passe de l'utilisateur connecté. Toutes les AUTRES sessions sont révoquées ;
+   * la session courante reste ouverte. Limité à 5 tentatives par 15 minutes et par utilisateur.
+   */
+  async changePassword(auth: AuthContext, currentPassword: string, newPassword: string): Promise<void> {
+    const key = `change-password:${auth.userId}`;
+    const attempts = await this.counter(() => this.limiter.hit(key, LOGIN_LOCK_SECONDS));
+    if (attempts.count > LOGIN_MAX_FAILURES) {
+      throw AppException.tooManyRequests('TOO_MANY_ATTEMPTS', 'Trop de tentatives, réessayez plus tard', attempts.retryAfter);
+    }
+    const user = await this.db.run({ companyId: auth.companyId }, (tx) => tx.user.findUniqueOrThrow({ where: { id: auth.userId } }));
+    if (!(await this.passwords.verifyOrDummy(user.passwordHash, currentPassword))) {
+      throw AppException.badRequest('INVALID_CURRENT_PASSWORD', 'Mot de passe actuel incorrect');
+    }
+    if (newPassword === currentPassword) {
+      throw AppException.badRequest('PASSWORD_UNCHANGED', "Le nouveau mot de passe doit être différent de l'ancien");
+    }
+    const passwordHash = await this.passwords.hash(newPassword);
+    await this.db.run({ companyId: auth.companyId }, async (tx) => {
+      const current = await tx.session.findUnique({ where: { id: auth.sessionId } });
+      await tx.user.update({ where: { id: user.id }, data: { passwordHash, passwordChangedAt: new Date() } });
+      const revoked = await tx.session.updateMany({
+        where: { userId: user.id, revokedAt: null, ...(current ? { familyId: { not: current.familyId } } : {}) },
+        data: { revokedAt: new Date() },
+      });
+      await this.audit.record(tx, {
+        companyId: auth.companyId,
+        action: 'auth.password_changed',
+        entityType: 'user',
+        entityId: user.id,
+        after: { otherSessionsRevoked: revoked.count },
+      });
+    });
+    await this.counter(() => this.limiter.reset(key));
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -469,7 +508,8 @@ export class AuthService {
     return AppException.badRequest('INVALID_TOKEN', 'Lien invalide ou expiré');
   }
 
-  private link(path: string, token: string): string {
-    return `${this.config.env.WEB_PUBLIC_URL}/${path}?token=${encodeURIComponent(token)}`;
+  /** Lien vers le site, dans la langue de l'utilisateur : https://site/<langue>/<page>?token=… */
+  private link(path: string, token: string, locale: Locale): string {
+    return `${this.config.env.WEB_PUBLIC_URL}/${locale}/${path}?token=${encodeURIComponent(token)}`;
   }
 }

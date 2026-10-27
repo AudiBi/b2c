@@ -1,6 +1,7 @@
 import { Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
+  changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   logoutSchema,
@@ -21,6 +22,8 @@ import { AuthService, type SessionTokens } from './auth.service';
 
 const REFRESH_COOKIE = 'b2c_refresh';
 const COOKIE_PATH = '/v1/auth';
+/** Indice lisible par le site (sans aucun secret) : « une session peut être restaurée ». Évite un appel de renouvellement inutile à chaque visite anonyme. */
+const HINT_COOKIE = 'b2c_session';
 
 type Body<T extends z.ZodType> = z.infer<T>;
 
@@ -160,6 +163,20 @@ export class AuthController {
     return { status: 'password_updated' };
   }
 
+  @Post('change-password')
+  @AnyAuthenticated()
+  @HttpCode(204)
+  @RateLimit({ name: 'auth-change-password', limit: 20, windowSeconds: 3600 })
+  @Validate({ body: changePasswordSchema })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Change mon mot de passe',
+    description: 'Les autres appareils sont déconnectés ; la session courante reste ouverte.',
+  })
+  async changePassword(@CurrentAuth() auth: AuthContext, @VBody() body: Body<typeof changePasswordSchema>) {
+    await this.auth.changePassword(auth, body.currentPassword, body.newPassword);
+  }
+
   @Get('me')
   @AnyAuthenticated()
   @ApiBearerAuth()
@@ -189,10 +206,18 @@ export class AuthController {
       path: COOKIE_PATH,
       maxAge: this.config.env.REFRESH_TOKEN_TTL_DAYS * 24 * 3600_000,
     });
+    res.cookie(HINT_COOKIE, '1', {
+      httpOnly: false,
+      secure: this.config.env.COOKIE_SECURE,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: this.config.env.REFRESH_TOKEN_TTL_DAYS * 24 * 3600_000,
+    });
     return rest;
   }
 
   private clearCookie(res: Response): void {
     res.clearCookie(REFRESH_COOKIE, { path: COOKIE_PATH, httpOnly: true, sameSite: 'lax', secure: this.config.env.COOKIE_SECURE });
+    res.clearCookie(HINT_COOKIE, { path: '/', httpOnly: false, sameSite: 'lax', secure: this.config.env.COOKIE_SECURE });
   }
 }

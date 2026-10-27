@@ -167,6 +167,19 @@ Réalisé et testé (voir [TEST_PLAN.md](TEST_PLAN.md)) : monorepo npm workspace
 | Tests | Vitest | Jest + ts-jest (chemin standard avec les décorateurs NestJS) |
 | Réinitialisation de la base de test | `prisma migrate reset` | Interdite à un agent par Prisma sans accord humain explicite ; remplacée par `migrate deploy` + nettoyage des données d'une base `*_test` |
 
+### Phase 4 : site web et espace client
+
+Réalisé : module API `customers` (profil et code client, adresses, bénéficiaires, adresses de réception, entrepôts, coordonnées et entrepôts publics, consultation des clients par le personnel), `POST /v1/auth/change-password`, application `apps/web` (voir [WEB.md](WEB.md)).
+
+| Sujet | Conception | Réalité |
+|---|---|---|
+| Décision D1 (SEO) | Pré-rendu statique des pages publiques | **Retenue et réalisée** : rendu serveur React à la construction (63 fichiers HTML), hydratation, espace client en application monopage chargée à la demande |
+| Un site par entreprise | non précisé | Une construction du site = une entreprise (`VITE_COMPANY_SLUG`) ; plusieurs entreprises = plusieurs constructions, ou plus tard un site qui lit l'entreprise dans le nom de domaine |
+| Code client | « séquence sous verrou » | `CounterService` (compteur `customer-code`) appelé dans la transaction d'inscription ; un client créé hors inscription (seed, import) reçoit son code à sa première visite de l'espace |
+| Portées en pratique | contrôle par la garde | Première utilisation : `warehouse:manage` limité à un entrepôt permet de le modifier mais pas d'en créer ; `warehouse:read` limité filtre la liste. Les routes doivent appeler `permissions.can(permission, portée)` : la garde seule ne vérifie que la détention dans une portée quelconque |
+| Messages de validation | texte | Codes stables dans `packages/shared`, traduits par l'interface |
+| `@b2c/shared` | CommonJS | Double publication : CommonJS (API, Jest) et ESM (navigateur, Vite) via `exports` |
+
 ## 14. Décisions ouvertes
 
 | ID | Question | Recommandation | Échéance |

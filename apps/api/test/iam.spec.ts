@@ -168,6 +168,7 @@ describe('Rôles, permissions et administration des utilisateurs', () => {
 
       const mail = lastMailTo(t, body.email as string);
       expect(mail.subject).toContain('account is ready');
+      expect(mail.text).toContain('/en/accept-invite?token=');
 
       const early = await api(t)
         .post('/v1/auth/login')

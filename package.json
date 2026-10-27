@@ -3,8 +3,13 @@
   "private": true,
   "version": "0.1.0",
   "description": "Plateforme de logistique et d'expédition (nom provisoire : TransitHaïti)",
-  "engines": { "node": ">=22.12.0" },
-  "workspaces": ["apps/*", "packages/*"],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "setup:env": "node scripts/init-env.mjs",
     "docker:up": "docker compose -f docker/compose.dev.yml --env-file .env up -d --wait",
@@ -18,8 +23,13 @@
     "build": "npm run build:shared && npm run prisma:generate && npm -w @b2c/api run build",
     "start": "node --env-file=.env apps/api/dist/main.js",
     "docs:openapi": "npm -w @b2c/api run docs:openapi",
-    "typecheck": "npm run build:shared && npm run prisma:generate && npm -w @b2c/api run typecheck",
-    "test": "npm run build:shared && npm run prisma:generate && npm -w @b2c/shared test && npm -w @b2c/api test"
+    "typecheck": "npm run build:shared && npm run prisma:generate && npm -w @b2c/api run typecheck && npm -w @b2c/web run typecheck",
+    "test": "npm run build:shared && npm run prisma:generate && npm -w @b2c/shared test && npm -w @b2c/api test && npm -w @b2c/web test",
+    "build:web": "npm -w @b2c/web run build",
+    "dev:api": "npm run build && node --env-file=.env apps/api/dist/main.js",
+    "dev:web": "npm -w @b2c/web run dev",
+    "preview:web": "npm -w @b2c/web run preview",
+    "test:e2e": "npm -w @b2c/web run test:e2e"
   },
   "devDependencies": {
     "prisma": "6.19.3",

@@ -4,6 +4,7 @@ import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from './config/config.module';
 import type { Env } from './config/env';
+import { CustomersModule } from './customers/customers.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { IamModule } from './iam/iam.module';
@@ -47,6 +48,7 @@ export class AppModule {
         PlatformSharedModule,
         AuthModule,
         IamModule,
+        CustomersModule,
         PlatformModule,
         HealthModule,
       ],

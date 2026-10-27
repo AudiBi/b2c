@@ -7,10 +7,15 @@ Plateforme multi-entreprises de gestion de colis, d'expéditions aériennes et m
 | Phase | Contenu | État |
 |---|---|---|
 | 1-2 | Audit, spécifications, architecture, schéma | ☑ documents dans `docs/` |
-| **3** | **Monorepo, Docker, Prisma, multi-entreprises (RLS), authentification, rôles, audit** | **☑ implémentée et testée (156 tests)** |
-| 4-10 | Site public, colis, entrepôts, finance, livraison, etc. | ☐ non commencées |
+| 3 | Monorepo, Docker, Prisma, multi-entreprises (RLS), authentification, rôles, audit | ☑ testée |
+| **4** | **Site public (17 pages, FR/HT/EN), espace client, code client, adresses de réception** | **☑ implémentée et testée (391 tests au total)** |
+| 5-10 | Colis, préalertes, suivi, calculateur, entrepôts, finance, livraison, etc. | ☐ non commencées |
 
-Ce qui existe : une API REST (`/v1`) avec inscription/connexion/sessions, 12 rôles et 68 permissions, administration des utilisateurs, création des entreprises par la plateforme, journal d'audit immuable, isolement des entreprises par Row-Level Security PostgreSQL. **Il n'y a pas encore d'interface web, de colis, de tarifs ni de paiements.** Voir [docs/ROADMAP.md](docs/ROADMAP.md).
+Ce qui existe :
+- une **API REST** (`/v1`) : inscription/connexion/sessions, 12 rôles et 68 permissions, administration des utilisateurs, création des entreprises, journal d'audit immuable, isolement des entreprises par Row-Level Security PostgreSQL ; profil client avec **code client unique**, adresses, bénéficiaires, entrepôts et **adresses de réception personnalisées** ;
+- un **site web** (`apps/web`) : 17 pages publiques en français, créole haïtien et anglais (pré-rendues pour le référencement), inscription, connexion, mot de passe oublié, et un espace client.
+
+**Il n'y a pas encore** de colis, de préalertes, de suivi, de calculateur, de tarifs, de paiements ni d'application pour le personnel : le suivi public et le calculateur du site expliquent leur principe et affichent « pas encore activé » (aucun faux formulaire, aucun prix inventé). Voir [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Prérequis
 
@@ -31,6 +36,14 @@ npm run db:seed          # synchronise permissions et rôles ; crée le super ad
 npm start                # API sur http://localhost:3100  (documentation interactive : /docs)
 ```
 
+### Lancer le site
+
+```bash
+npm run dev:web          # http://localhost:5173 (l'API doit tourner : le site la joint par le proxy /v1)
+```
+
+Le site sert **une entreprise** (variable `VITE_COMPANY_SLUG`, `demo` par défaut). Pour qu'elle existe, créez-la : `DEMO_PASSWORD='…' npm run db:seed:demo` (voir plus bas), ou, avec un super administrateur, `POST /v1/platform/companies`. Pour voir des adresses de réception, créez un entrepôt (`POST /v1/admin/warehouses`, rôle administrateur) : sans entrepôt actif, l'espace client l'indique. Version de production du site : `npm run build:web` (dossier `apps/web/dist/client`) puis `npm run preview:web` pour l'essayer sur http://localhost:4173. Détails et déploiement : [docs/WEB.md](docs/WEB.md).
+
 Les e-mails envoyés en développement (confirmation, invitation, réinitialisation) s'affichent dans Mailpit : http://localhost:8035.
 
 ### Créer le premier super administrateur
@@ -44,15 +57,16 @@ Le super administrateur se connecte avec `POST /v1/auth/login` (sans `companySlu
 DEMO_PASSWORD='<un mot de passe de votre choix>' npm run db:seed:demo
 ```
 
-Crée l'entreprise `demo` (nom préfixé « DEMO ») avec un compte par rôle, tous en `@demo.invalid` et tous avec le mot de passe donné : `company-admin`, `logistics-manager`, `billing-agent`, `customer-service`, `driver`, `customer-individual`, `customer-business`, `auditor`. Les rôles d'entrepôt et d'agence (`WAREHOUSE_MANAGER`, `RECEPTION_AGENT`, `AGENCY_MANAGER`) seront ajoutés en phase 6 quand les entrepôts et agences existeront. Le script refuse de s'exécuter si `NODE_ENV=production`. Aucun mot de passe n'est enregistré dans le dépôt.
+Crée l'entreprise `demo` (nom préfixé « DEMO », préfixe de code client `DM`) avec un compte par rôle, tous en `@demo.invalid` et tous avec le mot de passe donné : `company-admin`, `logistics-manager`, `billing-agent`, `customer-service`, `driver`, `customer-individual`, `customer-business`, `auditor`. Les rôles d'entrepôt et d'agence (`WAREHOUSE_MANAGER`, `RECEPTION_AGENT`, `AGENCY_MANAGER`) seront ajoutés en phase 6 quand les entrepôts et agences existeront. Le script refuse de s'exécuter si `NODE_ENV=production`. Aucun mot de passe n'est enregistré dans le dépôt.
 
 ## Tests
 
 ```bash
-npm test      # construit, puis exécute les tests du package partagé (21) et de l'API (135)
+npm test          # package partagé (33) + API (183) + site (102)
+npm run test:e2e  # recette navigateur : construit l'API et le site, puis Playwright (73 scénarios)
 ```
 
-Les tests de l'API utilisent de **vrais** PostgreSQL et Redis (les conteneurs ci-dessus), dans la base `b2c_test` et la base Redis n° 1, jamais dans la base de développement. Avant chaque exécution la base de test est mise à jour par les migrations, ses données sont effacées (le script refuse toute base dont le nom ne finit pas par `_test`) et le catalogue des rôles est resynchronisé. Détail : [docs/TEST_PLAN.md](docs/TEST_PLAN.md).
+Les tests de l'API utilisent de **vrais** PostgreSQL et Redis (les conteneurs ci-dessus), dans la base `b2c_test` et la base Redis n° 1, jamais dans la base de développement. Avant chaque exécution la base de test est mise à jour par les migrations, ses données sont effacées (le script refuse toute base dont le nom ne finit pas par `_test`) et le catalogue des rôles est resynchronisé. La recette navigateur utilise aussi la base de test, l'entreprise `e2e`, et lit les vrais e-mails dans Mailpit. Première utilisation : `npx playwright install chromium` (sinon Microsoft Edge est utilisé s'il est installé). Détail et résultats : [docs/TEST_PLAN.md](docs/TEST_PLAN.md).
 
 ## Variables d'environnement
 
@@ -72,6 +86,7 @@ Toutes sont décrites dans [.env.example](.env.example) ; `npm run setup:env` g�
 | `WEB_PUBLIC_URL`, `CORS_ORIGINS` | Liens dans les e-mails ; origines autorisées |
 | `TRUST_PROXY` | `true` derrière un proxy de confiance (lit `X-Forwarded-For`) |
 | `ENABLE_DOCS` | Expose `/docs` (désactiver en production si l'API n'est pas publique) |
+| `VITE_COMPANY_SLUG`, `VITE_BRAND_NAME`, `SITE_URL` | **Site web, à la construction** : entreprise servie, nom de marque, URL publique (liens canoniques, sitemap) |
 | `SEED_SUPERADMIN_EMAIL/PASSWORD`, `DEMO_PASSWORD` | Amorçage (voir ci-dessus) |
 
 Aucun secret n'est dans le dépôt : `.env` est ignoré par Git et `.env.example` ne contient que des marqueurs.
@@ -79,9 +94,10 @@ Aucun secret n'est dans le dépôt : `.env` est ignoré par Git et `.env.example
 ## Structure
 
 ```
-apps/api/           API NestJS (modules : security, auth, iam, audit, platform, infra, health…)
+apps/api/           API NestJS (modules : security, auth, iam, audit, platform, customers, infra, health…)
+apps/web/           Site public et espace client (React, pré-rendu), tests Vitest et Playwright
 packages/shared/    catalogue des permissions et rôles, PermissionSet, schémas zod partagés
-prisma/             schema.prisma, migrations/ (0001, 0002), seed.ts, seed-demo.ts
+prisma/             schema.prisma, migrations/ (0001 à 0003), seed.ts, seed-demo.ts
 docker/             compose.dev.yml, initialisation des rôles PostgreSQL
 docs/               audit, spécifications, architecture, schéma, API (+ openapi.json), sécurité, tests
 ```
@@ -95,6 +111,7 @@ docs/               audit, spécifications, architecture, schéma, API (+ openap
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture cible + écarts constatés à l'implémentation (§15) |
 | [docs/DOMAIN_MODEL.md](docs/DOMAIN_MODEL.md) | Règles métier, machine d'états des colis |
 | [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) | Schéma cible + état réellement migré (§0) |
+| [docs/WEB.md](docs/WEB.md) | Site web : architecture, déploiement statique, textes, limites |
 | [docs/API.md](docs/API.md), [docs/openapi.json](docs/openapi.json) | Routes, conventions, erreurs |
 | [docs/SECURITY.md](docs/SECURITY.md) | Mesures en place, limites connues, vulnérabilités de dépendances |
 | [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | Ce qui est testé, résultats, parcours du cahier couverts |

@@ -128,7 +128,7 @@ export class AdminUsersService {
 
     await this.mail.sendAuthMail('invite', input.email, input.locale as Locale, {
       firstName: input.firstName,
-      url: `${this.config.env.WEB_PUBLIC_URL}/accept-invite?token=${encodeURIComponent(created.rawToken)}`,
+      url: `${this.config.env.WEB_PUBLIC_URL}/${input.locale}/accept-invite?token=${encodeURIComponent(created.rawToken)}`,
     });
     return created.dto;
   }

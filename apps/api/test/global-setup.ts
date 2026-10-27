@@ -31,10 +31,14 @@ export default async function globalSetup(): Promise<void> {
 
   const prisma = new PrismaClient({ datasources: { db: { url: directUrl } } });
   try {
-    // TRUNCATE ne déclenche pas le verrou d'immutabilité du journal d'audit (réservé au propriétaire).
-    await prisma.$executeRawUnsafe(
-      `TRUNCATE sessions, verification_tokens, user_roles, users, audit_log, idempotency_keys, counters, company_settings`,
-    );
+    // Toutes les tables d'entreprise (colonne company_id) sauf les référentiels conservés. TRUNCATE ne déclenche
+    // pas le verrou d'immutabilité du journal d'audit (réservé au propriétaire des tables).
+    const tables = await prisma.$queryRaw<{ table_name: string }[]>`
+      SELECT DISTINCT table_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND column_name = 'company_id'
+        AND table_name NOT IN ('companies', 'roles', 'role_permissions')`;
+    const list = tables.map((row) => `"${row.table_name}"`).join(', ');
+    await prisma.$executeRawUnsafe(`TRUNCATE ${list} CASCADE`);
     await prisma.$executeRawUnsafe(`DELETE FROM role_permissions WHERE company_id <> '${PLATFORM_COMPANY_ID}'`);
     await prisma.$executeRawUnsafe(`DELETE FROM roles WHERE company_id <> '${PLATFORM_COMPANY_ID}'`);
     await prisma.$executeRawUnsafe(`DELETE FROM companies WHERE id <> '${PLATFORM_COMPANY_ID}'`);
