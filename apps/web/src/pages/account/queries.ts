@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
+import type { PickupPoint } from '../../api/public';
 import type { TimelineEvent } from '../../components/PackageParts';
 
 export interface NotificationPrefs {
@@ -107,6 +108,7 @@ export interface PackageSummary {
   destination: { country: string; city: string | null };
   measures: { actualWeightKg: string | null; billableWeight: string | null; weightUnit: 'KG' | 'LB' };
   fees: { freight: string; extras: string | null; currency: string; provisional: true } | null;
+  pickup: PickupPoint | null;
   receivedAt: string | null;
   createdAt: string;
 }

@@ -71,6 +71,13 @@ export async function prepare() {
       });
     }
 
+    // Agence de retrait de recette (Haïti)
+    await prisma.agency.upsert({
+      where: { companyId_code: { companyId: company.id, code: 'AGE1' } },
+      update: {},
+      create: { companyId: company.id, name: 'Agence de recette', code: 'AGE1', country: 'HT', city: 'Delmas', addressLine: '1 rue de la Recette', phone: '+50937000001', hours: 'Lun-Ven 8h-17h' },
+    });
+
     // Catégorie de marchandise et grille aérienne États-Unis → Haïti (valeurs de RECETTE, étiquetées comme telles)
     await prisma.packageCategory.upsert({
       where: { companyId_code: { companyId: company.id, code: 'ELEC' } },

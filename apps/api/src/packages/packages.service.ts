@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, type Customer, type Package, type PackageEvent, type Warehouse } from '@prisma/client';
+import { Prisma, type Agency, type Customer, type Package, type PackageEvent, type Warehouse } from '@prisma/client';
 import {
   findTransition,
   formatTrackingNumber,
@@ -36,12 +36,15 @@ export interface TransitionOptions {
   /** Limite les modules propriétaires acceptés (l'API générique n'accepte que PACKAGES et BILLING). */
   owners?: readonly TransitionOwner[];
   visibility?: 'PUBLIC' | 'PRIVATE';
+  /** Lieu affiché dans l'historique ; absent : ville de l'entrepôt d'origine. null : aucun lieu. */
+  locationLabel?: string | null;
 }
 
-type PackageWithRelations = Package & { warehouse: Warehouse; customer: (Customer & { user: { firstName: string; lastName: string; businessName: string | null } }) | null };
+type PackageWithRelations = Package & { warehouse: Warehouse; agency: Agency | null; customer: (Customer & { user: { firstName: string; lastName: string; businessName: string | null } }) | null };
 
-const staffInclude = {
+export const staffInclude = {
   warehouse: true,
+  agency: true,
   customer: { include: { user: { select: { firstName: true, lastName: true, businessName: true } } } },
 } satisfies Prisma.PackageInclude;
 
@@ -93,11 +96,22 @@ export function staffPackageDto(pkg: PackageWithRelations) {
           detail: pkg.pricingSnapshot,
         }
       : null,
+    destinationAgencyId: pkg.destinationAgencyId,
+    locationId: pkg.locationId,
+    agencyInfo: pkg.agency,
     receivedAt: pkg.receivedAt,
     registeredAt: pkg.registeredAt,
     createdAt: pkg.createdAt,
     version: pkg.version,
   };
+}
+
+const PICKUP_STATUSES = ['RECEIVED_AT_AGENCY', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'];
+
+/** Point de retrait montré au client : seulement lorsque le colis est réellement arrivé dans une agence. */
+export function pickupPoint(agency: Agency | null, status: string, publicOnly = false) {
+  if (!agency || !PICKUP_STATUSES.includes(status) || (publicOnly && !agency.publicVisible)) return null;
+  return { name: agency.name, kind: agency.kind, city: agency.city, country: agency.country, addressLine: agency.addressLine, phone: agency.phone, hours: agency.hours, ready: status === 'READY_FOR_PICKUP' };
 }
 
 /**
@@ -124,6 +138,7 @@ export function ownerPackageDto(pkg: PackageWithRelations) {
     fees: staff.pricing && staff.pricing.freight !== null
       ? { freight: staff.pricing.freight, extras: staff.pricing.extras, currency: staff.pricing.currency, provisional: true }
       : null,
+    pickup: pickupPoint(staff.agencyInfo, staff.status),
     receivedAt: staff.receivedAt,
     createdAt: staff.createdAt,
   };
@@ -178,7 +193,11 @@ export class PackagesService {
     if (!options.actor.bypassPermission) {
       const auth = options.actor.auth;
       if (!auth || !rule.permission) throw AppException.forbidden('FORBIDDEN', 'Permission insuffisante');
-      if (!auth.permissions.can(rule.permission, { type: 'WAREHOUSE', id: pkg.originWarehouseId })) {
+      // Portée selon la famille de la permission : agence de destination pour agency:* et delivery:*, entrepôt d'origine sinon
+      const scope = /^(agency|delivery):/.test(rule.permission)
+        ? pkg.destinationAgencyId ? ({ type: 'AGENCY', id: pkg.destinationAgencyId } as const) : undefined
+        : ({ type: 'WAREHOUSE', id: pkg.originWarehouseId } as const);
+      if (!auth.permissions.can(rule.permission, scope)) {
         throw AppException.forbidden('FORBIDDEN', 'Permission insuffisante');
       }
     }
@@ -223,7 +242,7 @@ export class PackagesService {
         actorUserId: options.actor.userId,
         reason: reason ?? null,
         visibility: options.visibility ?? 'PUBLIC',
-        locationLabel: pkg.warehouse.city,
+        locationLabel: options.locationLabel === undefined ? pkg.warehouse.city : options.locationLabel,
         data: ({ ...(options.data ?? {}), ...(enteringHold ? { holdReasonCode } : {}) } as Prisma.InputJsonValue),
         occurredAt: now,
       },
@@ -305,13 +324,13 @@ export class PackagesService {
     });
   }
 
-  private ambiguous(candidates: PackageWithRelations[]): AppException {
+  ambiguous(candidates: PackageWithRelations[]): AppException {
     return new AppException(409, 'AMBIGUOUS_MATCH', 'Plusieurs colis attendus correspondent : choisissez-en un (expectedPackageId)', {
       candidates: candidates.map((c) => ({ id: c.id, trackingNumber: c.trackingNumber, supplierTracking: c.supplierTracking, customerCode: c.customer?.customerCode ?? null, description: c.contentDescription })),
     });
   }
 
-  private async receiveExpected(tx: Tx, auth: AuthContext, expected: PackageWithRelations, warehouse: Warehouse, input: ReceivePackageInput, method: string, manual: boolean) {
+  async receiveExpected(tx: Tx, auth: AuthContext, expected: PackageWithRelations, warehouse: Warehouse, input: ReceivePackageInput, method: string, manual: boolean) {
     // L'entrepôt réel peut différer de celui que le client avait choisi
     if (expected.originWarehouseId !== warehouse.id) {
       await tx.package.update({
@@ -334,7 +353,7 @@ export class PackagesService {
     return { package: staffPackageDto(updated), match: { status: manual ? 'MATCHED_MANUAL' : 'MATCHED_AUTO', method } };
   }
 
-  private async createReceived(tx: Tx, auth: AuthContext, warehouse: Warehouse, customer: Customer | null, input: ReceivePackageInput, supplier: string | null) {
+  async createReceived(tx: Tx, auth: AuthContext, warehouse: Warehouse, customer: Customer | null, input: ReceivePackageInput, supplier: string | null) {
     const company = await tx.company.findUniqueOrThrow({ where: { id: auth.companyId }, select: { trackingPrefix: true } });
     const trackingNumber = await this.tracking.issue(tx, company.trackingPrefix);
     const delivery = customer
@@ -463,7 +482,9 @@ export class PackagesService {
         throw AppException.conflict('INVALID_STATE', "Un colis ne se pèse qu'après réception (statut reçu ou en vérification)");
       }
       if (!pkg.customerId) throw AppException.conflict('CUSTOMER_REQUIRED', "Identifiez le client avant de peser le colis");
-      if (!pkg.transportMode) throw AppException.conflict('TRANSPORT_MODE_REQUIRED', 'Le mode de transport doit être connu avant la pesée');
+      // Le mode connu (préalerte) ne se change pas ici ; il ne se renseigne que s'il manque
+      const mode = pkg.transportMode ?? input.transportMode;
+      if (!mode) throw AppException.conflict('TRANSPORT_MODE_REQUIRED', 'Le mode de transport doit être connu avant la pesée');
 
       let categoryId: string | null = null;
       if (input.categoryCode) {
@@ -481,7 +502,7 @@ export class PackagesService {
       }
 
       // Frais calculés à partir des MESURES RÉELLES et de la grille active (jamais inventés)
-      const card = await this.pricing.findActiveCard(tx, { transportMode: pkg.transportMode, originCountry: pkg.originCountry, destinationCountry: pkg.destinationCountry });
+      const card = await this.pricing.findActiveCard(tx, { transportMode: mode, originCountry: pkg.originCountry, destinationCountry: pkg.destinationCountry });
       let snapshot: Prisma.InputJsonValue | null = null;
       let pricingData: Prisma.PackageUncheckedUpdateInput = {};
       if (card) {
@@ -529,6 +550,7 @@ export class PackagesService {
           insured: input.insured,
           categoryId,
           registeredAt: new Date(),
+          transportMode: mode,
           pricingSnapshot: snapshot ?? Prisma.DbNull,
           ...(card ? { rateCardId: card.id } : {}),
           ...pricingData,

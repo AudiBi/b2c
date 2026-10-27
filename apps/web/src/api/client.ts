@@ -150,3 +150,14 @@ export async function apiUpload<T = unknown>(path: string, file: File): Promise<
   if (!response.ok) throw await toError(response);
   return (await response.json()) as T;
 }
+
+/** Télécharge un fichier protégé (manifeste…) : requête authentifiée, résultat en Blob. */
+export async function apiDownload(path: string): Promise<Blob> {
+  let response = await send(path, { method: 'GET', token: accessToken });
+  if (response.status === 401) {
+    if (await refreshSession()) response = await send(path, { method: 'GET', token: accessToken });
+    else notify(false);
+  }
+  if (!response.ok) throw await toError(response);
+  return response.blob();
+}

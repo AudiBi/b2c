@@ -221,6 +221,14 @@ export class AdminUsersService {
       where: { companyId_code: { companyId: PLATFORM_COMPANY_ID, code: assignment.roleCode } },
     });
     if (!role) throw new Error('Rôles système absents : exécuter npm run db:seed');
+    // La portée doit désigner un objet qui existe dans CETTE entreprise (la RLS cache ceux des autres)
+    if (assignment.scopeType === 'WAREHOUSE' || assignment.scopeType === 'AGENCY') {
+      const exists =
+        assignment.scopeType === 'WAREHOUSE'
+          ? await tx.warehouse.findUnique({ where: { id: assignment.scopeId ?? '' }, select: { id: true } })
+          : await tx.agency.findUnique({ where: { id: assignment.scopeId ?? '' }, select: { id: true } });
+      if (!exists) throw AppException.badRequest('SCOPE_NOT_FOUND', assignment.scopeType === 'WAREHOUSE' ? 'Entrepôt introuvable' : 'Agence introuvable');
+    }
     try {
       await tx.userRole.create({
         data: {

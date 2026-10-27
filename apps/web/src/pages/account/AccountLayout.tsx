@@ -27,6 +27,8 @@ export function AccountLayout() {
   }
 
   const isCustomer = user?.kind === 'CUSTOMER';
+  const can = (permission: string) => !!user?.permissions.includes(permission);
+  const isStaff = user?.kind === 'STAFF';
   return (
     <div className="container">
       <div className="account-layout">
@@ -58,6 +60,31 @@ export function AccountLayout() {
                   <LocNavLink page="accountProfile">{m.account.nav.profile}</LocNavLink>
                 </li>
               </>
+            ) : null}
+            {isStaff && can('package:receive') ? (
+              <li>
+                <LocNavLink page="accountStaffReception">{m.staff.nav.reception}</LocNavLink>
+              </li>
+            ) : null}
+            {isStaff && can('package:read') ? (
+              <li>
+                <LocNavLink page="accountStaffPackages">{m.staff.nav.packages}</LocNavLink>
+              </li>
+            ) : null}
+            {isStaff && can('warehouse:read') ? (
+              <li>
+                <LocNavLink page="accountStaffWarehouse">{m.staff.nav.warehouse}</LocNavLink>
+              </li>
+            ) : null}
+            {isStaff && can('shipment:read') ? (
+              <li>
+                <LocNavLink page="accountStaffShipments">{m.staff.nav.shipments}</LocNavLink>
+              </li>
+            ) : null}
+            {isStaff && can('agency:receive') ? (
+              <li>
+                <LocNavLink page="accountStaffAgency">{m.staff.nav.agency}</LocNavLink>
+              </li>
             ) : null}
             <li>
               <LocNavLink page="accountSecurity">{m.account.nav.security}</LocNavLink>

@@ -1,6 +1,6 @@
 # Intégrations externes
 
-Phases 3 à 5. Une intégration n'est dite **active** que si elle a été exercée avec un service réel.
+Phases 3 à 6. Une intégration n'est dite **active** que si elle a été exercée avec un service réel.
 
 | Intégration | État | Détail |
 |---|---|---|
@@ -13,5 +13,7 @@ Phases 3 à 5. Une intégration n'est dite **active** que si elle a été exerc�
 | SMS | ❌ non configuré | Aucun fournisseur choisi |
 | WhatsApp Business | ❌ non configuré | Aucun compte |
 | Paiement en ligne (cartes, mobile money) | ❌ non configuré | Aucun prestataire choisi ; l'interface `PaymentProvider` sera créée en phase 7 |
-| Transporteurs aériens / maritimes | ❌ non configuré | Aucun suivi automatique : les événements de lot seront saisis manuellement |
+| Transporteurs aériens / maritimes | ❌ non configuré | Aucun suivi automatique : départ et arrivée des lots sont **saisis par le personnel** (phase 6) ; aucune date prévue, aucune position |
+| Génération de PDF (manifestes) | ✅ active | Bibliothèque `pdfkit` (locale, sans service externe) ; tests : le document est un PDF valide, sans contrôle visuel automatisé |
+| Lecteur de codes-barres | ✅ par clavier | Un lecteur qui « tape » le code puis Entrée suffit (champ focalisé) ; testé par saisie simulée, **pas avec un lecteur matériel** ; pas de scan par caméra |
 | Sites marchands (Amazon, Walmart…) | ❌ aucune | Aucune intégration n'est prévue ni simulée |

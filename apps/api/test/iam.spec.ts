@@ -191,8 +191,19 @@ describe('Rôles, permissions et administration des utilisateurs', () => {
       expect(me.body.emailVerified).toBe(true);
     });
 
-    it("attribue une portée d'entrepôt et la restitue", async () => {
-      const warehouseId = uuidv7();
+    it("attribue une portée d'entrepôt et la restitue ; un entrepôt inexistant ou d'une autre entreprise est refusé", async () => {
+      const warehouse = await t.admin.warehouse.create({
+        data: { companyId: company.id, reference: `W${uniq('r').slice(0, 8).toUpperCase()}`, name: 'Entrepôt', country: 'US', city: 'Miami', addressLine: '1 rue', addressTemplate: ['{customerCode}'] },
+      });
+      const warehouseId = warehouse.id;
+      const unknown = await invite(adminToken, inviteBody({ roles: [{ roleCode: 'RECEPTION_AGENT', scopeType: 'WAREHOUSE', scopeId: uuidv7() }] }));
+      expect(unknown.status).toBe(400);
+      expect(unknown.body.error.code).toBe('SCOPE_NOT_FOUND');
+      const foreign = await t.admin.warehouse.create({
+        data: { companyId: other.id, reference: `W${uniq('f').slice(0, 8).toUpperCase()}`, name: 'Autre', country: 'US', city: 'Miami', addressLine: '1 rue', addressTemplate: ['{customerCode}'] },
+      });
+      const crossTenant = await invite(adminToken, inviteBody({ roles: [{ roleCode: 'RECEPTION_AGENT', scopeType: 'WAREHOUSE', scopeId: foreign.id }] }));
+      expect(crossTenant.body.error.code).toBe('SCOPE_NOT_FOUND');
       const body = inviteBody({ roles: [{ roleCode: 'RECEPTION_AGENT', scopeType: 'WAREHOUSE', scopeId: warehouseId }] });
       const res = await invite(adminToken, body);
       expect(res.status).toBe(201);

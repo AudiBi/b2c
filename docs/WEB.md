@@ -69,6 +69,16 @@ Derrière ce proxy, l'API doit avoir `TRUST_PROXY=true` (voir SECURITY.md). Le s
 - Les montants, poids et dates sont formatés par `src/lib/format.ts` (le créole se formate comme le français, faute de données de locale fiables). Les libellés des 17 statuts et des motifs de retenue sont dans les trois catalogues (un test vérifie qu'aucun statut n'en manque).
 - Tout ce qui concerne le **personnel** (réception, pesée…) n'a pas d'écran : voir [ROADMAP.md](ROADMAP.md).
 
+## Écrans du personnel (phase 6)
+
+Dans l'espace connecté (`/<langue>/account/staff/…`), le menu n'affiche que ce que les permissions de la personne permettent (le serveur contrôle chaque droit et sa portée : le menu n'est qu'une commodité).
+- **Réception** : champ de lecture focalisé en permanence, envoi par Entrée, historique de la session, résultat `Reçu` / `Déjà reçu` / `Non identifié`.
+- **Colis** : liste (statut, recherche, « sans client ») et fiche : identification, pesée (validation partagée avec l'API), changement de statut (seules les transitions que l'API générique accepte ; motif exigé), rangement, agence de retrait, note interne, photos, historique complet.
+- **Entrepôt** : inventaire par emplacement, création d'emplacements, file des anomalies.
+- **Lots** : création, chargement par lecture, départ / arrivée / douane / clôture / annulation **en deux temps**, colis laissés de côté nommés, manifeste CSV et PDF téléchargés avec la session.
+- **Agence** : réception par lecture, « prêt pour retrait ».
+Les textes sont dans les trois langues (créole à relire). Pas d'impression d'étiquettes ni de scan par caméra.
+
 ## Limites connues
 
 - **Poids du JavaScript** : environ 235 Ko compressés pour le fichier principal (React, React Router, zod, TanStack Query, les trois catalogues de textes). Le contenu s'affiche avant (pré-rendu) mais l'interactivité attend ce fichier. Pistes : charger seulement la langue courante, remplacer TanStack Query par un petit utilitaire, alléger zod côté navigateur.

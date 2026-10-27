@@ -30,6 +30,11 @@ export const paths = {
   accountReceiving: '/account/receiving-addresses',
   accountPrealerts: '/account/prealerts',
   accountPackages: '/account/packages',
+  accountStaffReception: '/account/staff/reception',
+  accountStaffPackages: '/account/staff/packages',
+  accountStaffWarehouse: '/account/staff/warehouse',
+  accountStaffShipments: '/account/staff/shipments',
+  accountStaffAgency: '/account/staff/agency',
   accountSecurity: '/account/security',
 } as const;
 

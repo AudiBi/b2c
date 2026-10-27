@@ -102,6 +102,8 @@ export const registerPackageSchema = z.strictObject({
   declaredValue: moneySchema.optional(),
   declaredCurrency: currencySchema.optional(),
   insured: z.boolean().default(false),
+  /** Seulement si le mode n'est pas encore connu (colis reçu sans préalerte). */
+  transportMode: z.enum(TRANSPORT_MODES).optional(),
 });
 export type RegisterPackageInput = z.infer<typeof registerPackageSchema>;
 

@@ -13,7 +13,7 @@ Légende : ☐ à faire · ◐ en cours · ☑ terminé et testé
 | 3 | Monorepo, Docker, auth, utilisateurs, rôles, tenancy + RLS, audit | ☑ 156 tests réussis ([TEST_PLAN.md](TEST_PLAN.md)) ; réserves ci-dessous |
 | 4 | Site public (17 pages) et portail client | ☑ 391 tests au total ; réserves ci-dessous |
 | 5 | Colis, préalertes, suivi, calculateur | ☑ 579 tests au total ; réserves ci-dessous |
-| 6 | Entrepôts, lots, manifestes, agences | ☐ |
+| 6 | Entrepôts, lots, manifestes, agences | ☑ 670 tests au total ; réserves ci-dessous |
 | 7 | Facturation, paiements, notifications | ☐ |
 | 8 | Livraisons, réclamations, tableaux de bord | ☐ |
 | 9 | Intégrations, tests de sécurité, tests de charge | ☐ |
@@ -99,6 +99,21 @@ Critère de sortie : tests verts exécutés, migration appliquée à une base vi
 | 6.4 | Propagation des événements de lot vers les colis | SHP-04 |
 | 6.5 | Agences, réception en agence | AGY-01, 02 |
 | 6.6 | Tests : parcours 3, 6, 11 ; scans concurrents | NFR-08 |
+
+**Réalisé en phase 6** : 6.1 à 6.6, **avec les écrans du personnel** (réserve de la phase 5 levée) :
+- **Entrepôt** : emplacements (zone, étagère, bac), mouvements en ajout seul (IN / MOVE / OUT), inventaire par emplacement (hors colis partis), file des anomalies (retenues ouvertes, colis sans client), réception **par scan** (numéro de suivi ou numéro du marchand ; relecture sans effet ; verrou consultatif : 6 lectures simultanées → 1 seul colis).
+- **Lots** : référence `<entrepôt>-<mode>-<AAAAMMJJ>-<n>` numérotée sans doublon ; chargement contrôlé (colis prêt, client, poids, dimensions, même mode, même entrepôt, même destination, **un seul lot à la fois** — index unique partiel) ; départ, arrivée, douane, clôture, annulation qui **propagent** le statut aux colis ; dates **réelles** seulement ; manifeste **CSV** (protégé contre l'injection de formules) et **PDF**.
+- **Agences** : administration, liste publique, affectation, réception par scan (refus si autre agence ou lot non arrivé), « prêt pour retrait », point de retrait montré au client et au suivi public (agence publique seulement).
+- **Droits** : portées entrepôt/agence respectées partout ; une portée doit désigner un entrepôt ou une agence existant de l'entreprise (réserve de sécurité levée).
+- **Site** : écrans « Réception », « Colis », « Entrepôt », « Lots », « Agence » (menu selon les droits), lecture par lecteur de codes-barres (le champ reprend le focus), téléchargement du manifeste.
+
+**Réserves de la phase 6 (reportées)** :
+- Les écrans du personnel sont **fonctionnels mais sobres** : pas de tableau de bord opérationnel, pas d'impression d'étiquettes, pas de scan par caméra (lecteur de codes-barres ou saisie seulement), pas d'écran d'administration des agences ni d'identification avec fusion dans le colis attendu (API disponible).
+- **Aucune intégration de transporteur** : départ et arrivée sont saisis par le personnel (SHP-05). Pas de date d'arrivée prévue ni de position.
+- Le transporteur est un **texte libre** (pas de table des transporteurs) ; pas de zones de livraison ni de tournées (phase 8).
+- La notification « prêt pour retrait » n'est pas envoyée (phase 7) : le client la voit en se connectant ou par le suivi.
+- Le manifeste n'est pas conservé (généré à la demande, action journalisée par les téléchargements de l'API) ; PDF sobre (police standard, pas de logo).
+- Remise au client (OTP, signature, preuve) : phase 8 ; `DELIVERED` reste hors de portée.
 
 ### Phase 7 : finance et notifications
 | # | Tâche | Exigences |

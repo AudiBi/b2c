@@ -232,7 +232,7 @@ export class PortalPackagesService {
           ...(query.cursor ? { id: { lt: query.cursor } } : {}),
           ...(q ? { OR: [{ trackingNumber: { contains: q } }, { supplierTracking: { contains: q } }] } : {}),
         },
-        include: { warehouse: true, customer: { include: { user: { select: { firstName: true, lastName: true, businessName: true } } } } },
+        include: { warehouse: true, agency: true, customer: { include: { user: { select: { firstName: true, lastName: true, businessName: true } } } } },
         orderBy: { id: 'desc' },
         take: query.limit + 1,
       });
@@ -247,7 +247,7 @@ export class PortalPackagesService {
       // Le filtre sur le client est dans la requête : le colis d'un autre client n'est pas distinguable d'un colis inexistant
       const pkg = await tx.package.findFirst({
         where: { id: packageId, customerId },
-        include: { warehouse: true, customer: { include: { user: { select: { firstName: true, lastName: true, businessName: true } } } } },
+        include: { warehouse: true, agency: true, customer: { include: { user: { select: { firstName: true, lastName: true, businessName: true } } } } },
       });
       if (!pkg) throw AppException.notFound('PACKAGE_NOT_FOUND', 'Colis introuvable');
       const events = await tx.packageEvent.findMany({ where: { packageId, visibility: 'PUBLIC' }, orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }] });

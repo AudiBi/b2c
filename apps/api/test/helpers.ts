@@ -294,3 +294,49 @@ export const fixtures = {
   pdf: () => Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n'),
   pdfWithScript: () => Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog /OpenAction << /S /JavaScript /JS (app.alert(1)) >> >>\nendobj\n%%EOF\n'),
 };
+
+// ---------------------------------------------------------------------------------------------
+// Aides pour la logistique (phase 6)
+// ---------------------------------------------------------------------------------------------
+
+export async function makeAgency(t: TestApp, token: string, overrides: Record<string, unknown> = {}) {
+  const res = await api(t)
+    .post('/v1/admin/agencies')
+    .set(bearer(token))
+    .send({
+      code: `A${randomBytes(3).toString('hex').toUpperCase()}`,
+      name: 'Agence de test',
+      country: 'ht',
+      city: 'Port-au-Prince',
+      addressLine: '1 rue de Test',
+      phone: '+50937000000',
+      hours: 'Lun-Ven 8h-17h',
+      ...overrides,
+    });
+  if (res.status !== 201) throw new Error(`Agence refusée : ${JSON.stringify(res.body)}`);
+  return res.body as { id: string; code: string; name: string; city: string };
+}
+
+/**
+ * Colis prêt pour expédition par le chemin réel : préalerte → réception → pesée → autorisation.
+ * Renvoie aussi le numéro du marchand (scannable).
+ */
+export async function readyPackage(
+  t: TestApp,
+  world: { token: string },
+  customer: CustomerSession,
+  warehouseId: string,
+  options: { transportMode?: 'AIR' | 'SEA'; description?: string } = {},
+) {
+  const prealert = await makePrealert(t, customer, warehouseId, { transportMode: options.transportMode ?? 'AIR' });
+  const received = await api(t).post('/v1/admin/packages/receive').set(bearer(world.token)).send({ warehouseId, expectedPackageId: prealert.package.id });
+  if (received.status !== 200) throw new Error(`Réception refusée : ${JSON.stringify(received.body)}`);
+  const weighed = await api(t)
+    .post(`/v1/admin/packages/${prealert.package.id}/register`)
+    .set(bearer(world.token))
+    .send({ weight: { value: 2, unit: 'KG' }, dimensions: { length: 30, width: 20, height: 10, unit: 'CM' }, declaredValue: 100, ...(options.description ? { contentDescription: options.description } : {}) });
+  if (weighed.status !== 200) throw new Error(`Pesée refusée : ${JSON.stringify(weighed.body)}`);
+  const ready = await api(t).post(`/v1/admin/packages/${prealert.package.id}/transitions`).set(bearer(world.token)).send({ to: 'READY_TO_SHIP', reason: 'Prépayé (test)' });
+  if (ready.status !== 200) throw new Error(`Autorisation refusée : ${JSON.stringify(ready.body)}`);
+  return { packageId: prealert.package.id, trackingNumber: prealert.package.trackingNumber, supplier: prealert.supplierTracking };
+}

@@ -124,8 +124,33 @@ export interface TrackingResult {
   origin: { country: string; city: string };
   destination: { country: string; city: string | null };
   estimatedDelivery: string | null;
+  pickup: PickupPoint | null;
   events: TrackingEvent[];
 }
 
 export const trackPackage = (number: string, signal?: AbortSignal) =>
   api<TrackingResult>(`/v1/public/tracking/${encodeURIComponent(number.trim())}`, { auth: false, signal });
+
+export interface PublicAgency {
+  name: string;
+  kind: 'AGENCY' | 'PICKUP_POINT';
+  country: string;
+  city: string;
+  addressLine: string;
+  phone: string | null;
+  hours: string | null;
+}
+
+export const usePublicAgencies = () =>
+  useQuery({ queryKey: ['public', 'agencies'], queryFn: () => api<{ items: PublicAgency[] }>(`${base}/agencies`, { auth: false }), staleTime: 60_000, retry: 1 });
+
+export interface PickupPoint {
+  name: string;
+  kind: 'AGENCY' | 'PICKUP_POINT';
+  city: string;
+  country: string;
+  addressLine: string;
+  phone: string | null;
+  hours: string | null;
+  ready: boolean;
+}

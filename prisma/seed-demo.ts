@@ -3,7 +3,7 @@
  * Tout est étiqueté DEMO (nom de l'entreprise, prénoms) et utilise des adresses en @demo.invalid.
  * Le mot de passe commun vient de DEMO_PASSWORD : aucun mot de passe n'est écrit dans le dépôt.
  * Un entrepôt, une catégorie et une grille tarifaire FICTIFS sont ajoutés pour que le calculateur et les préalertes fonctionnent en démonstration.
- * Les rôles liés à un entrepôt ou une agence restent ignorés (portée par entrepôt : création par l'administrateur).
+ * Une agence fictive et trois comptes à portée limitée (agent de réception et responsable d'entrepôt de l'entrepôt DEMO, responsable de l'agence DEMO) sont aussi créés.
  * Usage : DEMO_PASSWORD=... npm run db:seed:demo
  */
 import { existsSync } from 'node:fs';
@@ -133,8 +133,44 @@ async function main(): Promise<void> {
       await prisma.rateCard.update({ where: { id: card.id }, data: { status: 'ACTIVE' } });
     }
 
+    // Agence fictive et comptes à portée limitée (entrepôt ou agence) : ils n'existent qu'une fois ces objets créés
+    const agency = await prisma.agency.upsert({
+      where: { companyId_code: { companyId: company.id, code: 'DEMO-PAP' } },
+      update: {},
+      create: {
+        companyId: company.id,
+        code: 'DEMO-PAP',
+        name: 'DEMO : agence fictive',
+        country: 'HT',
+        city: 'Port-au-Prince',
+        addressLine: 'Adresse fictive : 1 rue de la Démonstration',
+        hours: 'DEMO : horaires fictifs',
+      },
+    });
+    const demoWarehouse = await prisma.warehouse.findUniqueOrThrow({ where: { companyId_reference: { companyId: company.id, reference: 'DEMO-MIA' } } });
+    const scoped: [string, 'WAREHOUSE' | 'AGENCY', string][] = [
+      ['RECEPTION_AGENT', 'WAREHOUSE', demoWarehouse.id],
+      ['WAREHOUSE_MANAGER', 'WAREHOUSE', demoWarehouse.id],
+      ['AGENCY_MANAGER', 'AGENCY', agency.id],
+    ];
+    let createdScoped = 0;
+    for (const [code, scopeType, scopeId] of scoped) {
+      const definition = ROLE_DEFINITIONS.find((d) => d.code === code)!;
+      const email = `${code.toLowerCase().replace(/_/g, '-')}@demo.invalid`;
+      if (await prisma.user.findUnique({ where: { companyId_email: { companyId: company.id, email } } })) continue;
+      const role = await prisma.role.findUniqueOrThrow({ where: { companyId_code: { companyId: PLATFORM_COMPANY_ID, code } } });
+      await prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: { companyId: company.id, kind: 'STAFF', email, firstName: 'DEMO', lastName: definition.name, passwordHash, passwordChangedAt: new Date(), status: 'ACTIVE', emailVerifiedAt: new Date() },
+        });
+        await tx.userRole.create({ data: { companyId: company.id, userId: user.id, roleId: role.id, scopeType, scopeId, scopeKey: `${scopeType}:${scopeId}` } });
+      });
+      createdScoped += 1;
+    }
+    created += createdScoped;
+    skipped.length = 0;
+
     console.log(`Entreprise « demo » prête ; ${created} compte(s) de démonstration créé(s).`);
-    if (skipped.length > 0) console.log(`Rôles ignorés (portée entrepôt/agence, phase 6) : ${skipped.join(', ')}`);
   } finally {
     await prisma.$disconnect();
   }

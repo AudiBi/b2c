@@ -9,3 +9,5 @@ export * from './schemas/pricing';
 export * from './address-template';
 export * from './package-status';
 export * from './tracking-number';
+export * from './shipment-status';
+export * from './schemas/logistics';

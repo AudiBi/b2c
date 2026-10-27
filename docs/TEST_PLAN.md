@@ -1,6 +1,6 @@
 # Plan de test
 
-Phases 3 à 5. Ce document sera étendu à chaque phase. **Seuls les résultats d'exécutions réelles y figurent.**
+Phases 3 à 6. Ce document sera étendu à chaque phase. **Seuls les résultats d'exécutions réelles y figurent.**
 
 ## Exécuter
 
@@ -20,7 +20,7 @@ Exécutés le 2026-10-27, Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chro
 
 | Suite | Tests | Résultat |
 |---|---|---|
-| `packages/shared` (catalogue, `PermissionSet`, schémas, modèle d'adresse, **machine d'états, numéro de suivi**) | 55 | ✅ |
+| `packages/shared` (catalogue, `PermissionSet`, schémas, machine d'états des colis, **des lots**, numéro de suivi) | 66 | ✅ |
 | API `rls.spec.ts` (isolation au niveau de la base) | 18 | ✅ |
 | API `auth.spec.ts` | 40 | ✅ |
 | API `iam.spec.ts` (politique des routes, matrice des rôles, invitations, plateforme) | 47 | ✅ |
@@ -29,16 +29,27 @@ Exécutés le 2026-10-27, Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chro
 | API `pricing.spec.ts` (grilles : brouillon/activation/immuabilité/chevauchement, catégories, calculateur public, estimations client) | 29 | ✅ |
 | API `packages.spec.ts` (préalertes, rapprochement, portées, identification/fusion, pesée, machine d'états, déclencheurs, regroupement, recherche, suivi public) | 54 | ✅ |
 | API `files.spec.ts` (contenu réel, taille, PDF actif, accès, liens signés, suppression, fusion) | 20 | ✅ |
+| API `warehouse-ops.spec.ts` (emplacements, mouvements, inventaire, anomalies, scan, agences, isolation) | 24 | ✅ |
+| API `shipments.spec.ts` (création, droits, chargement, départ/arrivée/douane/clôture/annulation, agence, manifestes CSV/PDF, base) | 33 | ✅ |
 | API `rate-limit.spec.ts` | 7 | ✅ |
 | API `infra.spec.ts` (compteurs, idempotence) | 9 | ✅ |
 | API `app.spec.ts` (santé, en-têtes, CORS, erreurs, configuration) | 14 | ✅ |
-| Site, unitaires (6 fichiers : `i18n`, `api-client`, `forms`, `prerender`, `format`, `phase5`) | 130 | ✅ |
-| Site, recette navigateur (`public-pages`, `customer-journey`, `parcels`) | 82 | ✅ |
-| **Total** | **579** | **579 réussis, 0 échec** |
+| Site, unitaires (7 fichiers : + `phase6`) | 149 | ✅ |
+| Site, recette navigateur (+ `logistics`) | 86 | ✅ |
+| **Total** | **670** | **670 réussis, 0 échec** |
 
 La recette navigateur couvre notamment : les **17 pages publiques × 3 langues** (51 pages) avec contrôle automatique d'accessibilité WCAG 2.1 A/AA (axe) sur ordinateur **et** sur téléphone (375 px), absence de défilement horizontal, absence d'erreur console (donc de violation de la CSP) ; le HTML pré-rendu sans JavaScript (titre, description, `canonical`, `hreflang`) ; le sitemap et robots.txt ; la page 404 avec statut 404 ; le sélecteur de langue ; la navigation au clavier (lien d'évitement) ; et tout le parcours client : inscription → e-mail réel → confirmation → connexion → code client → adresses de réception → profil → adresses → bénéficiaires → mot de passe → déconnexion, redirection vers la page demandée, redirection externe refusée, mot de passe oublié, jeton à usage unique, inscription en créole.
 
 La recette de la phase 5 ajoute : calculateur (poids réel, volumétrique, assurance, détail, validation FR/EN, téléphone 375 px, axe) ; parcours complet **préalerte → facture jointe (lien signé vérifié) → réception rapprochée → pesée → frais provisoires → suivi public sans connexion (aucune donnée personnelle dans le texte de la page) → retenue en douane** ; doublon de numéro marchand ; modification et annulation en deux temps ; un client ne peut pas ouvrir le colis d'un autre ; suivi en créole.
+
+La recette de la phase 6 ajoute le parcours complet **préalerte → lecture du code en entrepôt (reçu, relu, inconnu) → pesée → autorisation → rangement → lot (chargement refusé puis accepté) → manifestes CSV et PDF réellement téléchargés → départ → arrivée → clôture refusée → réception en agence → prêt pour retrait → point de retrait chez le client et dans le suivi public**, avec contrôle d'accessibilité sur chaque écran du personnel, l'absence d'accès d'un client aux écrans du personnel (interface et API), la liste publique des agences sur téléphone, et les écrans en créole et en anglais.
+
+### Défauts réels détectés par ces tests pendant la phase 6 (corrigés)
+1. **Colis reçu sans préalerte impossible à peser** : aucun moyen d'en fixer le mode de transport (`register` accepte maintenant `transportMode` quand il manque).
+2. **Droits d'agence évalués sur le mauvais objet** : la table de transitions contrôlait toute permission sur l'entrepôt d'origine ; les permissions `agency:*` se vérifient maintenant sur l'agence de destination.
+3. **Portées de rôle sans contrôle** : un rôle pouvait être attribué pour un entrepôt ou une agence inexistant ou d'une autre entreprise (`SCOPE_NOT_FOUND`).
+4. **Noms accessibles en double** (formulaire de lecture et formulaire de recherche portant le même nom que leur champ) : relevé par les tests d'interface, corrigé sur les écrans du personnel **et** « Mes colis » (phase 5).
+5. Test d'interface instable au premier rendu du module chargé à la demande (délai porté à 5 s).
 
 ### Défauts réels détectés par ces tests pendant la phase 5 (corrigés)
 1. **Modification d'une catégorie ou d'une préalerte qui réinitialisait des champs** : les schémas « partiels » gardaient les valeurs par défaut (`restricted: false`, devise `USD`) ; un renommage aurait levé la restriction d'une catégorie. Schémas de modification réécrits sans défauts.
@@ -63,7 +74,8 @@ La recette de la phase 5 ajoute : calculateur (poids réel, volumétrique, assur
 |---|---|---|
 | 1 | Un client crée son compte et se connecte | ✅ API et navigateur |
 | 2-5, 7 | Préalerte, réception et rapprochement, pesée, calculateur, statuts de colis | ✅ API et navigateur (phase 5) |
-| 6, 8-12 | Lot, notifications, paiement, agence, livraison… | ⏳ phases 6 à 8 |
+| 6 | Lot de transport, manifeste, propagation aux colis | ✅ API et navigateur (phase 6) |
+| 8-12 | Notifications, paiement, remise, réclamations… | ⏳ phases 7 et 8 |
 | 13 | Un client ne peut pas consulter les données d'un autre client | ✅ pour ce qui existe : utilisateurs, journal d'audit, adresses, bénéficiaires, adresses de réception, entrepôts, **préalertes, colis, pièces jointes, estimations** (API et navigateur), base entière via RLS ; à rejouer sur factures |
 | 14 | Un employé ne peut pas faire une opération interdite à son rôle | ✅ matrice sur toutes les routes existantes, portées d'entrepôt, autorisation avant validation, anti-escalade, dernier administrateur |
 | 15 | Erreurs de paiement ou de notification traitées | ◐ l'échec d'envoi d'e-mail est journalisé sans casser l'action (constaté, non couvert par test automatisé) ; paiements en phase 7 |
@@ -84,7 +96,8 @@ La recette de la phase 5 ajoute : calculateur (poids réel, volumétrique, assur
 - `seed-demo` exécuté sur la base de test et refusé en production.
 
 ## Limites des tests actuels
-- **Phase 5** : les opérations du personnel (réception, pesée…) sont testées par l'API, pas par une interface (elle n'existe pas). Aucun antivirus ni stockage S3 n'a été exercé. Les tests de transport, d'agence et de livraison attendent leurs modules. Charge et énumération des numéros de suivi : phase 9.
+- **Phase 6** : le PDF du manifeste est vérifié (document valide, taille), pas visuellement ; le lecteur de codes-barres est simulé par la saisie ; aucun test de charge sur les scans (phase 9) ; les écrans du personnel ne sont testés que dans Chromium.
+- **Phase 5 (levée en phase 6 pour les écrans)** : les opérations du personnel (réception, pesée…) sont testées par l'API, pas par une interface (elle n'existe pas). Aucun antivirus ni stockage S3 n'a été exercé. Les tests de transport, d'agence et de livraison attendent leurs modules. Charge et énumération des numéros de suivi : phase 9.
 - **L'accessibilité automatisée (axe) ne détecte qu'une partie des problèmes.** Aucun test avec lecteur d'écran ni audit manuel n'a eu lieu : ne pas annoncer de conformité WCAG avant cet audit.
 - Navigateurs testés : Chromium (et Edge pour le repli). Ni Firefox ni Safari. Pas de test sur un vrai téléphone ni sur un réseau lent.
 - **Les traductions créoles n'ont pas été relues par un locuteur natif** ; les tests vérifient la structure, pas la qualité de la langue.

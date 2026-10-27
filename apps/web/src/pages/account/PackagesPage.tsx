@@ -31,7 +31,7 @@ export function PackagesPage() {
       <h1 style={{ fontSize: '1.9rem' }}>{p.title}</h1>
       <p className="lead">{p.lead}</p>
 
-      <form className="form card" onSubmit={search} role="search" aria-label={p.search}>
+      <form className="form card" onSubmit={search} role="search">
         <div className="form-grid form-grid-2">
           <TextField name="q" label={p.search} optional value={text} onChange={setText} autoCapitalize="characters" spellCheck={false} />
           <SelectField
@@ -139,6 +139,32 @@ export function PackageDetailPage() {
               ) : null}
             </dl>
           </div>
+
+          {data.pickup ? (
+            <div className="card" data-testid="pickup-card">
+              <h2 style={{ fontSize: '1.1rem' }}>{d.pickupTitle}</h2>
+              <Alert tone={data.pickup.ready ? 'success' : 'info'}>{data.pickup.ready ? d.pickupReady : d.pickupHere}</Alert>
+              <p style={{ margin: 0 }}>
+                <strong>{data.pickup.name}</strong>
+                <br />
+                {data.pickup.addressLine}, {data.pickup.city}
+              </p>
+              <dl className="kv">
+                {data.pickup.hours ? (
+                  <>
+                    <dt>{d.pickupHours}</dt>
+                    <dd>{data.pickup.hours}</dd>
+                  </>
+                ) : null}
+                {data.pickup.phone ? (
+                  <>
+                    <dt>{d.pickupPhone}</dt>
+                    <dd>{data.pickup.phone}</dd>
+                  </>
+                ) : null}
+              </dl>
+            </div>
+          ) : null}
 
           <div className="card">
             <h2 style={{ fontSize: '1.1rem' }}>{d.measures}</h2>

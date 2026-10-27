@@ -3356,6 +3356,13 @@
                   "insured": {
                     "default": false,
                     "type": "boolean"
+                  },
+                  "transportMode": {
+                    "type": "string",
+                    "enum": [
+                      "AIR",
+                      "SEA"
+                    ]
                   }
                 },
                 "required": [
@@ -4247,6 +4254,1223 @@
         "summary": "Supprime une pièce jointe",
         "tags": [
           "Fichiers"
+        ]
+      }
+    },
+    "/v1/admin/warehouses/{id}/locations": {
+      "get": {
+        "operationId": "WarehouseOpsController_locations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Emplacements d'un entrepôt",
+        "tags": [
+          "Entrepôt (personnel)"
+        ],
+        "x-permissions": [
+          "warehouse:read"
+        ]
+      },
+      "post": {
+        "operationId": "WarehouseOpsController_createLocation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9][A-Z0-9_-]{0,19}$"
+                  },
+                  "kind": {
+                    "default": "SHELF",
+                    "type": "string",
+                    "enum": [
+                      "ZONE",
+                      "SHELF",
+                      "BIN"
+                    ]
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crée un emplacement (zone, étagère, bac)",
+        "tags": [
+          "Entrepôt (personnel)"
+        ],
+        "x-permissions": [
+          "warehouse:manage"
+        ]
+      }
+    },
+    "/v1/admin/locations/{id}": {
+      "patch": {
+        "operationId": "WarehouseOpsController_updateLocation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "ZONE",
+                      "SHELF",
+                      "BIN"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "INACTIVE"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifie ou désactive un emplacement (refusé s’il contient des colis)",
+        "tags": [
+          "Entrepôt (personnel)"
+        ],
+        "x-permissions": [
+          "warehouse:manage"
+        ]
+      }
+    },
+    "/v1/admin/warehouses/{id}/inventory": {
+      "get": {
+        "operationId": "WarehouseOpsController_inventory",
+        "parameters": [
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Inventaire des colis présents (par emplacement), hors colis déjà partis",
+        "tags": [
+          "Entrepôt (personnel)"
+        ],
+        "x-permissions": [
+          "warehouse:read"
+        ]
+      }
+    },
+    "/v1/admin/anomalies": {
+      "get": {
+        "operationId": "WarehouseOpsController_anomalies",
+        "parameters": [
+          {
+            "name": "warehouseId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "File de traitement : retenues ouvertes et colis sans client",
+        "tags": [
+          "Entrepôt (personnel)"
+        ],
+        "x-permissions": [
+          "package:read"
+        ]
+      }
+    },
+    "/v1/admin/packages/{id}/move": {
+      "post": {
+        "operationId": "WarehouseOpsController_move",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "locationId": {
+                    "nullable": true,
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "locationId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Range, déplace ou sort un colis de son emplacement (mouvement journalisé)",
+        "tags": [
+          "Entrepôt (personnel)"
+        ],
+        "x-permissions": [
+          "warehouse:move"
+        ]
+      }
+    },
+    "/v1/admin/packages/{id}/movements": {
+      "get": {
+        "operationId": "WarehouseOpsController_movements",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Historique des mouvements d'un colis en entrepôt",
+        "tags": [
+          "Entrepôt (personnel)"
+        ],
+        "x-permissions": [
+          "package:read"
+        ]
+      }
+    },
+    "/v1/admin/scan/receive": {
+      "post": {
+        "description": "Résultat : RECEIVED (colis attendu rapproché), ALREADY_RECEIVED (relecture sans effet) ou UNIDENTIFIED (nouveau colis sans client). Deux lectures simultanées du même code ne créent jamais deux colis.",
+        "operationId": "WarehouseOpsController_scan",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "warehouseId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 80,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]*$"
+                  },
+                  "transportMode": {
+                    "type": "string",
+                    "enum": [
+                      "AIR",
+                      "SEA"
+                    ]
+                  }
+                },
+                "required": [
+                  "warehouseId",
+                  "code"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Réception par scan (numéro de suivi ou numéro du marchand)",
+        "tags": [
+          "Entrepôt (personnel)"
+        ],
+        "x-permissions": [
+          "package:receive"
+        ]
+      }
+    },
+    "/v1/admin/agencies": {
+      "get": {
+        "operationId": "AgenciesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Agences (limitées à votre périmètre)",
+        "tags": [
+          "Agences"
+        ],
+        "x-permissions": [
+          "agency:read"
+        ]
+      },
+      "post": {
+        "operationId": "AgenciesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9][A-Z0-9-]{1,19}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "kind": {
+                    "default": "AGENCY",
+                    "type": "string",
+                    "enum": [
+                      "AGENCY",
+                      "PICKUP_POINT"
+                    ]
+                  },
+                  "country": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$"
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "addressLine": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+[1-9]\\d{7,14}$"
+                  },
+                  "hours": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "publicVisible": {
+                    "default": true,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "code",
+                  "name",
+                  "country",
+                  "city",
+                  "addressLine"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crée une agence ou un point de retrait",
+        "tags": [
+          "Agences"
+        ],
+        "x-permissions": [
+          "agency:manage"
+        ]
+      }
+    },
+    "/v1/admin/agencies/{id}": {
+      "patch": {
+        "operationId": "AgenciesController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "AGENCY",
+                      "PICKUP_POINT"
+                    ]
+                  },
+                  "country": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$"
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "addressLine": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "phone": {
+                    "nullable": true,
+                    "type": "string",
+                    "pattern": "^\\+[1-9]\\d{7,14}$"
+                  },
+                  "hours": {
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "publicVisible": {
+                    "type": "boolean"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "INACTIVE"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifie une agence",
+        "tags": [
+          "Agences"
+        ],
+        "x-permissions": [
+          "agency:manage"
+        ]
+      }
+    },
+    "/v1/admin/agencies/{id}/packages": {
+      "get": {
+        "operationId": "AgenciesController_inventory",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Colis présents dans l'agence et colis attendus",
+        "tags": [
+          "Agences"
+        ],
+        "x-permissions": [
+          "agency:read"
+        ]
+      }
+    },
+    "/v1/admin/agencies/{id}/receive": {
+      "post": {
+        "description": "RECEIVED ou ALREADY_RECEIVED. 409 WRONG_AGENCY si le colis est destiné à une autre agence, 409 NOT_ARRIVED si son lot n'est pas arrivé.",
+        "operationId": "AgenciesController_receive",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 80,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]*$"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Réception en agence par scan",
+        "tags": [
+          "Agences"
+        ],
+        "x-permissions": [
+          "agency:receive"
+        ]
+      }
+    },
+    "/v1/admin/agencies/{id}/packages/{packageId}/ready-for-pickup": {
+      "post": {
+        "operationId": "AgenciesController_ready",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Marque le colis « prêt pour retrait »",
+        "tags": [
+          "Agences"
+        ],
+        "x-permissions": [
+          "agency:receive"
+        ]
+      }
+    },
+    "/v1/admin/packages/{id}/agency": {
+      "post": {
+        "operationId": "AgenciesController_assign",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agencyId": {
+                    "nullable": true,
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "agencyId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Affecte (ou retire) l'agence de retrait d'un colis",
+        "tags": [
+          "Agences"
+        ],
+        "x-permissions": [
+          "package:update"
+        ]
+      }
+    },
+    "/v1/public/companies/{slug}/agencies": {
+      "get": {
+        "operationId": "PublicAgenciesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Agences et points de retrait actifs et visibles",
+        "tags": [
+          "Public"
+        ]
+      }
+    },
+    "/v1/admin/shipments": {
+      "get": {
+        "operationId": "ShipmentsController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "DISPATCHED",
+                "ARRIVED",
+                "IN_CUSTOMS",
+                "CLOSED",
+                "CANCELLED"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lots (limités aux entrepôts de votre périmètre)",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:read"
+        ]
+      },
+      "post": {
+        "description": "Référence <entrepôt>-<AIR|SEA>-<AAAAMMJJ>-<n>. Aucune date prévue ni position : seules les dates réelles de départ et d’arrivée sont enregistrées.",
+        "operationId": "ShipmentsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transportMode": {
+                    "type": "string",
+                    "enum": [
+                      "AIR",
+                      "SEA"
+                    ]
+                  },
+                  "originWarehouseId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "destinationCountry": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$"
+                  },
+                  "destinationCity": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "destinationAgencyId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "carrierName": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "transportRef": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "transportMode",
+                  "originWarehouseId",
+                  "destinationCountry"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crée un lot ouvert",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:manage"
+        ]
+      }
+    },
+    "/v1/admin/shipments/{id}": {
+      "get": {
+        "operationId": "ShipmentsController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Détail : colis chargés, totaux, historique",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:read"
+        ]
+      },
+      "patch": {
+        "operationId": "ShipmentsController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "destinationCity": {
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "destinationAgencyId": {
+                    "nullable": true,
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "carrierName": {
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "transportRef": {
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "notes": {
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifie un lot ouvert",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:manage"
+        ]
+      }
+    },
+    "/v1/admin/shipments/{id}/packages": {
+      "post": {
+        "description": "Colis « prêt pour expédition », même mode, même entrepôt, même destination, dans un seul lot à la fois. LOADED ou ALREADY_LOADED.",
+        "operationId": "ShipmentsController_load",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 80,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]*$"
+                  },
+                  "packageId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Charge un colis (par code scanné ou identifiant)",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:manage"
+        ]
+      }
+    },
+    "/v1/admin/shipments/{id}/packages/{packageId}": {
+      "delete": {
+        "operationId": "ShipmentsController_unload",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retire un colis d’un lot ouvert",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:manage"
+        ]
+      }
+    },
+    "/v1/admin/shipments/{id}/dispatch": {
+      "post": {
+        "operationId": "ShipmentsController_dispatch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Départ du lot : les colis passent « en transit »",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:dispatch"
+        ]
+      }
+    },
+    "/v1/admin/shipments/{id}/arrive": {
+      "post": {
+        "operationId": "ShipmentsController_arrive",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Arrivée du lot : les colis passent « arrivés dans le pays de destination »",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:receive"
+        ]
+      }
+    },
+    "/v1/admin/shipments/{id}/customs": {
+      "post": {
+        "operationId": "ShipmentsController_customs",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lot en douane : les colis passent « en cours de traitement douanier »",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:receive"
+        ]
+      }
+    },
+    "/v1/admin/shipments/{id}/close": {
+      "post": {
+        "operationId": "ShipmentsController_close",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Clôture le lot (refusée tant que des colis ne sont pas reçus en agence)",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:manage"
+        ]
+      }
+    },
+    "/v1/admin/shipments/{id}/cancel": {
+      "post": {
+        "operationId": "ShipmentsController_cancel",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Annule un lot ouvert (les colis redeviennent libres)",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:manage"
+        ]
+      }
+    },
+    "/v1/admin/shipments/{id}/manifest.csv": {
+      "get": {
+        "operationId": "ShipmentsController_csv",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Manifeste CSV (UTF-8, cellules protégées contre l’injection de formules)",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:read"
+        ]
+      }
+    },
+    "/v1/admin/shipments/{id}/manifest.pdf": {
+      "get": {
+        "operationId": "ShipmentsController_pdf",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Manifeste PDF imprimable",
+        "tags": [
+          "Lots de transport"
+        ],
+        "x-permissions": [
+          "shipment:read"
         ]
       }
     },

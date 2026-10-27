@@ -10,14 +10,16 @@ Plateforme multi-entreprises de gestion de colis, d'expéditions aériennes et m
 | 3 | Monorepo, Docker, Prisma, multi-entreprises (RLS), authentification, rôles, audit | ☑ testée |
 | 4 | Site public (17 pages, FR/HT/EN), espace client, code client, adresses de réception | ☑ testée |
 | **5** | **Colis, préalertes, suivi public, calculateur de frais, pièces jointes** | **☑ implémentée et testée (579 tests au total)** |
-| 6-10 | Entrepôts (écrans), lots, finance, livraison, intégrations, déploiement | ☐ non commencées |
+| **6** | **Entrepôts (scan, emplacements, inventaire), lots de transport et manifestes, agences, écrans du personnel** | **☑ implémentée et testée (670 tests au total)** |
+| 7-10 | Finance, notifications, livraison, intégrations, déploiement | ☐ non commencées |
 
 Ce qui existe :
 - une **API REST** (`/v1`) : inscription/connexion/sessions, 12 rôles et 69 permissions, administration des utilisateurs, création des entreprises, journal d'audit immuable, isolement des entreprises par Row-Level Security PostgreSQL ; profil client avec **code client unique**, adresses, bénéficiaires, entrepôts et **adresses de réception personnalisées** ;
 - un **site web** (`apps/web`) : 17 pages publiques en français, créole haïtien et anglais (pré-rendues pour le référencement), inscription, connexion, mot de passe oublié, et un espace client. Depuis la phase 5 : **calculateur de frais** (grille tarifaire de l'entreprise, jamais de prix inventé), **suivi public par numéro**, **préalertes** avec facture jointe et **Mes colis** (historique, frais provisoires) ;
+- **personnel** (phase 6) : réception par scan, pesée, rangement, inventaire, anomalies, **lots de transport** (chargement contrôlé, départ/arrivée qui font avancer les colis, manifeste CSV et PDF), **agences** (réception par scan, prêt pour retrait) ;
 - côté API : **colis** à 17 statuts et machine d'états contrôlée (aussi en base), réception avec rapprochement automatique/manuel, colis non identifiés, pesée avec frais, regroupement, retenue, **grilles tarifaires versionnées**, pièces jointes à liens signés.
 
-**Il n'y a pas encore** d'écran pour le personnel (la réception, la pesée et l'identification se font par l'API), ni de lots/manifestes, d'agences, de facturation, de paiements ni de notifications (phases 6 à 8). Les pièces jointes sont stockées sur disque local (pas de S3). Voir [docs/ROADMAP.md](docs/ROADMAP.md) pour les réserves.
+**Il n'y a pas encore** de facturation, de paiements, de notifications, de tournées ni de remise au client avec preuve (phases 7 et 8), ni d'intégration de transporteur. Les pièces jointes sont stockées sur disque local (pas de S3). Voir [docs/ROADMAP.md](docs/ROADMAP.md) pour les réserves.
 
 ## Prérequis
 
@@ -59,7 +61,7 @@ Le super administrateur se connecte avec `POST /v1/auth/login` (sans `companySlu
 DEMO_PASSWORD='<un mot de passe de votre choix>' npm run db:seed:demo
 ```
 
-Crée l'entreprise `demo` (nom préfixé « DEMO », préfixe de code client `DM`) avec un compte par rôle, tous en `@demo.invalid` et tous avec le mot de passe donné : `company-admin`, `logistics-manager`, `billing-agent`, `customer-service`, `driver`, `customer-individual`, `customer-business`, `auditor`. Le script ajoute aussi un entrepôt, une catégorie et une grille tarifaire aérienne **fictifs** (étiquetés DEMO) pour que le calculateur et les préalertes fonctionnent. Les rôles d'entrepôt et d'agence (`WAREHOUSE_MANAGER`, `RECEPTION_AGENT`, `AGENCY_MANAGER`) ne sont pas créés (portée par entrepôt : à attribuer par l'administrateur). Le script refuse de s'exécuter si `NODE_ENV=production`. Aucun mot de passe n'est enregistré dans le dépôt.
+Crée l'entreprise `demo` (nom préfixé « DEMO », préfixe de code client `DM`) avec un compte par rôle, tous en `@demo.invalid` et tous avec le mot de passe donné : `company-admin`, `logistics-manager`, `billing-agent`, `customer-service`, `driver`, `customer-individual`, `customer-business`, `auditor`. Le script ajoute aussi un entrepôt, une catégorie et une grille tarifaire aérienne **fictifs** (étiquetés DEMO) pour que le calculateur et les préalertes fonctionnent. Trois comptes à portée limitée sont aussi créés : `reception-agent` et `warehouse-manager` (entrepôt DEMO), `agency-manager` (agence DEMO fictive). Le script refuse de s'exécuter si `NODE_ENV=production`. Aucun mot de passe n'est enregistré dans le dépôt.
 
 ## Tests
 

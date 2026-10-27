@@ -10,6 +10,7 @@ import { FilesModule } from './files/files.module';
 import { HealthModule } from './health/health.module';
 import { IamModule } from './iam/iam.module';
 import { InfraModule } from './infra/infra.module';
+import { LogisticsModule } from './logistics/logistics.module';
 import { MailModule } from './mail/mail.module';
 import { PackagesModule } from './packages/packages.module';
 import { PlatformModule } from './platform/platform.module';
@@ -55,6 +56,7 @@ export class AppModule {
         PricingModule,
         PackagesModule,
         FilesModule,
+        LogisticsModule,
         PlatformModule,
         HealthModule,
       ],

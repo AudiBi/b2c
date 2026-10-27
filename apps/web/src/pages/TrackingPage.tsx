@@ -89,6 +89,14 @@ export function TrackingPage() {
                 </>
               ) : null}
             </dl>
+            {data.pickup ? (
+              <div data-testid="tracking-pickup" style={{ marginTop: 16 }}>
+                <Alert tone={data.pickup.ready ? 'success' : 'info'} title={t.result.pickupTitle}>
+                  {data.pickup.ready ? t.result.pickupReady : t.result.pickupHere} {data.pickup.name}, {data.pickup.addressLine}, {data.pickup.city}
+                  {data.pickup.hours ? ` — ${data.pickup.hours}` : ''}
+                </Alert>
+              </div>
+            ) : null}
             <h3 style={{ fontSize: '1.1rem', marginTop: 24 }}>{t.result.historyTitle}</h3>
             <Timeline events={data.events} label={t.result.historyTitle} />
             {data.estimatedDelivery ? null : (

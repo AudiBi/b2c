@@ -22,7 +22,7 @@ import { Validate, VBody, VParams, VQuery } from '../common/validation';
 import { DbService } from '../database/db.service';
 import type { AuthContext } from '../security/auth.types';
 import { AnyAuthenticated, CurrentAuth, Public, RateLimit, RequirePermission } from '../security/decorators';
-import { PackagesService, publicEventDto } from './packages.service';
+import { PackagesService, pickupPoint, publicEventDto } from './packages.service';
 import { PortalPackagesService, PrealertsService } from './prealerts.service';
 
 type Id = z.infer<typeof idParamSchema>;
@@ -243,7 +243,7 @@ export class PublicTrackingController {
     if (!companyId) throw notFound();
 
     return this.db.run({ companyId }, async (tx) => {
-      const pkg = await tx.package.findUnique({ where: { trackingNumber: canonical }, include: { warehouse: true } });
+      const pkg = await tx.package.findUnique({ where: { trackingNumber: canonical }, include: { warehouse: true, agency: true } });
       if (!pkg) throw notFound();
       const events = await tx.packageEvent.findMany({
         where: { packageId: pkg.id, visibility: 'PUBLIC', toStatus: { not: null } },
@@ -258,7 +258,7 @@ export class PublicTrackingController {
         origin: { country: pkg.originCountry, city: pkg.originCity },
         destination: { country: pkg.destinationCountry, city: pkg.destinationCity },
         estimatedDelivery: null,
-        pickup: null,
+        pickup: pickupPoint(pkg.agency, pkg.status, true),
         events: events.map((event) => publicEventDto(event, 'PUBLIC')),
       };
     });
