@@ -14,7 +14,7 @@ Plateforme multi-entreprises de gestion de colis, d'expéditions aériennes et m
 | **7** | **Factures (numérotation sans trou, avoirs, PDF), paiements (espèces avec caisse, virement / mobile déclaré puis validé, confirmation signée si un prestataire est configuré), remboursements, export comptable, notifications (portail + e-mail avec nouvelles tentatives, modèles FR/HT/EN)** | **☑ implémentée et testée (772 tests au total)** |
 | **8** | **Tournées et livreurs, remise avec code, pièce d'identité et photo, solde dû bloquant, échecs de livraison, réclamations, tableau de bord réel, journal d'audit** | **☑ implémentée et testée (856 tests au total)** |
 | **9** | **Double authentification (TOTP), revue de sécurité (ASVS niveau 2 comme guide), tests de charge, test de restauration de sauvegarde, stockage S3 (SeaweedFS)** | **☑ implémentée et testée (voir docs/TEST_PLAN.md)** |
-| 10 | Documentation finale, déploiement, préparation à la production | ☐ non commencée |
+| **10** | **Images Docker de production, pile de production, sauvegarde et restauration, guide de déploiement, liste des risques** | **☑ réalisée ; la plateforme n'est PAS prête pour le public : voir docs/RISKS.md** |
 
 Ce qui existe :
 - une **API REST** (`/v1`) : inscription/connexion/sessions, 12 rôles et 71 permissions, administration des utilisateurs, création des entreprises, journal d'audit immuable, isolement des entreprises par Row-Level Security PostgreSQL ; profil client avec **code client unique**, adresses, bénéficiaires, entrepôts et **adresses de réception personnalisées** ;
@@ -72,11 +72,23 @@ Crée l'entreprise `demo` (nom préfixé « DEMO », préfixe de code client `DM
 ## Tests
 
 ```bash
-npm test          # package partagé (88) + API (522, plus 7 de stockage S3 ignorés) + site (200)
+npm test          # package partagé (88) + API (523, plus 7 de stockage S3 ignorés) + site (200)
 npm run test:e2e  # recette navigateur : construit l'API et le site, puis Playwright (88 scénarios)
 npm run loadtest  # tests de charge (suivi, calculateur, limite de débit) : sème des colis dans la base de TEST
 npm run backup:check # sauvegarde la base de test, la restaure dans une copie et compare (RLS, audit, droits)
 npm run test:s3   # adaptateur S3 contre SeaweedFS (profil Docker « storage », voir docs/INTEGRATIONS.md)
+```
+
+## Production
+
+Guide complet : [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) ; risques avant ouverture : [docs/RISKS.md](docs/RISKS.md).
+
+```bash
+npm run setup:env:prod   # crée .env.production (secrets aléatoires) ; à compléter : domaine, entreprise, SMTP
+npm run prod:up          # construit et lance la pile (nginx HTTPS, API, PostgreSQL, Redis, migrations)
+npm run prod:smoke       # contrôle de fumée (SMOKE_URL=https://votre-domaine)
+npm run prod:backup      # sauvegarde la base et les pièces jointes dans backups/
+npm run prod:drill       # restaure la dernière sauvegarde dans une base temporaire et la compare
 ```
 
 Les tests de l'API utilisent de **vrais** PostgreSQL et Redis (les conteneurs ci-dessus), dans la base `b2c_test` et la base Redis n° 1, jamais dans la base de développement. Avant chaque exécution la base de test est mise à jour par les migrations, ses données sont effacées (le script refuse toute base dont le nom ne finit pas par `_test`) et le catalogue des rôles est resynchronisé. La recette navigateur utilise aussi la base de test, l'entreprise `e2e`, et lit les vrais e-mails dans Mailpit. Première utilisation : `npx playwright install chromium` (sinon Microsoft Edge est utilisé s'il est installé). Détail et résultats : [docs/TEST_PLAN.md](docs/TEST_PLAN.md).

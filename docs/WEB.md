@@ -54,7 +54,7 @@ add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 add_header X-Content-Type-Options "nosniff" always;
 ```
 
-Derrière ce proxy, l'API doit avoir `TRUST_PROXY=true` (voir SECURITY.md). Le serveur de `scripts/serve-dist.mjs` applique la même politique CSP : la recette navigateur échoue si une page viole la CSP (erreur console). Les procédures de déploiement complètes (HTTPS, sauvegardes, supervision) relèvent de la phase 10 ; ce qui précède n'a pas été testé sur un vrai serveur nginx ou Apache.
+Derrière ce proxy, l'API doit avoir `TRUST_PROXY=true` (voir SECURITY.md). Le serveur de `scripts/serve-dist.mjs` applique la même politique CSP : la recette navigateur échoue si une page viole la CSP (erreur console). **Production** : la configuration nginx essayée (HTTPS, CSP, HSTS, relais `/v1`, `200.html` pour l'espace client, vrai 404) est dans `docker/nginx/` et décrite dans [DEPLOYMENT.md](DEPLOYMENT.md) ; elle a été exécutée dans Docker (nginx 1.27) avec un certificat auto-signé, pas sur un serveur public. L'exemple ci-dessus reste valable pour un autre serveur web (Apache non essayé).
 
 ## Ajouter ou modifier un texte
 

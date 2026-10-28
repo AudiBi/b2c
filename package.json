@@ -33,7 +33,12 @@
     "loadtest": "npm run build && node scripts/loadtest/run.mjs",
     "backup:check": "node scripts/backup-restore-check.mjs",
     "s3:init": "node scripts/s3-init.mjs",
-    "test:s3": "node scripts/s3-init.mjs && node scripts/test-s3.mjs"
+    "test:s3": "node scripts/s3-init.mjs && node scripts/test-s3.mjs",
+    "setup:env:prod": "node scripts/init-env-prod.mjs",
+    "prod:up": "docker compose -f docker/compose.prod.yml --env-file .env.production up -d --build",
+    "prod:backup": "node scripts/prod-backup.mjs backup",
+    "prod:drill": "node scripts/prod-backup.mjs drill",
+    "prod:smoke": "node scripts/prod-smoke.mjs"
   },
   "devDependencies": {
     "autocannon": "^8.0.0",

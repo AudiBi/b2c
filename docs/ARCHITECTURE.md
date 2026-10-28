@@ -144,7 +144,7 @@ Une notification n'est jamais perdue si le processus s'arrête après le commit,
 - `/health/live` et `/health/ready` (base, Redis, S3).
 - Métriques Prometheus : latence, erreurs, profondeur et échecs des files.
 - Sauvegardes `pg_dump` quotidiennes chiffrées + test de restauration planifié (DEPLOYMENT.md).
-- Migrations : Prisma Migrate, fichiers versionnés, exécutées par une étape de déploiement distincte ; jamais `db push` en production.
+- Migrations : Prisma Migrate, fichiers versionnés, exécutées par une étape de déploiement distincte ; jamais `db push` en production. Réalisé en phase 10 : tâche `migrate` de `docker/compose.prod.yml` (rôle de migration), exécutée avant le démarrage de l'API à chaque déploiement ([DEPLOYMENT.md](DEPLOYMENT.md)).
 
 ## 13. Sécurité applicative (résumé, détail dans SECURITY.md)
 Helmet, CORS en liste blanche, limitation de débit (Redis), validation stricte, requêtes paramétrées, en-têtes CSP, pas d'identifiants séquentiels exposés (UUID v7 / numéros opaques), protection SSRF sur toute requête sortante pilotée par une donnée utilisateur, pas de secret en dépôt.

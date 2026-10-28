@@ -1,6 +1,6 @@
 # Plan de test
 
-Phases 3 à 9. Ce document sera étendu à chaque phase. **Seuls les résultats d'exécutions réelles y figurent.**
+Phases 3 à 10. Ce document sera étendu à chaque phase. **Seuls les résultats d'exécutions réelles y figurent.**
 
 ## Exécuter
 
@@ -21,7 +21,7 @@ Ne **jamais** lancer deux de ces commandes en même temps : elles partagent la b
 
 ## Derniers résultats
 
-Exécutés le 2026-10-28, Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chromium de Playwright.
+Exécutés le 2026-10-28 (suites automatisées rejouées à la fin de la phase 10), Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chromium de Playwright.
 
 | Suite | Tests | Résultat |
 |---|---|---|
@@ -44,12 +44,12 @@ Exécutés le 2026-10-28, Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chro
 | API `reports.spec.ts` (tableau de bord vide, chiffres réels, revenus et impayés par devise, incidents, période, droits, livreurs) | 7 | ✅ |
 | API `rate-limit.spec.ts` | 7 | ✅ |
 | API `infra.spec.ts` (compteurs, idempotence) | 9 | ✅ |
-| API `app.spec.ts` (santé, en-têtes, CORS, erreurs, configuration) | 14 | ✅ |
+| API `app.spec.ts` (santé, en-têtes, CORS, erreurs, configuration, **variables vides**) | 15 | ✅ |
 | API `totp.spec.ts` + `two-factor.spec.ts` (vecteurs officiels RFC 6238, fenêtre, rejeu, chiffrement du secret, codes de secours, activation / désactivation, connexion en deux temps, verrouillage, obligation du personnel, base) | 31 | ✅ |
 | API `s3-storage.spec.ts` : configuration (3, toujours exécutés) ; stockage réel (7, **ignorés** sans `npm run test:s3`, voir ci-dessous) | 3 + 7 ignorés | ✅ / ⏭ |
 | Site, unitaires (10 fichiers : + `phase9`) | 200 | ✅ |
 | Site, recette navigateur | 88 | ✅ |
-| **Total de la suite standard** | **898** | **898 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
+| **Total de la suite standard** | **899** | **899 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
 
 Stockage S3 contre un **vrai SeaweedFS** (`npm run test:s3`) : **10 tests sur 10 réussis** (3 de configuration + 7 de stockage, dont le parcours API complet), exécutés le 2026-10-28. Ils sont ignorés par `npm test` pour ne pas exiger ce service : la suite l'affiche comme « ignorés », elle ne les compte pas comme vérifiés.
 
@@ -111,6 +111,19 @@ La recette de la phase 8 ajoute le parcours complet **colis arrivé et « prêt 
 4. **Appel de renouvellement de session à chaque visite anonyme** (erreur 401 en console, consommation de la limite de débit) : remplacé par un cookie « indice » lisible.
 5. **Test de purge** de la base de test qui ne couvrait pas les nouvelles tables ; **limite de débit globale** déclenchée par des tests partageant la même IP (corrigé dans le banc de test).
 
+## Pile de production (phase 10)
+
+Essai du 2026-10-28 sur Docker Desktop (Windows 11, conteneurs Linux), domaine `localhost`, certificat auto-signé, SMTP vers un Mailpit de développement. **Ce n'est pas un essai sur un serveur public.**
+
+- `npm run prod:smoke` (`scripts/prod-smoke.mjs`) par le point d'entrée HTTPS : **22 contrôles sur 22 réussis** (disponibilité PostgreSQL et Redis, CSP / HSTS / nosniff, vrai 404, `/docs` fermé, cache des ressources, redirection HTTP→HTTPS, **limite de débit non contournable par `X-Forwarded-For` falsifié**, attributs du cookie de session, **double authentification obligatoire** de bout en bout, création d'une entreprise). Un second passage, après reconstruction depuis la sauvegarde, a réussi aussi (second facteur toujours actif).
+- **Mise à jour** : relancer le déploiement sur une pile existante → « No pending migrations », catalogue resynchronisé, super administrateur inchangé.
+- **Sauvegarde et exercice** (`npm run prod:backup`, `npm run prod:drill`) : empreinte SHA-256 conforme, restauration sans erreur (2,1 s), 54 tables et 311 lignes identiques, RLS forcée sur 52 tables, 9 migrations, droits identiques.
+- **Sinistre simulé** : volumes supprimés, pile reconstruite, base restaurée avec `pg_restore` : 2 entreprises et 2 utilisateurs retrouvés, compte équipé de la double authentification répondant `TOTP_REQUIRED`.
+- **Non essayé sur cette pile** : la recette navigateur complète, un test de charge, les pannes brutales, un vrai serveur, domaine, certificat ou fournisseur d'e-mail (voir DEPLOYMENT.md § 9 et RISKS.md).
+
+### Défaut réel détecté pendant la phase 10 (corrigé)
+1. **L'API refusait de démarrer sous `docker compose`** : le fichier de composition transmet `S3_ENDPOINT=` (chaîne vide) quand la variable n'est pas définie, et la validation de configuration rejetait cette chaîne vide (URL invalide). Une variable vide équivaut désormais à une variable absente (test ajouté dans `app.spec.ts`) ; relevé en préparant l'essai, avant tout lancement.
+
 ## Tests de charge (phase 9)
 
 `npm run loadtest` (script `scripts/loadtest/run.mjs`). Résultats du 2026-10-28 (fichier `loadtest-results.json`, non versionné).
@@ -170,6 +183,7 @@ La recette de la phase 8 ajoute le parcours complet **colis arrivé et « prêt 
 - `seed-demo` exécuté sur la base de test et refusé en production.
 
 ## Limites des tests actuels
+- **Phase 10** : voir « Pile de production » ci-dessus et DEPLOYMENT.md § 9 : aucun essai sur serveur public, aucune recette navigateur ni charge sur la pile de production.
 - **Phase 9** : la double authentification n'est testée qu'avec des codes calculés par les tests (RFC 6238), jamais avec une application d'authentification réelle, et n'est pas dans la recette navigateur ; le stockage S3 n'est testé que contre SeaweedFS en local ; **aucune intégration de paiement, SMS, WhatsApp, transporteur ni e-mail de production** n'a été testée (aucun compte de test) ; les mesures de charge viennent d'une seule machine ; aucun test d'intrusion, d'analyse automatique du code ni d'endurance.
 - **Phase 8** : le code de remise est lu à l'écran du client (aucun SMS) ; la photo de preuve est simulée par une pièce jointe insérée en base (le chemin de dépôt de fichier est testé par la phase 5) ; les tournées ne sont testées que sur de petits volumes (2 à 3 arrêts) ; aucune mesure de performance des requêtes du tableau de bord sur un grand volume de données ; pas de test sur un téléphone réel pour l'écran du livreur.
 - **Phase 7** : la confirmation signée est exercée avec un émetteur écrit pour les tests (aucun prestataire réel) ; l'échec d'envoi d'e-mail est simulé (SMTP injoignable réel non testé) ; les PDF de facture et de reçu sont vérifiés (document valide) mais pas visuellement ; pas de test de charge sur l'émission simultanée au-delà de 4 factures ; les écrans de finance ne sont testés que dans Chromium.

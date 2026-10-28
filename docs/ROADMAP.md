@@ -17,7 +17,7 @@ Légende : ☐ à faire · ◐ en cours · ☑ terminé et testé
 | 7 | Facturation, paiements, notifications | ☑ 772 tests au total ; réserves ci-dessous |
 | 8 | Livraisons, réclamations, tableaux de bord | ☑ 856 tests au total ; réserves ci-dessous |
 | 9 | Intégrations, tests de sécurité, tests de charge | ☑ 898 tests au total ; réserves ci-dessous |
-| 10 | Documentation finale, déploiement, préparation à la production | ☐ |
+| 10 | Documentation finale, déploiement, préparation à la production | ☑ 899 tests au total ; **non prête pour le public** : voir [RISKS.md](RISKS.md) |
 
 ## Backlog détaillé et dépendances
 
@@ -217,6 +217,25 @@ Revue de sécurité (OWASP ASVS niveau 2 comme guide), tests de charge du suivi 
 
 ### Phase 10 : production
 Docker de production, procédures de déploiement et de sauvegarde, `docs/DEPLOYMENT.md`, `docs/SECURITY.md`, `docs/TEST_PLAN.md`, `docs/INTEGRATIONS.md`, `docs/API.md`, liste finale des risques bloquants.
+
+| # | Tâche | Résultat |
+|---|---|---|
+| 10.1 | Images Docker de production (API, tâche de migration, site + nginx HTTPS) | ☑ construites et lancées |
+| 10.2 | Pile de production `docker/compose.prod.yml` (réseau interne, secrets générés, réglages de production imposés) | ☑ essayée en local |
+| 10.3 | Contrôle de fumée de production (`npm run prod:smoke`) | ☑ 22 contrôles sur 22 |
+| 10.4 | Sauvegarde, exercice de restauration, reconstruction après sinistre | ☑ essayés de bout en bout |
+| 10.5 | `DEPLOYMENT.md` (installation, mises à jour, sauvegardes, restauration, exploitation) | ☑ |
+| 10.6 | Liste finale des risques bloquants ([RISKS.md](RISKS.md)) | ☑ |
+| 10.7 | Mise en ligne réelle (serveur, domaine, certificat, e-mail) | ❌ **non faite** : aucun serveur ni compte fournis |
+
+**Réalisé en phase 10** :
+- **Images** (`docker/Dockerfile`, 3 cibles) : `api` (dépendances de production seulement, utilisateur `node`, contrôle de santé), `migrate` (migrations Prisma puis amorçage, tâche ponctuelle), `web` (site pré-rendu servi par nginx qui termine le HTTPS, CSP stricte, HSTS, redirection HTTP→HTTPS, relais `/v1`). Le site est construit pour **une** entreprise.
+- **Pile** (`docker/compose.prod.yml`, `.env.production.example`, `npm run setup:env:prod`) : seul nginx publie des ports ; PostgreSQL (rôle applicatif soumis à la RLS créé à l'initialisation) et Redis (mot de passe) restent internes ; les réglages de production sont imposés (cookies sécurisés, double authentification obligatoire, documentation de l'API fermée).
+- **Exploitation** : `npm run prod:backup` (base + pièces jointes, empreintes SHA-256, relecture par `pg_restore -l`), `npm run prod:drill` (restauration dans une base temporaire et comparaison), `npm run prod:smoke`.
+- **Essais réels** (détail dans DEPLOYMENT.md § 8) : pile construite et lancée depuis zéro ; 22 contrôles de fumée réussis, dont l'impossibilité de contourner la limite de débit en falsifiant `X-Forwarded-For` et l'enfermement d'un compte du personnel sans second facteur ; e-mail d'invitation réellement reçu ; mise à jour idempotente ; **sinistre simulé** (volumes supprimés) puis reconstruction depuis la sauvegarde, double authentification comprise.
+- **Défaut trouvé par ces essais** : les variables vides transmises par `docker compose` (`S3_ENDPOINT=`) faisaient échouer la validation de la configuration de l'API ; une variable vide vaut maintenant une variable absente (test ajouté).
+
+**Réserves de la phase 10 (reportées)** : voir [RISKS.md](RISKS.md), qui est la liste de référence. En résumé : aucun déploiement essayé sur un vrai serveur, domaine, certificat ni fournisseur d'e-mail ; sauvegardes non planifiées ni copiées hors serveur ; aucune supervision ; la recette navigateur complète n'a pas été rejouée contre la pile de production (seul le contrôle de fumée l'a été) ; une seule instance, sans haute disponibilité ; textes juridiques à valider ; test d'intrusion à faire.
 
 ## Questions à régler avant ou pendant les phases
 

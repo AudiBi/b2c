@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+**/dist
+**/dist-esm
+**/coverage
+**/test-results
+**/playwright-report
+.git
+.data
+.env
+.env.*
+!.env.example
+!.env.production.example
+*.log
+loadtest-results.json
+docs

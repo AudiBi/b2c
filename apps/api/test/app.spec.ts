@@ -116,6 +116,13 @@ describe('Application', () => {
       expect(env).toMatchObject({ NODE_ENV: 'development', COOKIE_SECURE: false, TRUST_PROXY: false, ACCESS_TOKEN_TTL_SECONDS: 900 });
     });
 
+    it('traite une variable vide comme absente (docker compose transmet des chaînes vides)', () => {
+      const env = loadEnv({ ...base, S3_ENDPOINT: '', PAYMENT_WEBHOOK_PROVIDER: '', PAYMENT_WEBHOOK_SECRET: '', SMTP_USER: '' } as NodeJS.ProcessEnv);
+      expect(env.S3_ENDPOINT).toBeUndefined();
+      expect(env.PAYMENT_WEBHOOK_PROVIDER).toBeUndefined();
+      expect(env.SMTP_USER).toBe('');
+    });
+
     it('impose des réglages sûrs en production', () => {
       const prod = { ...base, NODE_ENV: 'production' } as NodeJS.ProcessEnv;
       expect(() => loadEnv(prod)).toThrow(/COOKIE_SECURE/);

@@ -1,0 +1,73 @@
+# Serveur web de production : termine le HTTPS, sert le site pré-rendu et relaie /v1 vers l'API.
+# Les variables ${...} sont remplacées au démarrage du conteneur (SERVER_NAME, API_UPSTREAM).
+# nginx est le SEUL point d'entrée : il écrase X-Forwarded-For par l'adresse réelle du client (l'API a TRUST_PROXY=true
+# et ne fait confiance qu'à un seul saut). Ne placer aucun autre mandataire devant lui sans revoir ce réglage.
+
+server {
+    listen 80;
+    server_name ${SERVER_NAME};
+
+    # Renouvellement de certificat par webroot (facultatif)
+    location /.well-known/acme-challenge/ {
+        root /var/www/acme;
+    }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${SERVER_NAME};
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    root /usr/share/nginx/html;
+    server_tokens off;
+    client_max_body_size 10m;
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml text/plain application/xml;
+
+    include /etc/nginx/security-headers.conf;
+
+    # API : même domaine que le site (le cookie de session a pour chemin /v1/auth)
+    location /v1/ {
+        proxy_pass http://${API_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+        include /etc/nginx/security-headers.conf;
+    }
+    location = /health/live  { proxy_pass http://${API_UPSTREAM}; include /etc/nginx/security-headers.conf; }
+    location = /health/ready { proxy_pass http://${API_UPSTREAM}; include /etc/nginx/security-headers.conf; }
+
+    # Espace client : coquille de l'application (le routage se fait dans le navigateur)
+    location ~ ^/(fr|ht|en)/account(/|$) {
+        try_files /200.html =404;
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/security-headers.conf;
+    }
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        include /etc/nginx/security-headers.conf;
+        try_files $uri =404;
+    }
+    location / {
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/security-headers.conf;
+        try_files $uri $uri/index.html =404;
+    }
+    error_page 404 /404.html;
+    location = /404.html {
+        internal;
+        include /etc/nginx/security-headers.conf;
+    }
+}

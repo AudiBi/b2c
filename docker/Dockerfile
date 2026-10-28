@@ -1,0 +1,67 @@
+# Images de production. Cibles : api, migrate, web.
+#   docker build -f docker/Dockerfile --target api -t b2c-api .
+#   docker build -f docker/Dockerfile --target web --build-arg VITE_COMPANY_SLUG=ma-societe --build-arg SITE_URL=https://exemple.com -t b2c-web .
+# Normalement construites par docker/compose.prod.yml (voir docs/DEPLOYMENT.md).
+
+# ---------------------------------------------------------------------------------------------
+# Construction : installe tout, compile le package partagé, le client Prisma et l'API
+# ---------------------------------------------------------------------------------------------
+FROM node:22-alpine AS build
+RUN apk add --no-cache openssl
+WORKDIR /app
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY packages/shared/package.json packages/shared/
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+RUN npm ci
+COPY packages packages
+COPY prisma prisma
+COPY apps apps
+RUN npm run build
+
+# ---------------------------------------------------------------------------------------------
+# Migrations et amorçage : tâche ponctuelle (rôle de migration), jamais exposée
+# ---------------------------------------------------------------------------------------------
+FROM build AS migrate
+CMD ["sh", "-c", "npx prisma migrate deploy --schema prisma/schema.prisma && npx tsx prisma/seed.ts"]
+
+# ---------------------------------------------------------------------------------------------
+# API : dépendances de production seulement, utilisateur sans privilège
+# ---------------------------------------------------------------------------------------------
+FROM node:22-alpine AS api
+RUN apk add --no-cache openssl
+ENV NODE_ENV=production
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json packages/shared/
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+RUN npm ci --omit=dev -w @b2c/api -w @b2c/shared && npm cache clean --force
+# Client Prisma généré à la construction (le CLI Prisma n'est pas dans l'image d'exécution)
+COPY --from=build /app/node_modules/.prisma node_modules/.prisma
+COPY --from=build /app/packages/shared/dist packages/shared/dist
+COPY --from=build /app/packages/shared/dist-esm packages/shared/dist-esm
+COPY --from=build /app/apps/api/dist apps/api/dist
+RUN mkdir -p /data/files && chown -R node:node /data
+USER node
+EXPOSE 3100
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.API_PORT||3100)+'/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "apps/api/dist/main.js"]
+
+# ---------------------------------------------------------------------------------------------
+# Site : fichiers statiques pré-rendus servis par nginx (qui termine aussi le HTTPS)
+# ---------------------------------------------------------------------------------------------
+FROM build AS web-build
+ARG VITE_COMPANY_SLUG
+ARG VITE_BRAND_NAME
+ARG SITE_URL
+RUN test -n "$VITE_COMPANY_SLUG" && test -n "$SITE_URL"
+ENV VITE_COMPANY_SLUG=$VITE_COMPANY_SLUG VITE_BRAND_NAME=$VITE_BRAND_NAME SITE_URL=$SITE_URL
+RUN npm -w @b2c/web run build
+
+FROM nginx:1.27-alpine AS web
+COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/nginx/security-headers.conf /etc/nginx/security-headers.conf
+COPY --from=web-build /app/apps/web/dist/client /usr/share/nginx/html
+EXPOSE 80 443

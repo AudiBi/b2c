@@ -93,7 +93,9 @@ export const envSchema = z
 export type Env = z.infer<typeof envSchema>;
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  const parsed = envSchema.safeParse(source);
+  // Une variable vide (docker compose transmet « VAR: ${VAR:-} » comme une chaîne vide) équivaut à une variable absente
+  const present = Object.fromEntries(Object.entries(source).filter(([, value]) => value !== ''));
+  const parsed = envSchema.safeParse(present);
   if (!parsed.success) {
     const lines = parsed.error.issues.map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`);
     throw new Error(`Configuration invalide :\n${lines.join('\n')}`);

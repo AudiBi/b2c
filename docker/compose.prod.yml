@@ -1,0 +1,129 @@
+# Pile de production (une seule machine). Lancer avec :
+#   docker compose -f docker/compose.prod.yml --env-file .env.production up -d --build
+# Procédure complète, prérequis et limites : docs/DEPLOYMENT.md.
+name: b2c-prod
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: b2c_migrator
+      POSTGRES_PASSWORD: ${POSTGRES_MIGRATOR_PASSWORD:?définir POSTGRES_MIGRATOR_PASSWORD}
+      POSTGRES_DB: b2c
+      B2C_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?définir POSTGRES_APP_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init-prod:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U b2c_migrator -d b2c"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # Aucun port publié : seuls l'API et la tâche de migration, sur le réseau interne, joignent la base
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?définir REDIS_PASSWORD}", "--appendonly", "yes"]
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Tâche ponctuelle : applique les migrations (rôle de migration) puis synchronise droits et rôles, et crée le
+  # super administrateur si SEED_SUPERADMIN_* est défini. Idempotente : relancée à chaque déploiement.
+  migrate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: migrate
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://b2c_app:${POSTGRES_APP_PASSWORD}@postgres:5432/b2c
+      DIRECT_URL: postgresql://b2c_migrator:${POSTGRES_MIGRATOR_PASSWORD}@postgres:5432/b2c
+      SEED_SUPERADMIN_EMAIL: ${SEED_SUPERADMIN_EMAIL:-}
+      SEED_SUPERADMIN_PASSWORD: ${SEED_SUPERADMIN_PASSWORD:-}
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: api
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      API_PORT: "3100"
+      API_PUBLIC_URL: https://${PUBLIC_HOST:?définir PUBLIC_HOST}
+      WEB_PUBLIC_URL: https://${PUBLIC_HOST}
+      CORS_ORIGINS: https://${PUBLIC_HOST}
+      TRUST_PROXY: "true"
+      ENABLE_DOCS: "false"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgresql://b2c_app:${POSTGRES_APP_PASSWORD}@postgres:5432/b2c
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?définir JWT_ACCESS_SECRET}
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:?définir TOTP_ENCRYPTION_KEY}
+      REQUIRE_STAFF_2FA: "true"
+      COOKIE_SECURE: "true"
+      MAIL_TRANSPORT: smtp
+      SMTP_HOST: ${SMTP_HOST:?définir SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:?définir MAIL_FROM}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-disk}
+      FILES_DIR: /data/files
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
+      PAYMENT_WEBHOOK_PROVIDER: ${PAYMENT_WEBHOOK_PROVIDER:-}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-}
+    volumes:
+      - files:/data/files
+    # Aucun port publié : seul nginx joint l'API
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: web
+      args:
+        VITE_COMPANY_SLUG: ${COMPANY_SLUG:?définir COMPANY_SLUG}
+        VITE_BRAND_NAME: ${BRAND_NAME:-}
+        SITE_URL: https://${PUBLIC_HOST}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      SERVER_NAME: ${PUBLIC_HOST}
+      API_UPSTREAM: api:3100
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      # fullchain.pem et privkey.pem : certificat TLS du domaine (voir docs/DEPLOYMENT.md)
+      - ${CERTS_DIR:-../certs}:/etc/nginx/certs:ro
+
+volumes:
+  pgdata:
+  redisdata:
+  files:
