@@ -3,7 +3,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 import { ConfigService } from '../config/config.module';
 
-/** Abstraction du stockage des pièces jointes. Implémentation actuelle : disque local ; un adaptateur S3 la remplacera. */
+/** Abstraction du stockage des pièces jointes. Deux implémentations : disque local (défaut) et stockage objet S3 (`STORAGE_DRIVER=s3`, voir s3-storage.ts). */
 export abstract class FileStorage {
   abstract put(key: string, content: Buffer): Promise<void>;
   abstract get(key: string): Promise<Buffer>;

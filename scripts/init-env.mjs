@@ -15,7 +15,7 @@ const hex = (n) => randomBytes(n).toString('hex');
 const values = {
   __MIGRATOR_PW__: hex(16),
   __APP_PW__: hex(16),
-  __MINIO_PW__: hex(16),
+  __S3_SECRET__: hex(16),
   __JWT_SECRET__: hex(32),
 };
 let text = readFileSync(join(root, '.env.example'), 'utf8');

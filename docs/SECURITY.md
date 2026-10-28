@@ -1,12 +1,12 @@
 # Sécurité
 
-Phase 3. Décrit ce qui est **en place et testé**, puis ce qui **manque**. Une revue de sécurité complète est prévue en phase 9 ; ce document ne vaut pas audit.
+Décrit ce qui est **en place et testé**, puis ce qui **manque**. La revue de la phase 9 a pris l'OWASP ASVS niveau 2 comme **liste de contrôle** (voir « Revue de la phase 9 ») : ce document ne vaut ni audit externe ni certification.
 
 ## Mesures en place
 
 | Domaine | Mesure | Où / test |
 |---|---|---|
-| Isolation des entreprises | `company_id` NOT NULL partout ; Row-Level Security activée **et forcée** sur 51 tables (celles qui portent `company_id`, plus `companies`) ; le rôle de l'API n'est ni superutilisateur, ni `BYPASSRLS`, ni propriétaire ; sans contexte, aucune ligne n'est visible ; contexte posé par `SET LOCAL` dans la transaction (pas de fuite entre requêtes sur le pool) ; clés étrangères composites (une session ne peut pas relier un utilisateur à une autre entreprise) | migration 0001, `DbService`, `rls.spec.ts` |
+| Isolation des entreprises | `company_id` NOT NULL partout ; Row-Level Security activée **et forcée** sur 52 tables (celles qui portent `company_id`, plus `companies`) ; le rôle de l'API n'est ni superutilisateur, ni `BYPASSRLS`, ni propriétaire ; sans contexte, aucune ligne n'est visible ; contexte posé par `SET LOCAL` dans la transaction (pas de fuite entre requêtes sur le pool) ; clés étrangères composites (une session ne peut pas relier un utilisateur à une autre entreprise) | migration 0001, `DbService`, `rls.spec.ts` |
 | Mode plateforme | Un seul drapeau (`app.platform`) ouvre la table `companies` ; il ne donne accès à aucune donnée métier ; seuls 2 fichiers peuvent l'utiliser (un test le vérifie en lisant le code source) | `iam.spec.ts` |
 | Mots de passe | argon2id (mémoire 64 Mio par défaut, 3 itérations) ; longueur 10-128 ; liste de mots de passe courants (courte) ; refus si contenant l'adresse e-mail ; vérification factice pour les comptes inconnus (temps de réponse comparable) | `PasswordService`, `auth.spec.ts` |
 | Sessions | jeton d'accès JWT HS256 15 min (algorithme, émetteur, audience imposés) ; droits relus en base à chaque requête ; jeton de renouvellement opaque (256 bits, seul le condensé SHA-256 est stocké) à rotation ; réutilisation = révocation de la famille ; cookie HttpOnly + SameSite=Lax + chemin restreint + en-tête anti-CSRF | `auth.spec.ts` |
@@ -34,6 +34,8 @@ Phase 3. Décrit ce qui est **en place et testé**, puis ce qui **manque**. Une 
 | Livreur | Voit et traite **uniquement les arrêts de ses tournées** ; tout le reste (tournée, arrêt, colis, remise au comptoir) répond 404 ; aucun montant ni solde dans sa vue ; la remise au comptoir exige de lire et confirmer les livraisons **de l'agence** | `delivery.spec.ts` |
 | Réclamations | Un client ne voit que les siennes et jamais les **notes internes** ; messages en ajout seul ; identité de la réclamation figée en base ; colis invoqué = colis du client | `claims.spec.ts` |
 | Tableau de bord | Calculé en base par des requêtes sur l'entreprise de l'utilisateur (RLS) ; réservé aux droits portant sur **toute** l'entreprise ; aucune valeur de remplacement | `reports.spec.ts` |
+| Double authentification (phase 9) | TOTP (RFC 6238 : SHA-1, 30 s, 6 chiffres, fenêtre ±1 pas) ; secret **chiffré au repos** (AES-256-GCM, clé dérivée par HKDF de `TOTP_ENCRYPTION_KEY`) ; **un code ne sert qu'une fois** (comparaison-échange atomique sur le dernier pas utilisé) ; 10 **codes de secours** à usage unique, conservés sous forme d'empreinte HMAC et montrés une seule fois ; activation et désactivation exigent le mot de passe **et** un code ; la connexion répond `TOTP_REQUIRED` puis `INVALID_TOTP` (même message pour un code faux, rejoué ou périmé), comptée dans le verrouillage du compte ; avec `REQUIRE_STAFF_2FA=true` (obligatoire en production) tout compte du personnel sans second facteur ne peut atteindre que sa page Sécurité (`TOTP_ENROLLMENT_REQUIRED`) et ne peut pas le désactiver | `totp.spec.ts`, `two-factor.spec.ts`, `phase9.test.tsx` |
+| Stockage de fichiers S3 (phase 9) | Adaptateur `S3Storage` (`STORAGE_DRIVER=s3`) : clés construites par le serveur et refusées si elles sortent de leur espace ; ne crée jamais de bucket ; erreurs franchement remontées (bucket absent, identifiants refusés) | `s3-storage.spec.ts` (contre SeaweedFS réel) |
 | Journaux | JSON structuré (pino) ; en-têtes `Authorization`, `Cookie`, `Set-Cookie` masqués ; chaîne de requête non journalisée | configuration |
 
 ## Ce qui manque ou reste fragile
@@ -42,19 +44,19 @@ _Phase 4 : le cookie `b2c_session` est lisible par JavaScript par conception ; i
 
 | Sujet | Détail | Phase prévue |
 |---|---|---|
-| Double authentification (TOTP) du personnel | La colonne existe, la fonction non. À rendre obligatoire pour administrateurs et facturation | avant production |
+| Double authentification : reste à faire | Fait en phase 9 (voir ci-dessus). Absent : SMS, clé de sécurité matérielle (WebAuthn), **réinitialisation par un administrateur** d'un second facteur perdu (aujourd'hui : codes de secours, sinon intervention en base), liste d'appareils de confiance. L'obligation n'est appliquée que si `REQUIRE_STAFF_2FA=true` ; elle se vérifie à chaque requête (le jeton d'accès de 15 min ne la contourne pas) | 10 |
 | Vérification du téléphone | Non implémentée (nécessite un fournisseur SMS) | 7 |
 | E-mails d'authentification sans file ni nouvelle tentative | **Levé pour les notifications** (phase 7 : file, nouvelles tentatives, échec visible). Reste vrai pour les e-mails d'inscription, de confirmation et de mot de passe oublié : un échec d'envoi est journalisé mais le message est perdu ; le client doit redemander un lien | 7 (outbox + BullMQ) |
 | RLS ≠ protection contre l'exécution de SQL arbitraire | Si un attaquant exécutait du SQL avec le rôle applicatif, il pourrait modifier les paramètres de session. La RLS protège contre un filtre oublié dans le code ; la défense contre l'injection reste les requêtes paramétrées et la revue de code | 9 |
 | `TRUST_PROXY` | Doit être `true` uniquement derrière un proxy de confiance qui écrase `X-Forwarded-For`. Mal réglé, un client peut falsifier son IP et contourner les limites par IP (le verrouillage par compte, lui, reste efficace) | 10 |
 | Renouvellement concurrent strict | Deux renouvellements simultanés avec le même jeton (double clic, réseau instable) révoquent la session : sûr, mais peut déconnecter un client légitime. Une courte période de grâce pourra être ajoutée | 4 |
-| Liste de mots de passe courants | ~50 entrées seulement | 9 |
-| Journal d'audit sans chaînage cryptographique | Immuable pour l'application et le propriétaire des tables, mais un superutilisateur PostgreSQL pourrait le tronquer. Prévoir export externe/WORM | 9-10 |
-| Pas de détection de robots à l'inscription | Seule la limitation de débit protège | 9 |
+| Liste de mots de passe courants | ~50 entrées seulement (non élargie en phase 9 : sans source fiable de liste, on n'en invente pas) ; aucun contrôle contre les fuites publiques | 10 |
+| Journal d'audit sans chaînage cryptographique | Immuable pour l'application et le propriétaire des tables (vérifié aussi **après restauration**), mais un superutilisateur PostgreSQL pourrait le tronquer. Prévoir export externe/WORM | 10 |
+| Pas de détection de robots à l'inscription | Seule la limitation de débit protège (mesurée en charge : exactement 30 requêtes/min/IP, voir TEST_PLAN) ; un CAPTCHA suppose un prestataire | 10 |
 | Contrôle de l'existence des portées | **Levé en phase 6** (`SCOPE_NOT_FOUND`). Reste : la suppression d'un entrepôt ou d'une agence n'existe pas (désactivation seulement), ce qui évite des portées orphelines | – |
-| Sauvegardes, rétention, chiffrement au repos | Non traités | 10 |
+| Sauvegardes, rétention, chiffrement au repos | La **restauration de PostgreSQL** est vérifiée (`npm run backup:check`, voir TEST_PLAN) ; planification, rétention, chiffrement et copie hors machine ne sont pas traités | 10 |
 | `/docs` | Exposé si `ENABLE_DOCS=true` : à désactiver ou protéger en production | 10 |
-| Stockage de fichiers | Écriture sur **disque local** (`FILES_DIR`) ; adaptateur S3 non écrit (image MinIO inaccessible) ; chiffrement au repos et sauvegarde du dossier à prévoir | 10 |
+| Stockage de fichiers | Disque local par défaut (`FILES_DIR`, à sauvegarder avec la base : **le test de restauration ne couvre que PostgreSQL**). Adaptateur S3 écrit et testé **contre SeaweedFS uniquement** (jamais contre AWS S3 ni un autre fournisseur) ; l'écrasement d'un objet existant n'est pas interdit côté S3 (les clés contiennent des uuid générés par le serveur : collision pratiquement impossible, mais non empêchée) ; chiffrement au repos des objets à la charge du stockage ; pas de relecture d'empreinte à la lecture | 10 |
 | Code de remise de 6 chiffres | 1 million de combinaisons seulement : la protection repose sur le verrou (5 essais), la limite de 5 codes par colis et par heure (≤ 25 essais par heure et par colis) et la limite de débit par adresse IP. Pas d'alerte en cas de tentatives répétées. Le code n'est jamais envoyé par SMS (aucun prestataire) | 9 |
 | Livreur compromis | Un compte de livreur volé peut remettre les colis de **sa** tournée s'il connaît le code du client ; il ne voit aucun autre colis ni montant. Pas de géolocalisation ni de double confirmation | 9 |
 | Paiements : validation humaine | Un virement ou paiement mobile n'est confirmé que par un agent (`payment:reconcile`) qui compare avec son relevé : l'outil n'a **aucun moyen de vérifier** le paiement lui-même. La séparation des tâches (celui qui déclare ≠ celui qui valide) est garantie pour le client, pas entre deux agents. Pas de double validation pour les gros montants | 9 |
@@ -65,15 +67,32 @@ _Phase 4 : le cookie `b2c_session` est lisible par JavaScript par conception ; i
 | `SECURITY DEFINER` | `app_package_company` suppose un propriétaire de fonction qui contourne la RLS : vérifier le rôle de migration en production | 10 |
 | Numéros de suivi devinables | 50 bits : l'énumération est limitée par le débit (30/min/IP) mais pas par un compteur global ; surveiller les 404 en production | 9 |
 
-## Vulnérabilités connues des dépendances (`npm audit`, 7 restantes : 2 modérées, 5 élevées)
+## Revue de la phase 9 (guide : OWASP ASVS niveau 2)
+
+Méthode : parcours des chapitres ASVS pertinents pour cette application (authentification, sessions, contrôle d'accès, validation, cryptographie, erreurs et journaux, données, communications, API, fichiers, configuration), en confrontant chaque exigence au code et aux tests existants. **Ce n'est pas une certification** : aucune exigence n'a été vérifiée par un tiers et aucun test d'intrusion n'a été mené.
+
+- **Écart comblé** : second facteur du personnel (ASVS V2, authentification multifacteur) — voir la ligne « Double authentification ».
+- **Dépendances** : `multer` et `js-yaml` (vulnérables) sont forcés vers des versions corrigées par `overrides` dans le `package.json` racine ; l'ajout du client S3 a d'abord introduit des paquets vulnérables (version trop ancienne), résolus en prenant la version courante.
+- **Charge et déni de service** : voir TEST_PLAN (aucune erreur serveur sous 50 connexions simultanées ; limite par IP exacte).
+- **Restauration** : la copie restaurée garde RLS forcée, politiques, déclencheurs et droits (vérifié par comparaison avec la source et par des requêtes avec le rôle applicatif).
+- **Reste ouvert** (voir le tableau ci-dessus) : liste de mots de passe courants, audit sans chaînage, absence de détection de robots, `TRUST_PROXY` et période de grâce du renouvellement de session, antivirus, intégrations de paiement réelles, SMS.
+
+## Vulnérabilités connues des dépendances (`npm audit`, état du 28/10/2026)
+
+| Périmètre | Résultat |
+|---|---|
+| Dépendances de **production** (`npm audit --omit=dev`) | **3 « élevées », toutes dans l'outil en ligne de commande Prisma** (`prisma`, `@prisma/config`, `deepmerge-ts` : récursion excessive sur des objets circulaires) |
+| Ensemble, outils de développement compris | 15 : 2 critiques et 4 modérées dans les outils de test et de charge (`vitest`/`tinypool`, `autocannon`/`uuid`), 6 faibles (`jest`), plus les 3 ci-dessus |
 
 | Paquet | Nature | Décision |
 |---|---|---|
-| `multer` (via `@nestjs/platform-express`) | déni de service avec un `fileFilter` asynchrone | **Non exploitable ici** : aucune route n'accepte de téléversement multipart (les fichiers passeront par des URL signées vers le stockage objet). Correctif attendu avec NestJS 12 |
-| `js-yaml` (via `@nestjs/swagger`) | consommation CPU sur des fusions de clés YAML | Non exploitable : la documentation est générée à partir de notre code, pas de YAML fourni par un utilisateur |
-| `prisma`, `@prisma/config`, `deepmerge-ts` | récursion excessive dans l'outil en ligne de commande | Outil de développement et de déploiement (non exposé) ; le correctif impose Prisma 7 (changement majeur) |
+| `prisma`, `@prisma/config`, `deepmerge-ts` | récursion excessive dans l'outil en ligne de commande | Outil de développement et de déploiement (jamais exposé) ; le correctif impose Prisma 7 (changement majeur), non fait |
+| `vitest`, `@vitest/mocker`, `tinypool` | lecture de fichier arbitraire via une redirection de mock ; exécution de code via les options d'un worker | Outil de test local, jamais déployé ni exposé ; ne s'exploite qu'en lançant des tests contrôlés par un attaquant. Correctif : vitest 5 (changement majeur), non fait |
+| `autocannon`, `hyperid`, `uuid` | contrôle de bornes de `uuid` v3/v5/v6 avec tampon fourni | Outil de test de charge local ; non exposé |
+| `jest`, `ts-jest`, `deepmerge` | pollution de prototype (faible) | Outil de test local |
+| `multer`, `js-yaml` | (corrigés) | **Levé** en phase 9 par `overrides` ; de toute façon, aucune route n'accepte de multipart |
 
-`nodemailer` a été mis à jour en version 10 (la 7 était signalée vulnérable). Réévaluer à chaque phase.
+`nodemailer` est en version 10 (la 7 était signalée vulnérable). Réévaluer à chaque phase et avant la mise en production.
 
 ## Signaler un problème
 À définir avec l'entreprise exploitante (adresse de contact sécurité) avant la mise en production.

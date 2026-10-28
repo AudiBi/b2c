@@ -14,3 +14,6 @@ playwright-report/
 
 # Pièces jointes locales (développement)
 .data/
+
+# Résultats bruts des tests de charge
+loadtest-results.json

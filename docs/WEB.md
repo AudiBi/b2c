@@ -105,6 +105,13 @@ Textes en trois langues (créole à relire). Le total de la facture et le solde 
 - **Journal d'audit** : lecture seule, filtres, détails avant / après.
 Textes en trois langues (créole à relire). Pas de carte ni d'itinéraire, pas d'application mobile pour le livreur (écran responsive seulement).
 
+## Double authentification (phase 9)
+
+- **Connexion** : si le serveur répond `TOTP_REQUIRED`, le formulaire affiche un champ « Code de l'application » (6 chiffres, vérifié côté navigateur avant l'envoi) ; un bouton bascule vers le **code de secours** (`xxxx-xxxx`) ; le mot de passe n'est pas ressaisi.
+- **Page Sécurité** (`/account/security`) : activation en deux temps (mot de passe → clé à saisir dans l'application d'authentification, **sans code QR** : saisie manuelle de la clé ou de l'adresse `otpauth://` → code de vérification) ; les **10 codes de secours** sont montrés **une seule fois** avec la case « J'ai noté mes codes » ; régénération et désactivation exigent le mot de passe et un code.
+- **Compte du personnel quand la double authentification est obligatoire** : tant qu'elle n'est pas active, tout l'espace redirige vers la page Sécurité (bandeau explicatif) ; la désactivation y est masquée.
+- Textes en trois langues (créole à relire). Testé par `tests/phase9.test.tsx` (8 tests d'interface) ; **non couvert par la recette navigateur** (pas de générateur de code TOTP dans le banc e2e) et jamais essayé avec une vraie application d'authentification ni sur téléphone. Pas de code QR : l'activation sur le téléphone même exige de recopier la clé.
+
 ## Limites connues
 
 - **Poids du JavaScript** : environ 277 Ko compressés pour le fichier principal (les écrans connectés, dont 51 Ko compressés, sont chargés à la demande) (React, React Router, zod, TanStack Query, les trois catalogues de textes). Le contenu s'affiche avant (pré-rendu) mais l'interactivité attend ce fichier. Pistes : charger seulement la langue courante, remplacer TanStack Query par un petit utilitaire, alléger zod côté navigateur.

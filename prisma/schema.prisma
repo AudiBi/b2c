@@ -157,6 +157,7 @@ model Company {
   handoverCodes         HandoverCode[]
   claims                Claim[]
   claimMessages         ClaimMessage[]
+  totpRecoveryCodes     TotpRecoveryCode[]
 
   @@map("companies")
 }
@@ -188,8 +189,11 @@ model User {
   status            UserStatus @default(PENDING)
   emailVerifiedAt   DateTime?  @map("email_verified_at") @db.Timestamptz(6)
   phoneVerifiedAt   DateTime?  @map("phone_verified_at") @db.Timestamptz(6)
-  // Réservé à l'authentification à deux facteurs du personnel (non implémentée en phase 3)
+  // Authentification à deux facteurs (TOTP) : secret chiffré (AES-256-GCM) ; actif seulement une fois `totpEnabledAt` renseigné
   totpSecretEnc     String?    @map("totp_secret_enc")
+  totpEnabledAt     DateTime?  @map("totp_enabled_at") @db.Timestamptz(6)
+  // Dernière période de 30 s acceptée : un code ne sert qu'une fois (anti-rejeu)
+  totpLastStep      BigInt?    @map("totp_last_step")
   lastLoginAt       DateTime?  @map("last_login_at") @db.Timestamptz(6)
   createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -198,6 +202,7 @@ model User {
   sessions           Session[]
   verificationTokens VerificationToken[]
   userRoles          UserRole[]
+  recoveryCodes      TotpRecoveryCode[]
   drivenRoutes       Route[]
   assignedClaims     Claim[]
   customer           Customer?
@@ -1595,4 +1600,25 @@ model ClaimMessage {
 
   @@index([companyId, claimId, createdAt])
   @@map("claim_messages")
+}
+
+// =============================================================================================
+// Phase 9 : double authentification
+// =============================================================================================
+
+// Code de secours d'un compte à double authentification : seule l'empreinte HMAC est conservée, usage unique
+model TotpRecoveryCode {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  companyId String    @map("company_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash")
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation(fields: [userId, companyId], references: [id, companyId])
+
+  @@unique([userId, codeHash])
+  @@index([companyId, userId])
+  @@map("totp_recovery_codes")
 }

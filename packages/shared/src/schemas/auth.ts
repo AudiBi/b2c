@@ -60,11 +60,26 @@ export const registerSchema = z
   });
 export type RegisterInput = z.infer<typeof registerSchema>;
 
-export const loginSchema = z.strictObject({
-  companySlug: companySlugSchema.optional(),
-  email: emailSchema,
-  password: z.string().min(1).max(128),
-});
+/** Code à 6 chiffres d'une application d'authentification, ou code de secours « xxxx-xxxx » (usage unique). */
+export const totpCodeSchema = z.string().trim().regex(/^\d{6}$/, 'totp_format');
+export const recoveryCodeSchema = z.string().trim().toLowerCase().regex(/^[a-z0-9]{4}-[a-z0-9]{4}$/, 'recovery_format');
+
+export const loginSchema = z
+  .strictObject({
+    companySlug: companySlugSchema.optional(),
+    email: emailSchema,
+    password: z.string().min(1).max(128),
+    totpCode: totpCodeSchema.optional(),
+    recoveryCode: recoveryCodeSchema.optional(),
+  })
+  .refine((v) => !(v.totpCode && v.recoveryCode), { path: ['recoveryCode'], message: 'one_code_only' });
+
+/** Les actions sensibles sur la double authentification exigent le mot de passe ET un code (application ou secours). */
+export const twoFactorSetupSchema = z.strictObject({ password: z.string().min(1).max(128) });
+export const twoFactorEnableSchema = z.strictObject({ code: totpCodeSchema });
+export const twoFactorProofSchema = z
+  .strictObject({ password: z.string().min(1).max(128), totpCode: totpCodeSchema.optional(), recoveryCode: recoveryCodeSchema.optional() })
+  .refine((v) => !!v.totpCode !== !!v.recoveryCode, { path: ['totpCode'], message: 'one_code_required' });
 export type LoginInput = z.infer<typeof loginSchema>;
 
 export const verifyEmailSchema = z.strictObject({ token: tokenSchema });

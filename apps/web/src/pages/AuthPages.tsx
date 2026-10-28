@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router';
 import {
   forgotPasswordSchema,
   loginSchema,
+  recoveryCodeSchema,
+  totpCodeSchema,
   registerSchema,
   resetPasswordSchema,
   resendVerificationSchema,
@@ -152,6 +154,11 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
+  // Second facteur : demandé par le serveur une fois le mot de passe accepté
+  const [needsCode, setNeedsCode] = useState(false);
+  const [useRecovery, setUseRecovery] = useState(false);
+  const [second, setSecond] = useState('');
+  const [secondError, setSecondError] = useState<string | undefined>();
 
   // Redirection uniquement vers une page de l'espace client du même site (jamais vers une URL externe)
   const next = params.get('next');
@@ -170,13 +177,30 @@ export function LoginPage() {
       setError(m.common.fixErrors);
       return;
     }
+    let proof: { totpCode?: string; recoveryCode?: string } = {};
+    if (needsCode) {
+      const value = second.trim();
+      const schema = useRecovery ? recoveryCodeSchema : totpCodeSchema;
+      const checked = schema.safeParse(value);
+      if (!checked.success) {
+        setSecondError(useRecovery ? m.auth.login.recoveryFormat : m.auth.login.totpFormat);
+        return;
+      }
+      setSecondError(undefined);
+      proof = useRecovery ? { recoveryCode: checked.data } : { totpCode: checked.data };
+    }
     setBusy(true);
     try {
-      await login(data.email, data.password);
+      await login(data.email, data.password, proof);
       navigate(target, { replace: true });
     } catch (e) {
-      setError(apiErrorMessage(e, m));
-      if (e instanceof ApiError) setCode(e.code);
+      if (e instanceof ApiError && e.code === 'TOTP_REQUIRED') {
+        setNeedsCode(true);
+        setError(null);
+      } else {
+        setError(apiErrorMessage(e, m));
+        if (e instanceof ApiError) setCode(e.code);
+      }
     } finally {
       setBusy(false);
     }
@@ -211,6 +235,33 @@ export function LoginPage() {
         ) : null}
         <TextField name="email" type="email" label={f.email} value={String(form.values.email)} onChange={(v) => form.set('email', v)} error={form.errors.email} autoComplete="username" inputMode="email" />
         <PasswordField name="password" label={f.password} value={String(form.values.password)} onChange={(v) => form.set('password', v)} error={form.errors.password} autoComplete="current-password" />
+        {needsCode ? (
+          <>
+            <p role="status">{useRecovery ? m.auth.login.recoveryLead : m.auth.login.totpLead}</p>
+            <TextField
+              name="secondFactor"
+              label={useRecovery ? m.auth.login.recoveryCode : m.auth.login.totpCode}
+              inputMode={useRecovery ? 'text' : 'numeric'}
+              autoComplete="one-time-code"
+              maxLength={useRecovery ? 9 : 6}
+              value={second}
+              onChange={setSecond}
+              error={secondError}
+              spellCheck={false}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setUseRecovery(!useRecovery);
+                setSecond('');
+                setSecondError(undefined);
+              }}
+            >
+              {useRecovery ? m.auth.login.useApp : m.auth.login.useRecovery}
+            </Button>
+          </>
+        ) : null}
         <div className="form-actions">
           <Button type="submit" disabled={busy}>
             {busy ? m.common.loading : m.auth.login.submit}

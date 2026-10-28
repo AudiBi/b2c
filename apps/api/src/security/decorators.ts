@@ -7,6 +7,7 @@ import type { AuthContext } from './auth.types';
 export const IS_PUBLIC = 'b2c:public';
 export const REQUIRED_PERMISSIONS = 'b2c:permissions';
 export const ANY_AUTHENTICATED = 'b2c:any-authenticated';
+export const ALLOW_WITHOUT_MFA = 'b2c:allow-without-mfa';
 export const RATE_LIMIT = 'b2c:rate-limit';
 
 /** Route sans authentification (inscription, connexion, suivi public, santé…). */
@@ -18,6 +19,9 @@ export const RequirePermission = (...permissions: PermissionCode[]) =>
 
 /** Route ouverte à tout utilisateur authentifié (profil, déconnexion). À utiliser explicitement. */
 export const AnyAuthenticated = () => SetMetadata(ANY_AUTHENTICATED, true);
+
+/** Reste accessible à un compte du personnel dont la double authentification est obligatoire mais pas encore activée (activation, profil, déconnexion). */
+export const AllowWithoutMfa = () => SetMetadata(ALLOW_WITHOUT_MFA, true);
 
 export interface RateLimitOptions {
   /** Nom du compteur (une clé Redis par nom et par IP). */

@@ -122,7 +122,12 @@ describe('Application', () => {
       expect(() => loadEnv({ ...prod, COOKIE_SECURE: 'true', MAIL_TRANSPORT: 'memory' })).toThrow(/MAIL_TRANSPORT/);
       expect(() => loadEnv({ ...prod, COOKIE_SECURE: 'true', ARGON2_MEMORY_KIB: '4096' })).toThrow(/ARGON2_MEMORY_KIB/);
       expect(() => loadEnv({ ...prod, COOKIE_SECURE: 'true', JWT_ACCESS_SECRET: '__JWT_SECRET__'.padEnd(40, 'x') })).toThrow(/substitution/);
-      expect(loadEnv({ ...prod, COOKIE_SECURE: 'true' }).NODE_ENV).toBe('production');
+      // Double authentification du personnel : obligatoire, avec sa propre clé de chiffrement (distincte du secret JWT)
+      const secure = { ...prod, COOKIE_SECURE: 'true', REQUIRE_STAFF_2FA: 'true', TOTP_ENCRYPTION_KEY: 'k'.repeat(40) };
+      expect(() => loadEnv({ ...prod, COOKIE_SECURE: 'true' })).toThrow(/REQUIRE_STAFF_2FA/);
+      expect(() => loadEnv({ ...secure, TOTP_ENCRYPTION_KEY: undefined } as NodeJS.ProcessEnv)).toThrow(/TOTP_ENCRYPTION_KEY/);
+      expect(() => loadEnv({ ...secure, TOTP_ENCRYPTION_KEY: base.JWT_ACCESS_SECRET } as NodeJS.ProcessEnv)).toThrow(/diff/);
+      expect(loadEnv(secure as NodeJS.ProcessEnv).NODE_ENV).toBe('production');
     });
   });
 });

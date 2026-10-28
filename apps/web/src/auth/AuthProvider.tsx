@@ -12,7 +12,7 @@ interface AuthValue {
   user: SessionUser | null;
   /** Vrai après une déconnexion demandée par la personne (et jusqu'à la prochaine connexion) : on retourne alors à l'accueil, pas à la connexion. */
   loggedOut: boolean;
-  login(email: string, password: string): Promise<SessionUser>;
+  login(email: string, password: string, proof?: { totpCode?: string; recoveryCode?: string }): Promise<SessionUser>;
   logout(options?: { allSessions?: boolean }): Promise<void>;
   reload(): Promise<void>;
 }
@@ -64,11 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, proof: { totpCode?: string; recoveryCode?: string } = {}) => {
       const result = await api<{ accessToken: string }>('/v1/auth/login', {
         method: 'POST',
         auth: false,
-        body: { companySlug: config.companySlug, email, password },
+        body: { companySlug: config.companySlug, email, password, ...proof },
       });
       setAccessToken(result.accessToken);
       setLoggedOut(false);

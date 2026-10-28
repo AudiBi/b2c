@@ -75,8 +75,10 @@ test.describe('logistique : du scan en entrepôt au retrait en agence', () => {
     await weigh.getByLabel('Largeur').fill('30');
     await weigh.getByLabel('Hauteur').fill('20');
     await weigh.getByRole('button', { name: 'Enregistrer la pesée' }).click();
-    await expect(page.getByText('Pesée enregistrée.')).toBeVisible();
+    // Le message « Pesée enregistrée. » est éphémère (le panneau de pesée disparaît dès le rechargement du colis) :
+    // on vérifie le résultat, pas le message (assertion instable révélée par la recette de la phase 9).
     await expect(page.getByText('Enregistré et pesé').first()).toBeVisible();
+    await expect(page.getByText('2 kg').first()).toBeVisible();
     await expect(page.getByRole('region', { name: 'Peser et enregistrer' })).toHaveCount(0);
 
     // --- 4. Changement de statut : le motif est exigé ----------------------------------------------

@@ -1,6 +1,6 @@
 # Plan de test
 
-Phases 3 à 6. Ce document sera étendu à chaque phase. **Seuls les résultats d'exécutions réelles y figurent.**
+Phases 3 à 9. Ce document sera étendu à chaque phase. **Seuls les résultats d'exécutions réelles y figurent.**
 
 ## Exécuter
 
@@ -8,7 +8,12 @@ Phases 3 à 6. Ce document sera étendu à chaque phase. **Seuls les résultats 
 npm run docker:up     # PostgreSQL, Redis, Mailpit doivent tourner
 npm test              # package partagé + API (intégration) + site (unitaire)
 npm run test:e2e      # recette navigateur : construit l'API et le site, lance Playwright
+npm run loadtest      # tests de charge (phase 9) : construit l'API, sème 20 000 colis dans la base de TEST, mesure
+npm run backup:check  # test de restauration (phase 9) : sauvegarde la base de test, la restaure dans une copie, compare
+npm run test:s3       # adaptateur S3 contre SeaweedFS (profil Docker « storage » : docker compose -f docker/compose.dev.yml --profile storage up -d seaweedfs)
 ```
+
+Ne **jamais** lancer deux de ces commandes en même temps : elles partagent la base de test (un échec sans rapport a déjà été observé).
 
 - **API** : tests d'intégration. L'application complète (NestJS) est interrogée en HTTP contre un vrai PostgreSQL (rôle applicatif soumis à la RLS), un vrai Redis et un transport e-mail en mémoire. Un client Prisma avec le rôle de migration sert uniquement à préparer ou vérifier les données. Chaque test crée ses propres entreprises et utilisateurs (identifiants aléatoires) et utilise une adresse IP fictive distincte (`X-Forwarded-For`).
 - **Site, unitaires** (Vitest + jsdom) : traductions, client d'API, formulaires, rendu serveur des 63 pages.
@@ -16,7 +21,7 @@ npm run test:e2e      # recette navigateur : construit l'API et le site, lance P
 
 ## Derniers résultats
 
-Exécutés le 2026-10-27, Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chromium de Playwright.
+Exécutés le 2026-10-28, Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chromium de Playwright.
 
 | Suite | Tests | Résultat |
 |---|---|---|
@@ -40,9 +45,13 @@ Exécutés le 2026-10-27, Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chro
 | API `rate-limit.spec.ts` | 7 | ✅ |
 | API `infra.spec.ts` (compteurs, idempotence) | 9 | ✅ |
 | API `app.spec.ts` (santé, en-têtes, CORS, erreurs, configuration) | 14 | ✅ |
-| Site, unitaires (9 fichiers : + `phase8`) | 192 | ✅ |
-| Site, recette navigateur (+ `delivery`) | 88 | ✅ |
-| **Total** | **856** | **856 réussis, 0 échec** |
+| API `totp.spec.ts` + `two-factor.spec.ts` (vecteurs officiels RFC 6238, fenêtre, rejeu, chiffrement du secret, codes de secours, activation / désactivation, connexion en deux temps, verrouillage, obligation du personnel, base) | 31 | ✅ |
+| API `s3-storage.spec.ts` : configuration (3, toujours exécutés) ; stockage réel (7, **ignorés** sans `npm run test:s3`, voir ci-dessous) | 3 + 7 ignorés | ✅ / ⏭ |
+| Site, unitaires (10 fichiers : + `phase9`) | 200 | ✅ |
+| Site, recette navigateur | 88 | ✅ |
+| **Total de la suite standard** | **898** | **898 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
+
+Stockage S3 contre un **vrai SeaweedFS** (`npm run test:s3`) : **10 tests sur 10 réussis** (3 de configuration + 7 de stockage, dont le parcours API complet), exécutés le 2026-10-28. Ils sont ignorés par `npm test` pour ne pas exiger ce service : la suite l'affiche comme « ignorés », elle ne les compte pas comme vérifiés.
 
 La recette navigateur couvre notamment : les **17 pages publiques × 3 langues** (51 pages) avec contrôle automatique d'accessibilité WCAG 2.1 A/AA (axe) sur ordinateur **et** sur téléphone (375 px), absence de défilement horizontal, absence d'erreur console (donc de violation de la CSP) ; le HTML pré-rendu sans JavaScript (titre, description, `canonical`, `hreflang`) ; le sitemap et robots.txt ; la page 404 avec statut 404 ; le sélecteur de langue ; la navigation au clavier (lien d'évitement) ; et tout le parcours client : inscription → e-mail réel → confirmation → connexion → code client → adresses de réception → profil → adresses → bénéficiaires → mot de passe → déconnexion, redirection vers la page demandée, redirection externe refusée, mot de passe oublié, jeton à usage unique, inscription en créole.
 
@@ -53,6 +62,15 @@ La recette de la phase 6 ajoute le parcours complet **préalerte → lecture du 
 La recette de la phase 7 ajoute le parcours complet **client inscrit → colis pesé → le personnel crée un brouillon à partir du colis, l'émet → le client voit « À payer », déclare un virement (référence trop courte refusée) → le paiement reste « en attente » → un agent le valide dans la file → facture « Payée », reçu téléchargeable, colis « prêt pour expédition » → traitement des notifications → le client lit « facture à régler » et « paiement reçu » dans son portail → l'e-mail de paiement est réellement arrivé dans Mailpit → encaissement en espèces d'un second colis (refusé sans caisse ouverte, accepté après ouverture)**, avec contrôle d'accessibilité (axe, WCAG 2.1 A/AA) sur les huit écrans de ce parcours.
 
 La recette de la phase 8 ajoute le parcours complet **colis arrivé et « prêt pour retrait » → le client obtient son code (lu à l'écran) → le personnel tente un code faux (refusé), puis le bon : colis remis, tentative et historique visibles → un livreur invité (rôle « Livreur ») se connecte et ne voit que « Mes tournées » → le personnel planifie une tournée de deux colis et la fait partir → le livreur remet un colis avec le code du client et déclare un échec « client absent » pour l'autre (le colis revient « prêt pour retrait ») → le personnel termine la tournée → le client ouvre une réclamation depuis le colis, le service répond puis clôture avec une résolution (refusée sans résolution) → tableau de bord et journal d'audit**, avec contrôle d'accessibilité sur les écrans de ce parcours.
+
+### Défauts réels détectés pendant la phase 9 (corrigés)
+1. **Aucun code de double authentification n'était accepté** : l'expression régulière du format (`/^\d{6}$/`) avait perdu son antislash à l'écriture du fichier (`/^d{6}$/`) ; relevé par le test d'activation (`VALIDATION_ERROR`), corrigé et verrouillé par les tests de format.
+2. **Bibliothèques vulnérables** : `multer` et `js-yaml` (corrigés par `overrides`) ; puis le client S3 en version trop ancienne introduisait 22 alertes (dont une critique) — résolu en prenant la version courante, avec contrôle de `npm audit` après chaque ajout.
+3. **SeaweedFS crée un bucket absent à l'écriture** (S3 répond `NoSuchBucket`) : le test « bucket absent » a échoué ; le service Docker est lancé avec `-s3.autoCreateBucket=false`.
+4. **Banc de charge** : le semis de colis violait deux règles de la base (client et mesures obligatoires pour un colis avancé, format du code client) — preuve que ces protections existent ; le semis les respecte.
+5. **Test d'environnement de production** (`app.spec.ts`) devenu faux : la production exige désormais `REQUIRE_STAFF_2FA` et `TOTP_ENCRYPTION_KEY` ; test réécrit pour les couvrir.
+6. Test d'interface du formulaire de double authentification : le bouton « Activer » était cherché avant la fin du chargement de l'état (défaut du test, pas du produit).
+7. **Recette navigateur instable** : le parcours de logistique attendait le message « Pesée enregistrée. », qui disparaît dès que la fiche du colis se recharge (le panneau de pesée se ferme) ; échec reproduit dans la suite complète, succès isolé. Assertion remplacée par la vérification du résultat (statut et poids). Réserve produit : cette confirmation est quasi invisible pour l'agent (à améliorer).
 
 ### Défauts réels détectés par ces tests pendant la phase 8 (corrigés)
 1. **L'administrateur de l'entreprise ne pouvait pas inviter un livreur** (403 anti-escalade : il ne détenait pas `delivery:read_assigned`) — révélé par la recette navigateur, verrouillé ensuite par un test d'API.
@@ -93,6 +111,35 @@ La recette de la phase 8 ajoute le parcours complet **colis arrivé et « prêt 
 4. **Appel de renouvellement de session à chaque visite anonyme** (erreur 401 en console, consommation de la limite de débit) : remplacé par un cookie « indice » lisible.
 5. **Test de purge** de la base de test qui ne couvrait pas les nouvelles tables ; **limite de débit globale** déclenchée par des tests partageant la même IP (corrigé dans le banc de test).
 
+## Tests de charge (phase 9)
+
+`npm run loadtest` (script `scripts/loadtest/run.mjs`). Résultats du 2026-10-28 (fichier `loadtest-results.json`, non versionné).
+
+**Conditions** : Intel Core i7-1355U (12 threads), 32 Gio, Windows 11, Node 22.21.1 ; **le générateur de charge (autocannon), l'API compilée, PostgreSQL 17 et Redis 7 (Docker Desktop) tournent sur la même machine** ; base de TEST seule, avec 20 000 colis et 60 000 événements d'une entreprise ; 50 connexions simultanées pendant 20 s par scénario (sauf mention) ; adresses IP distinctes simulées pour rester sous la limite de débit (sauf le dernier scénario). Les chiffres sont donc des **ordres de grandeur sur du matériel de poste de travail, pas une capacité de production**.
+
+| Scénario | Débit | Latence p50 | p97,5 | p99 | Statuts |
+|---|---|---|---|---|---|
+| Référence : `/health/live` (aucune requête SQL), 8 s | 874 req/s | 54 ms | 87 ms | 104 ms | 6 995 × 2xx |
+| Référence : suivi d'un numéro connu, **1 seule connexion** (latence sans file d'attente), 8 s | 48 req/s | 19 ms | 32 ms | 33 ms | 382 × 2xx |
+| Suivi public : numéro connu | 128 req/s | 351 ms | 636 ms | 690 ms | 2 562 × 2xx |
+| Suivi public : numéro inconnu (404 identique) | 329 req/s | 147 ms | 232 ms | 273 ms | 6 572 × 404 |
+| Calculateur public (estimation avec assurance) | 161 req/s | 302 ms | 410 ms | 495 ms | 3 226 × 2xx |
+| **Une seule adresse IP insiste sur le suivi** (10 connexions, 8 s) | – | – | – | – | **30 × 2xx, 7 275 × 429, 0 × 5xx** |
+
+**Ce que les mesures montrent** : aucune erreur serveur (0 × 5xx), aucun délai dépassé, aucune erreur de connexion sur l'ensemble des scénarios ; la limite de débit par adresse laisse passer **exactement 30** requêtes par minute puis refuse le reste sous une charge de plus de 900 req/s ; une requête de suivi isolée prend 19 ms avec 20 000 colis (non comparé à d’autres volumes). Sous 50 connexions la latence est surtout de l'attente en file (le suivi fait deux transactions par requête) ; cette explication est une estimation, le goulot n'a pas été profilé.
+
+**Ce que les mesures ne montrent pas** : le comportement sur des machines séparées ou plus puissantes ; la saturation du pool de connexions PostgreSQL en production ; une charge soutenue sur des heures (aucun test d'endurance) ; les écrans du personnel, l'émission de factures et le traitement des notifications (non mesurés) ; l'effet d'un proxy inverse (nginx, TLS) ; le goulot exact (non profilé). Un maximum isolé de 2,4 s a été observé sur le suivi connu (cause non investiguée) sans erreur. **Aucune optimisation n'a été faite** : le script est reproductible pour mesurer avant / après.
+
+## Test de restauration d'une sauvegarde (phase 9)
+
+`npm run backup:check` (script `scripts/backup-restore-check.mjs`), exécuté le 2026-10-28 sur la base de TEST (refuse toute base dont le nom ne finit pas par `_test`) : `pg_dump -Fc` (0,6 s, 2,2 Mio) puis `pg_restore` dans une base neuve (2,0 s), puis suppression de la copie. **17 contrôles sur 17 réussis** :
+- restauration sans aucune erreur ; **54 tables, 80 597 lignes**, nombre de lignes identique table par table ; 9 migrations identiques ;
+- **empreinte md5 du contenu** identique pour `users`, `invoices`, `payments`, `audit_log`, `packages` ;
+- RLS activée **et forcée** identique (52 tables protégées), 57 politiques, 28 déclencheurs, droits du rôle applicatif identiques ;
+- avec le **rôle applicatif** (celui de l'API) sur la copie : sans contexte d'entreprise → 0 colis ; avec le contexte de l'entreprise → ses 20 000 colis exactement ; avec celui d'une autre entreprise → 0 ; la modification du journal d'audit est **refusée** (« ajout seul »).
+
+**Limites** : une seule base, petite (le test mesure la fidélité, pas les délais d'une vraie base) ; sauvegarde et restauration dans le **même conteneur** PostgreSQL (une panne de la machine n'est pas simulée) ; les **fichiers joints** ne sont pas sauvegardés par ce test ; aucune sauvegarde planifiée ni rétention ni chiffrement (phase 10) ; restauration complète seulement (pas à un instant donné).
+
 ## Couverture des parcours du cahier des charges (§18)
 
 | # | Parcours | État |
@@ -113,7 +160,8 @@ La recette de la phase 8 ajoute le parcours complet **colis arrivé et « prêt 
 | Erreurs réseau | ✅ Redis injoignable (503 / échec fermé, routes ordinaires disponibles) ; client d'API : panne réseau, 401 puis renouvellement, renouvellement refusé. ❌ non testé : panne PostgreSQL, SMTP injoignable |
 | Données invalides | ✅ champs inconnus, formats, JSON mal formé, corps trop gros, mots de passe faibles, jetons falsifiés, validation côté navigateur ET serveur, en trois langues |
 | Transitions de statut interdites | ✅ test exhaustif des 289 paires (paquet partagé) + refus au niveau API (409) + refus en base sans événement |
-| Tests de charge | ⏳ phase 9 |
+| Tests de charge | ✅ phase 9, une seule machine : voir « Tests de charge » ci-dessous |
+| Restauration d'une sauvegarde | ✅ phase 9 : voir « Test de restauration » ci-dessous |
 
 ## Contrôles manuels réalisés
 - **Détection des tests** (phase 3) : trois protections cassées volontairement puis rétablies (révocation de famille de sessions, garde de permissions, politique RLS) : les tests échouent comme attendu.
@@ -122,6 +170,7 @@ La recette de la phase 8 ajoute le parcours complet **colis arrivé et « prêt 
 - `seed-demo` exécuté sur la base de test et refusé en production.
 
 ## Limites des tests actuels
+- **Phase 9** : la double authentification n'est testée qu'avec des codes calculés par les tests (RFC 6238), jamais avec une application d'authentification réelle, et n'est pas dans la recette navigateur ; le stockage S3 n'est testé que contre SeaweedFS en local ; **aucune intégration de paiement, SMS, WhatsApp, transporteur ni e-mail de production** n'a été testée (aucun compte de test) ; les mesures de charge viennent d'une seule machine ; aucun test d'intrusion, d'analyse automatique du code ni d'endurance.
 - **Phase 8** : le code de remise est lu à l'écran du client (aucun SMS) ; la photo de preuve est simulée par une pièce jointe insérée en base (le chemin de dépôt de fichier est testé par la phase 5) ; les tournées ne sont testées que sur de petits volumes (2 à 3 arrêts) ; aucune mesure de performance des requêtes du tableau de bord sur un grand volume de données ; pas de test sur un téléphone réel pour l'écran du livreur.
 - **Phase 7** : la confirmation signée est exercée avec un émetteur écrit pour les tests (aucun prestataire réel) ; l'échec d'envoi d'e-mail est simulé (SMTP injoignable réel non testé) ; les PDF de facture et de reçu sont vérifiés (document valide) mais pas visuellement ; pas de test de charge sur l'émission simultanée au-delà de 4 factures ; les écrans de finance ne sont testés que dans Chromium.
 - **Phase 6** : le PDF du manifeste est vérifié (document valide, taille), pas visuellement ; le lecteur de codes-barres est simulé par la saisie ; aucun test de charge sur les scans (phase 9) ; les écrans du personnel ne sont testés que dans Chromium.

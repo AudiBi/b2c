@@ -26,7 +26,7 @@ Codes ajoutés en phase 6 : entrepôt — `LOCATION_NOT_FOUND`, `LOCATION_CODE_U
 
 Les messages de `details` d'une `VALIDATION_ERROR` pour les règles propres à l'application sont des **codes stables** (`password_common`, `phone_format`, `terms_required`, `country_format`, `date_order`…) que l'interface traduit ; les autres sont les messages bruts de zod.
 
-Codes principaux : `VALIDATION_ERROR` (400), `UNAUTHENTICATED`, `INVALID_TOKEN`, `SESSION_ENDED`, `INVALID_CREDENTIALS` (401), `FORBIDDEN`, `EMAIL_NOT_VERIFIED`, `ACCOUNT_DISABLED`, `COMPANY_SUSPENDED`, `PRIVILEGE_ESCALATION`, `CSRF_HEADER_REQUIRED` (403), `NOT_FOUND`, `USER_NOT_FOUND`, `COMPANY_NOT_FOUND` (404), `CONFLICT`, `EMAIL_ALREADY_USED`, `ROLE_ALREADY_ASSIGNED`, `LAST_ADMINISTRATOR`, `COMPANY_ALREADY_EXISTS` (409), `IDEMPOTENCY_KEY_REUSED` (422), `RATE_LIMITED`, `ACCOUNT_LOCKED` (429), `SECURITY_BACKEND_UNAVAILABLE`, `RATE_LIMITER_UNAVAILABLE` (503), `INTERNAL_ERROR` (500, sans détail).
+Codes principaux : `VALIDATION_ERROR` (400), `UNAUTHENTICATED`, `INVALID_TOKEN`, `SESSION_ENDED`, `INVALID_CREDENTIALS`, `TOTP_REQUIRED`, `INVALID_TOTP` (401), `FORBIDDEN`, `EMAIL_NOT_VERIFIED`, `ACCOUNT_DISABLED`, `COMPANY_SUSPENDED`, `PRIVILEGE_ESCALATION`, `CSRF_HEADER_REQUIRED`, `TOTP_ENROLLMENT_REQUIRED` (403 : le compte doit d'abord activer la double authentification ; seules `/v1/auth/me`, `/v1/auth/logout` et `/v1/me/2fa/*` restent ouvertes), `NOT_FOUND`, `USER_NOT_FOUND`, `COMPANY_NOT_FOUND` (404), `CONFLICT`, `EMAIL_ALREADY_USED`, `ROLE_ALREADY_ASSIGNED`, `LAST_ADMINISTRATOR`, `COMPANY_ALREADY_EXISTS`, `TOTP_ALREADY_ENABLED`, `TOTP_SETUP_REQUIRED`, `TOTP_NOT_ENABLED`, `TOTP_REQUIRED_BY_POLICY` (409), `IDEMPOTENCY_KEY_REUSED` (422), `RATE_LIMITED`, `ACCOUNT_LOCKED`, `TOO_MANY_ATTEMPTS` (429), `SECURITY_BACKEND_UNAVAILABLE`, `RATE_LIMITER_UNAVAILABLE` (503), `INTERNAL_ERROR` (500, sans détail).
 
 Une route qui ne déclare ni accès public, ni accès « tout utilisateur connecté », ni permissions, est refusée par défaut (`ROUTE_NOT_CONFIGURED`) ; un test vérifie que cela n'arrive pour aucune route.
 
@@ -37,12 +37,17 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 | `POST /v1/auth/register` | public, 10/h/IP | Inscription client (individuel/professionnel). **Toujours 202**, que l'adresse existe ou non |
 | `POST /v1/auth/verify-email` | public | Confirme l'e-mail (jeton à usage unique, 24 h) |
 | `POST /v1/auth/resend-verification` | public | Renvoie le lien (3/h/adresse), réponse identique si inconnu |
-| `POST /v1/auth/login` | public, 30/10 min/IP + verrou 5 échecs/15 min/compte | Connexion. Sans `companySlug` : équipe de la plateforme |
+| `POST /v1/auth/login` | public, 30/10 min/IP + verrou 5 échecs/15 min/compte | Connexion. Sans `companySlug` : équipe de la plateforme. Si la double authentification est active, le mot de passe seul répond **401 `TOTP_REQUIRED`** ; renvoyer la requête avec `totpCode` (6 chiffres) **ou** `recoveryCode` (`xxxx-xxxx`, jamais les deux). Un code faux, rejoué ou périmé : **401 `INVALID_TOTP`** (compté comme un échec de connexion) |
 | `POST /v1/auth/refresh` | public (cookie + `X-CSRF-Protection: 1`, ou corps `refreshToken`) | Rotation des jetons ; réutilisation = révocation de la famille |
 | `POST /v1/auth/logout` | connecté | Déconnexion (`allSessions: true` pour tous les appareils) |
 | `POST /v1/auth/forgot-password` | public | Lien de réinitialisation (1 h), 3/h/adresse, réponse identique |
 | `POST /v1/auth/reset-password` | public | Nouveau mot de passe ; active aussi un compte invité (72 h) ; révoque les sessions |
-| `GET /v1/auth/me` | connecté | Profil, rôles avec portées, permissions |
+| `GET /v1/auth/me` | connecté | Profil, rôles avec portées, permissions, et `mfa` : `{ enabled, required, enrollmentRequired }` |
+| `GET /v1/me/2fa` | connecté | État de la double authentification et nombre de codes de secours restants |
+| `POST /v1/me/2fa/setup` | connecté, 20/h/IP ; corps `{ password }` | Démarre l'activation : renvoie la clé (`secret`) et l'adresse `otpauth://` **une seule fois** ; sans effet tant qu'un code valide n'a pas été saisi |
+| `POST /v1/me/2fa/enable` | connecté ; corps `{ code }` | Active après un code valide ; renvoie les **10 codes de secours, une seule fois** |
+| `POST /v1/me/2fa/disable` | connecté ; corps `{ password, totpCode ou recoveryCode }` | Désactive (refusé : `TOTP_REQUIRED_BY_POLICY` si le compte y est tenu) |
+| `POST /v1/me/2fa/recovery-codes` | connecté ; même corps | Remplace les codes de secours par 10 nouveaux, montrés une seule fois |
 | `GET /v1/admin/users` | `user:read` | Liste (filtres `q`, `kind`, `status`) |
 | `GET /v1/admin/users/{id}` | `user:read` | Détail |
 | `POST /v1/admin/users` | `user:create` | Invite un membre du personnel avec ses rôles |

@@ -29,6 +29,11 @@ export function AccountLayout() {
     return <Navigate to={`${localized(lang, 'login')}?next=${next}`} replace />;
   }
 
+  // Double authentification obligatoire et pas encore activée : seule la page Sécurité (où on l'active) reste ouverte
+  if (user?.mfa?.enrollmentRequired && !location.pathname.endsWith('/account/security')) {
+    return <Navigate to={localized(lang, 'accountSecurity')} replace />;
+  }
+
   const isCustomer = user?.kind === 'CUSTOMER';
   const can = (permission: string) => !!user?.permissions.includes(permission);
   const isStaff = user?.kind === 'STAFF';

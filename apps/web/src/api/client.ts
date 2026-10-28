@@ -41,6 +41,8 @@ export interface SessionUser {
   emailVerified: boolean;
   roles: { userRoleId: string; roleCode: string; scopeType: string; scopeId: string | null }[];
   permissions: string[];
+  /** Double authentification : active, exigée pour ce compte, activation encore à faire. */
+  mfa?: { enabled: boolean; required: boolean; enrollmentRequired: boolean };
 }
 
 /** Jeton d'accès conservé en mémoire uniquement (jamais dans localStorage) : le cookie HttpOnly sert à le renouveler. */

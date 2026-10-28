@@ -2,11 +2,13 @@ import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/commo
 import { Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
 import { AppException } from '../common/errors';
+import { ConfigService } from '../config/config.module';
 import { setActor } from '../common/request-context';
 import { RateLimiter } from '../redis/rate-limiter.service';
 import { AuthContextService } from './auth-context.service';
 import type { AuthContext } from './auth.types';
 import {
+  ALLOW_WITHOUT_MFA,
   ANY_AUTHENTICATED,
   IS_PUBLIC,
   RATE_LIMIT,
@@ -87,7 +89,10 @@ export class AuthGuard implements CanActivate {
  */
 @Injectable()
 export class PermissionsGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly config: ConfigService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const targets = [context.getHandler(), context.getClass()];
@@ -96,6 +101,11 @@ export class PermissionsGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request>();
     const auth = req.auth;
     if (!auth) throw AppException.unauthorized('UNAUTHENTICATED', 'Authentification requise');
+
+    // Double authentification obligatoire : tant qu'elle n'est pas activée, seules les routes d'activation et de sortie répondent
+    if (this.config.env.REQUIRE_STAFF_2FA && auth.kind !== 'CUSTOMER' && !auth.totpEnabled && !this.reflector.getAllAndOverride<boolean>(ALLOW_WITHOUT_MFA, targets)) {
+      throw AppException.forbidden('TOTP_ENROLLMENT_REQUIRED', 'Activez la double authentification pour continuer');
+    }
 
     if (this.reflector.getAllAndOverride<boolean>(ANY_AUTHENTICATED, targets)) return true;
 

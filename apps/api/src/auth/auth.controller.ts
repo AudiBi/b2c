@@ -16,7 +16,7 @@ import type { z } from 'zod';
 import { AppException } from '../common/errors';
 import { ConfigService } from '../config/config.module';
 import { Validate, VBody } from '../common/validation';
-import { AnyAuthenticated, CurrentAuth, Public, RateLimit } from '../security/decorators';
+import { AllowWithoutMfa, AnyAuthenticated, CurrentAuth, Public, RateLimit } from '../security/decorators';
 import type { AuthContext } from '../security/auth.types';
 import { AuthService, type SessionTokens } from './auth.service';
 
@@ -125,6 +125,7 @@ export class AuthController {
 
   @Post('logout')
   @AnyAuthenticated()
+  @AllowWithoutMfa()
   @HttpCode(204)
   @Validate({ body: logoutSchema })
   @ApiBearerAuth()
@@ -179,6 +180,7 @@ export class AuthController {
 
   @Get('me')
   @AnyAuthenticated()
+  @AllowWithoutMfa()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Profil de l\'utilisateur connecté, rôles et permissions' })
   me(@CurrentAuth() auth: AuthContext) {
@@ -191,6 +193,7 @@ export class AuthController {
       lastName: auth.lastName,
       locale: auth.locale,
       emailVerified: auth.emailVerified,
+      mfa: { enabled: auth.totpEnabled, required: this.config.env.REQUIRE_STAFF_2FA && auth.kind !== 'CUSTOMER', enrollmentRequired: this.config.env.REQUIRE_STAFF_2FA && auth.kind !== 'CUSTOMER' && !auth.totpEnabled },
       roles: auth.roles,
       permissions: auth.permissions.list(),
     };

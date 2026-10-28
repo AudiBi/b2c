@@ -16,7 +16,7 @@ Légende : ☐ à faire · ◐ en cours · ☑ terminé et testé
 | 6 | Entrepôts, lots, manifestes, agences | ☑ 670 tests au total ; réserves ci-dessous |
 | 7 | Facturation, paiements, notifications | ☑ 772 tests au total ; réserves ci-dessous |
 | 8 | Livraisons, réclamations, tableaux de bord | ☑ 856 tests au total ; réserves ci-dessous |
-| 9 | Intégrations, tests de sécurité, tests de charge | ☐ |
+| 9 | Intégrations, tests de sécurité, tests de charge | ☑ 898 tests au total ; réserves ci-dessous |
 | 10 | Documentation finale, déploiement, préparation à la production | ☐ |
 
 ## Backlog détaillé et dépendances
@@ -188,6 +188,32 @@ Critère de sortie : tests verts exécutés, migration appliquée à une base vi
 
 ### Phase 9 : intégrations et robustesse
 Revue de sécurité (OWASP ASVS niveau 2 comme guide), tests de charge du suivi et du calculateur, tests de restauration de sauvegarde, intégrations réelles uniquement avec des comptes de test.
+
+| # | Tâche | Résultat |
+|---|---|---|
+| 9.1 | Revue de sécurité guidée par ASVS niveau 2 ; audit des dépendances | ☑ [SECURITY.md](SECURITY.md) (écart principal : second facteur du personnel) |
+| 9.2 | Double authentification TOTP, codes de secours, obligation du personnel | ☑ API, base (migration 0009), écrans, 3 langues |
+| 9.3 | Tests de charge du suivi public et du calculateur | ☑ `npm run loadtest` : chiffres réels dans [TEST_PLAN.md](TEST_PLAN.md) |
+| 9.4 | Test de restauration d'une sauvegarde | ☑ `npm run backup:check` : 17 contrôles, tous réussis |
+| 9.5 | Intégration réelle : stockage S3 | ◐ adaptateur testé contre **SeaweedFS** seulement ; aucun autre fournisseur |
+| 9.6 | Intégrations de paiement, SMS, WhatsApp, transporteurs | ❌ **non faites** : aucun compte de test n'existe, rien n'est simulé |
+
+**Réalisé en phase 9** :
+- **Double authentification** (`/v1/me/2fa/*`, connexion en deux temps) : TOTP standard (RFC 6238, vecteurs officiels reproduits), secret chiffré au repos, code à usage unique, 10 codes de secours (empreinte HMAC), mot de passe exigé pour activer / désactiver / régénérer, échecs comptés dans le verrouillage. `REQUIRE_STAFF_2FA=true` (obligatoire en production) enferme tout compte du personnel non équipé sur sa page Sécurité. Défauts trouvés en chemin : une expression régulière perdue par l'outil d'écriture (`/^d{6}$/`) refusait tous les codes ; vue par un test d'intégration avant toute livraison.
+- **Dépendances** : `multer` et `js-yaml` corrigés (`overrides`) ; en production il ne reste que 3 alertes « élevées » de l'outil en ligne de commande Prisma (détail dans SECURITY.md).
+- **Charge** : banc `scripts/loadtest/run.mjs` (20 000 colis, 60 000 événements, API compilée, autocannon, Redis dédié, base de test uniquement). Chiffres, limites et conditions dans [TEST_PLAN.md](TEST_PLAN.md) ; la limite par adresse IP laisse passer exactement 30 requêtes par minute, sans aucune erreur serveur.
+- **Sauvegarde / restauration** : `npm run backup:check` sauvegarde la base de test (`pg_dump -Fc`), la restaure dans une base neuve (`pg_restore`), compare lignes et empreintes des tables sensibles, puis vérifie avec le **rôle applicatif** que l'isolation par entreprise et l'audit en ajout seul ont survécu.
+- **Stockage S3** : `STORAGE_DRIVER=s3`, adaptateur `S3Storage` (client `@aws-sdk/client-s3`), service Docker `seaweedfs` (profil `storage`) à la place de MinIO (image introuvable), `npm run s3:init` / `npm run test:s3`. Défaut relevé par un test : SeaweedFS crée silencieusement un bucket absent (S3 répond `NoSuchBucket`) → désactivé dans le compose.
+
+**Réserves de la phase 9 (reportées)** :
+- **Aucune intégration externe de production n'a été faite** : pas de prestataire de paiement, de SMS, de WhatsApp, de transporteur ni de fournisseur d'e-mail de production, faute de compte de test. Le webhook de paiement, le SMS et le code de remise par SMS restent inexercés avec un vrai service.
+- **S3** : essayé uniquement avec SeaweedFS, dans Docker, en local. Pas d'AWS S3 ni d'autre fournisseur, pas de lien pré-signé direct vers le stockage (les fichiers passent encore par l'API), pas de chiffrement ni de cycle de vie, et le test de restauration ne couvre pas les fichiers.
+- **Charge** : mesurée sur **une seule machine** (générateur de charge, API, PostgreSQL et Redis ensemble, Windows + Docker Desktop) : les chiffres sont des ordres de grandeur, pas une capacité de production. Le suivi public coûte deux transactions par requête et n'a pas été optimisé ni profilé. Pas de test de charge des écrans du personnel, de l'émission des factures ni du traitement des notifications, pas de test d'endurance.
+- **Sauvegarde** : vérifie la restauration d'**une** base de test (2,2 Mio) ; aucune sauvegarde planifiée, aucune rétention, aucun chiffrement, aucune copie hors machine, aucune restauration partielle, aucune mesure sur une grosse base.
+- **Revue de sécurité** : par lecture du code et des tests, guidée par ASVS ; ni test d'intrusion, ni analyse automatique du code (SAST), ni audit externe. Les alertes d'outils de développement restent (vitest, autocannon, jest) : voir SECURITY.md.
+- **Double authentification** : pas de WebAuthn, de SMS ni de réinitialisation par un administrateur ; pas de code QR ; testée avec des codes calculés par les tests, jamais avec une vraie application d'authentification ; absente de la recette navigateur.
+- Le créole des nouveaux écrans (double authentification) n'a pas été relu par un locuteur natif.
+- **Confirmation de pesée furtive** (relevée par la recette navigateur) : le message « Pesée enregistrée. » disparaît presque aussitôt, car le panneau de pesée se ferme au rechargement de la fiche du colis ; le test vérifie désormais le résultat, mais l'agent ne voit presque pas la confirmation. À améliorer (message au niveau de la page).
 
 ### Phase 10 : production
 Docker de production, procédures de déploiement et de sauvegarde, `docs/DEPLOYMENT.md`, `docs/SECURITY.md`, `docs/TEST_PLAN.md`, `docs/INTEGRATIONS.md`, `docs/API.md`, liste finale des risques bloquants.

@@ -18,6 +18,8 @@ export interface AuthContext {
   lastName: string;
   locale: Locale;
   emailVerified: boolean;
+  /** Double authentification active sur ce compte. */
+  totpEnabled: boolean;
   roles: AssignedRole[];
   permissions: PermissionSet;
 }

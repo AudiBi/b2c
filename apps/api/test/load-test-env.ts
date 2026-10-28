@@ -30,6 +30,8 @@ export function loadTestEnv(): void {
     COOKIE_SECURE: 'false',
     // Pièces jointes des tests : dossier temporaire, jamais celui du développement
     FILES_DIR: join(tmpdir(), 'b2c-test-files'),
+    // Disque par défaut : les tests du stockage S3 (s3-storage.spec.ts) l'activent eux-mêmes
+    STORAGE_DRIVER: 'disk',
     // Le traitement des notifications est déclenché à la main par les tests (déterminisme)
     NOTIFICATION_WORKER_INTERVAL_MS: '0',
   });

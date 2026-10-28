@@ -20,6 +20,7 @@ import type { AuthContext } from '../security/auth.types';
 import { OneTimeTokenService } from '../security/one-time-token.service';
 import { PasswordService } from '../security/password.service';
 import { randomSecret, sha256, TokenService } from '../security/token.service';
+import { TwoFactorService } from './two-factor.service';
 
 const LOGIN_MAX_FAILURES = 5;
 const LOGIN_LOCK_SECONDS = 15 * 60;
@@ -79,6 +80,7 @@ export class AuthService {
     private readonly limiter: RateLimiter,
     private readonly companies: CompanyDirectory,
     private readonly customers: CustomersService,
+    private readonly twoFactor: TwoFactorService,
   ) {}
 
   // ---------------------------------------------------------------------------------------------
@@ -229,6 +231,16 @@ export class AuthService {
     }
     if (!user.emailVerifiedAt) {
       throw AppException.forbidden('EMAIL_NOT_VERIFIED', "Adresse e-mail non confirmée");
+    }
+
+    // Double authentification : le mot de passe est correct, un second facteur est exigé (un code faux compte comme un échec)
+    if (user.totpEnabledAt) {
+      if (!input.totpCode && !input.recoveryCode) throw AppException.unauthorized('TOTP_REQUIRED', 'Code de double authentification requis');
+      const proofOk = await this.db.run({ companyId: company.id }, (tx) => this.twoFactor.verifyProof(tx, user, input));
+      if (!proofOk) {
+        await this.recordLoginFailure(failKey, company.id, user.id, input.email);
+        throw AppException.unauthorized('INVALID_TOTP', 'Code incorrect');
+      }
     }
 
     const session = await this.db.run({ companyId: company.id }, async (tx) => {

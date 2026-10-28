@@ -29,11 +29,22 @@
     "dev:api": "npm run build && node --env-file=.env apps/api/dist/main.js",
     "dev:web": "npm -w @b2c/web run dev",
     "preview:web": "npm -w @b2c/web run preview",
-    "test:e2e": "npm -w @b2c/web run test:e2e"
+    "test:e2e": "npm -w @b2c/web run test:e2e",
+    "loadtest": "npm run build && node scripts/loadtest/run.mjs",
+    "backup:check": "node scripts/backup-restore-check.mjs",
+    "s3:init": "node scripts/s3-init.mjs",
+    "test:s3": "node scripts/s3-init.mjs && node scripts/test-s3.mjs"
   },
   "devDependencies": {
+    "autocannon": "^8.0.0",
     "prisma": "6.19.3",
     "tsx": "^4.20.0",
     "typescript": "5.9.3"
+  },
+  "overrides": {
+    "multer": "2.5.0",
+    "@nestjs/swagger": {
+      "js-yaml": "5.5.0"
+    }
   }
 }

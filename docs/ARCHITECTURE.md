@@ -10,7 +10,7 @@ Navigateur / mobile futur
         ▼
   apps/web (React, Vite)  ──────►  apps/api (NestJS)  ──►  PostgreSQL (données, RLS)
   site public + portails           REST /v1 + OpenAPI  ──►  Redis (limites de débit, files BullMQ)
-                                          │            ──►  Stockage S3 (MinIO en local)
+                                          │            ──►  Stockage S3 (SeaweedFS en local, optionnel)
                                           ▼
                               apps/worker (même code, processus séparé)
                               notifications, e-mails, exports, rapprochements
@@ -27,7 +27,7 @@ b2c/
   apps/web/        React + TypeScript : site public, portail client, back-office
   packages/shared/ types, schémas de validation (zod), énumérations de statuts, permissions
   prisma/          schema.prisma, migrations versionnées, seed.ts (minimal), seed-demo.ts (DEMO)
-  docker/          Dockerfiles, compose.dev.yml (postgres, redis, minio, mailpit)
+  docker/          Dockerfiles, compose.dev.yml (postgres, redis, mailpit ; seaweedfs en option)
   docs/
   .env.example
 ```
@@ -43,7 +43,7 @@ Outils : npm workspaces, TypeScript strict, ESLint, Prettier, Vitest (shared, we
 | ORM | Prisma | Migrations versionnées, types générés. Limite : RLS et verrous demandent du SQL brut, encadré dans une couche dédiée |
 | Validation | zod dans `packages/shared`, partagé API/web | Une seule définition des formats |
 | Files | BullMQ sur Redis | Nouvelles tentatives, délais, tâches différées |
-| Fichiers | API S3 (MinIO en dev) avec URLs signées | Les fichiers ne transitent pas par l'API ; clés préfixées par l'entreprise |
+| Fichiers | Disque local (défaut) ou API S3 (SeaweedFS en dev) via `STORAGE_DRIVER` | **Réalisé tel quel en phase 9 : les fichiers transitent par l'API** (liens signés HMAC de l'API, pas d'URL pré-signée du stockage) ; clés préfixées par l'entreprise |
 | Auth | Cookie `HttpOnly` pour le web, jeton porteur pour mobile | Voir §5 |
 | Front | React + Vite + React Router + TanStack Query, i18next | SPA pour les portails. Le site public a besoin de SEO : voir décision D1 |
 | Docs API | `@nestjs/swagger` → `docs/API.md` généré + `/docs` | Une source |
@@ -162,7 +162,7 @@ Réalisé et testé (voir [TEST_PLAN.md](TEST_PLAN.md)) : monorepo npm workspace
 | Validation | `class-validator` / zod | zod partagé (`packages/shared`), appliqué par un intercepteur global (`@Validate`) qui alimente aussi OpenAPI |
 | Express 5 | non prévu | `req.query` est en lecture seule : les données validées sont exposées par `@VBody() / @VQuery() / @VParams()` |
 | Files de tâches | BullMQ dès la phase 3 | **File dans PostgreSQL, pas BullMQ** (phase 7) : table `outbox_events` écrite dans la transaction de l'action, puis table `notifications` traitée par un traitement de fond (intervalle `NOTIFICATION_WORKER_INTERVAL_MS`, verrous `SKIP LOCKED`, plusieurs instances sans doublon). Une dépendance et un point de panne de moins ; Redis reste réservé aux limites de débit. Les e-mails d'authentification (inscription, mot de passe) sont toujours envoyés directement après la transaction, sans nouvelle tentative |
-| Stockage S3 | MinIO dans le compose | Profil `storage` optionnel et non vérifié (image MinIO introuvable) ; sans objet avant la phase 5 |
+| Stockage S3 | SeaweedFS dans le compose (profil `storage`) | MinIO abandonné (image introuvable) ; adaptateur testé contre SeaweedFS seulement (phase 9) |
 | Authentification | TOTP du personnel | Colonne prévue, **fonction non implémentée** |
 | Tests | Vitest | Jest + ts-jest (chemin standard avec les décorateurs NestJS) |
 | Réinitialisation de la base de test | `prisma migrate reset` | Interdite à un agent par Prisma sans accord humain explicite ; remplacée par `migrate deploy` + nettoyage des données d'une base `*_test` |

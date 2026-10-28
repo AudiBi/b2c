@@ -56,6 +56,7 @@ export class AuthContextService {
         lastName: user.lastName,
         locale: user.locale as Locale,
         emailVerified: user.emailVerifiedAt !== null,
+        totpEnabled: user.totpEnabledAt !== null,
         roles: user.userRoles.map((assignment) => ({
           userRoleId: assignment.id,
           roleCode: assignment.role.code,
