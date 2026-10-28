@@ -16,6 +16,11 @@ export function formatNumber(value: string | number, lang: Lang, maximumFraction
   return new Intl.NumberFormat(locale(lang), { maximumFractionDigits }).format(Number(value));
 }
 
+/** Montant à deux décimales sans symbole de devise (quand la devise n'est pas connue). */
+export function formatAmount(value: string | number, lang: Lang): string {
+  return new Intl.NumberFormat(locale(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value));
+}
+
 const WEIGHT_LABEL = { KG: 'kg', LB: 'lb' } as const;
 export function formatWeight(value: string | number | null | undefined, unit: 'KG' | 'LB', lang: Lang): string {
   if (value === null || value === undefined) return '—';

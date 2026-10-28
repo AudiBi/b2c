@@ -11,3 +11,5 @@ export * from './package-status';
 export * from './tracking-number';
 export * from './shipment-status';
 export * from './schemas/logistics';
+export * from './schemas/finance';
+export * from './notifications';

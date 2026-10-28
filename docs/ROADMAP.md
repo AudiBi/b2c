@@ -14,7 +14,7 @@ Légende : ☐ à faire · ◐ en cours · ☑ terminé et testé
 | 4 | Site public (17 pages) et portail client | ☑ 391 tests au total ; réserves ci-dessous |
 | 5 | Colis, préalertes, suivi, calculateur | ☑ 579 tests au total ; réserves ci-dessous |
 | 6 | Entrepôts, lots, manifestes, agences | ☑ 670 tests au total ; réserves ci-dessous |
-| 7 | Facturation, paiements, notifications | ☐ |
+| 7 | Facturation, paiements, notifications | ☑ 772 tests au total ; réserves ci-dessous |
 | 8 | Livraisons, réclamations, tableaux de bord | ☐ |
 | 9 | Intégrations, tests de sécurité, tests de charge | ☐ |
 | 10 | Documentation finale, déploiement, préparation à la production | ☐ |
@@ -111,7 +111,7 @@ Critère de sortie : tests verts exécutés, migration appliquée à une base vi
 - Les écrans du personnel sont **fonctionnels mais sobres** : pas de tableau de bord opérationnel, pas d'impression d'étiquettes, pas de scan par caméra (lecteur de codes-barres ou saisie seulement), pas d'écran d'administration des agences ni d'identification avec fusion dans le colis attendu (API disponible).
 - **Aucune intégration de transporteur** : départ et arrivée sont saisis par le personnel (SHP-05). Pas de date d'arrivée prévue ni de position.
 - Le transporteur est un **texte libre** (pas de table des transporteurs) ; pas de zones de livraison ni de tournées (phase 8).
-- La notification « prêt pour retrait » n'est pas envoyée (phase 7) : le client la voit en se connectant ou par le suivi.
+- ~~La notification « prêt pour retrait » n'est pas envoyée~~ : **levée en phase 7**.
 - Le manifeste n'est pas conservé (généré à la demande, action journalisée par les téléchargements de l'API) ; PDF sobre (police standard, pas de logo).
 - Remise au client (OTP, signature, preuve) : phase 8 ; `DELIVERED` reste hors de portée.
 
@@ -122,9 +122,34 @@ Critère de sortie : tests verts exécutés, migration appliquée à une base vi
 | 7.2 | Paiements espèces, reçus, caisse | FIN-04 |
 | 7.3 | Interface prestataire, webhooks signés, idempotence ; virement manuel validé | FIN-05, 06 |
 | 7.4 | Remboursements, rapprochement, export CSV | FIN-03, 07 |
-| 7.5 | Outbox, BullMQ, modèles multilingues, e-mail réel (SMTP), nouvelle tentative | NOT-01 à 05 |
+| 7.5 | Outbox, file, modèles multilingues, e-mail réel (SMTP), nouvelle tentative | NOT-01 à 05 |
 | 7.6 | SMS / WhatsApp : interface + adaptateur, **actifs seulement avec identifiants réels** | NOT-02 |
 | 7.7 | Tests : parcours 9, 10, 15 ; webhook rejoué ; échec de fournisseur | – |
+
+**Réalisé en phase 7** : 7.1 à 7.7, avec les écrans.
+- **Factures** : brouillon à partir des colis pesés (fret et manutention repris de la **pesée**, jamais saisis ; un colis sans tarif calculé exige un fret saisi), remise plafonnée (10 % par défaut, réglable) et soumise à `discount:apply`, **un colis n'est facturé qu'une fois** (contrainte unique, y compris brouillons simultanés), émission avec numéro `INV-AAAA-NNNNNN` **sans trou** (4 émissions simultanées → 1 à 4), facture **immuable** après émission (API et déclencheurs), annulation motivée sans paiement, **avoirs** numérotés (`CN-…`), PDF. Une facture entièrement payée libère ses colis.
+- **Paiements** : espèces avec **caisse ouverte exigée**, droits par agence, **Idempotency-Key** (rejeu sans doublon), reçu `RCT-…` immédiat, ouverture / clôture de caisse (attendu, compté, écart) ; virement et paiement mobile **déclarés par le client** (référence unique, réservation du montant) puis **validés ou refusés par un agent** ; plafond au reste dû garanti par verrou **et** par la base ; remboursements partiels ou totaux ; synthèse de rapprochement et export CSV.
+- **Confirmation signée** d'un prestataire : HMAC horodaté, rejeu sans effet, montant et devise rapprochés ; **inexistante (404) tant qu'aucun prestataire n'est configuré**.
+- **Notifications** : douze événements, dont dix ont un émetteur (réception, identification, facture à payer, paiement reçu, préalerte, lot préparé / parti / arrivé, prêt pour retrait, incident ; **testés par un test dédié** : préalerte, réception, incident, facture à payer, paiement reçu ; les émetteurs des lots, de l'identification et du retrait en agence sont en place mais **sans test dédié**) ; portail + e-mail ; langue du client ; préférences respectées sauf événements obligatoires ; modèles par défaut FR / HT / EN modifiables par l'entreprise (variables contrôlées, texte brut) ; nouvelles tentatives à +1, +5, +30, +120 min puis échec visible et relançable ; journal ; traitement de fond.
+- **Site** : « Mes factures » (détail, déclaration de paiement, PDF, reçus), « Notifications » avec pastille, et pour le personnel « Factures », « Paiements » (file, caisse, synthèse, export, réglages) et « Notifications » (journal, relance, modèles).
+- Réserves des phases 5 et 6 levées : le passage « en attente de paiement » → « prêt pour expédition » se fait par le paiement ; la notification « prêt pour retrait » est désormais émise (sans test dédié).
+
+**Écarts avec le plan (assumés)** :
+- **Pas de BullMQ** : la file est dans PostgreSQL (`outbox_events` + `notifications`, verrous `SKIP LOCKED`). Moins de dépendances ; Redis reste pour les limites de débit.
+- **Pas d'interface `PaymentProvider` ni d'adaptateur** (7.3) : aucun prestataire n'est choisi, et en écrire un sans service réel serait de la simulation. Seuls existent le point d'entrée de confirmation signée (désactivé par défaut) et la validation manuelle.
+- **Pas d'adaptateur SMS / WhatsApp** (7.6) : le canal existe dans le journal et produit « ignorée — canal non configuré » ; rien n'est envoyé.
+- Un paiement règle **une** facture (pas de `payment_allocations`).
+
+**Réserves de la phase 7 (reportées)** :
+- **Aucun paiement en ligne** (carte, mobile money) : la confirmation signée n'a été exercée qu'avec un émetteur simulé par les tests ; le format des événements d'un vrai prestataire, son secret et ses adresses d'émission restent à valider. Les remboursements sont **enregistrés** ici, l'argent est rendu hors plateforme.
+- **La validation d'un virement ou d'un paiement mobile est humaine** : l'outil ne peut pas le vérifier. Pas de double validation pour les gros montants.
+- **Caisse mono-devise** : le montant attendu à la clôture additionne les encaissements de toutes devises ; la caisse n'enregistre pas de devise.
+- **Documents non validés par un comptable ou un juriste** : pas de mentions légales (numéro fiscal, taxe), pas de logo ; PDF sobre. Aucun moteur de taxes : une ligne de taxe ne vient que de la grille, la douane est saisie à la main. Export **CSV seulement** (aucune interface avec un logiciel comptable).
+- **Pas de relance d'échéance** : la date d'échéance est indicative. Les événements `delivery.scheduled` et `package.delivered` n'ont pas d'émetteur (phase 8).
+- **Téléphone non vérifié** : aucun SMS n'est envoyé (aucun prestataire) ; la vérification du téléphone reste absente.
+- Livraison des e-mails « au moins une fois » (un arrêt entre l'envoi SMTP et son enregistrement peut produire un doublon) ; traitement de fond dans le processus de l'API, sans alerte ni mesure ; 5 tentatives maximum.
+- Les données de démonstration (`seed-demo`) ne contiennent pas encore de factures ni de paiements.
+- Le créole des nouveaux écrans et des modèles n'a pas été relu par un locuteur natif.
 
 ### Phase 8 : livraison, réclamations, tableaux de bord
 Tournées, OTP, preuves, tentatives échouées (DEL-01 à 05) ; réclamations (ADM-04) ; indicateurs réels (ADM-02) ; journal d'audit consultable (ADM-03) ; tests parcours 11 et 12.

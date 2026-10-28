@@ -1,6 +1,6 @@
 # API
 
-Phases 3 à 6. Spécification machine : [openapi.json](openapi.json) (régénérée par `npm run docs:openapi`) ; interface interactive : `/docs` quand `ENABLE_DOCS=true`. Les routes de facturation, de lots et de livraison seront ajoutées avec leurs phases.
+Phases 3 à 7. Spécification machine : [openapi.json](openapi.json) (régénérée par `npm run docs:openapi`) ; interface interactive : `/docs` quand `ENABLE_DOCS=true`. Les routes de livraison seront ajoutées avec la phase 8.
 
 ## Conventions
 
@@ -95,6 +95,30 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 | `GET /v1/admin/shipments/{id}/manifest.csv` · `manifest.pdf` | `shipment:read` | Manifeste en téléchargement (`attachment`, `nosniff`, `no-store`) ; 409 si le lot est vide |
 | `GET /health/live`, `GET /health/ready` | public, sans limite | Sondes (la seconde teste PostgreSQL et Redis, 503 sinon) |
 
+### Finance et notifications (phase 7)
+
+| Méthode et chemin | Accès | Rôle |
+|---|---|---|
+| `GET/POST /v1/admin/invoices` · `GET /v1/admin/invoices/{id}` | `invoice:read` · `invoice:create` | Liste (statut, client, numéro ou code client) ; **brouillon** à partir des colis pesés (frais de la pesée, remise plafonnée, lignes libres contrôlées) |
+| `POST /v1/admin/invoices/{id}/issue` · `DELETE /v1/admin/invoices/{id}` | `invoice:create` | Émet (numéro `INV-AAAA-NNNNNN` sans trou, colis « en attente de paiement » ou « prêts » selon la politique, client prévenu) · supprime un brouillon |
+| `POST /v1/admin/invoices/{id}/void` · `POST …/credit-notes` | `invoice:void` | Annule une facture sans paiement (motif) · émet un avoir (`CN-AAAA-NNNNNN`) limité à ce qui n'est ni payé ni en attente |
+| `GET /v1/admin/invoices/{id}/pdf` | `invoice:read` | Facture en PDF (pas de PDF pour un brouillon) |
+| `GET /v1/me/invoices` · `GET …/{id}` · `GET …/{id}/pdf` | `invoice:read_own` | Mes factures **émises** (jamais les brouillons) |
+| `POST /v1/me/invoices/{id}/payments` | `payment:declare_own` | Déclare un virement ou paiement mobile (référence obligatoire) : le paiement reste `PENDING` |
+| `GET /v1/me/payments` · `DELETE /v1/me/payments/{id}` · `GET …/{id}/receipt.pdf` · `GET /v1/me/payment-options` | `payment:read_own` · `payment:declare_own` | Mes paiements ; retire une déclaration en attente ; reçu PDF ; moyens réellement disponibles (`online: false` tant qu'aucun prestataire n'est configuré) |
+| `GET /v1/admin/payments` | `payment:read` | Paiements (statut, mode, facture) |
+| `POST /v1/admin/payments/cash` | `payment:record_cash` | Encaissement en espèces ; **caisse ouverte exigée** ; en-tête `Idempotency-Key` ; reçu `RCT-AAAA-NNNNNN` immédiat |
+| `POST /v1/admin/payments/{id}/confirm` · `POST …/reject` | `payment:reconcile` | Valide / refuse (motif) un paiement déclaré |
+| `POST /v1/admin/payments/{id}/refunds` | `payment:refund` | Enregistre un remboursement (partiel ou total, motif) |
+| `GET /v1/admin/payments/{id}/receipt.pdf` | `payment:read` | Reçu PDF |
+| `GET/POST /v1/admin/cash-sessions` · `POST …/{id}/close` | `payment:read` · `payment:record_cash` | Caisses (par agence ou entreprise) : ouverture, clôture avec attendu / compté / écart |
+| `GET /v1/admin/finance/summary` · `GET …/export.csv` | `payment:reconcile` · `payment:export` | Synthèse par mode et devise ; registre CSV (période ≤ 366 jours, cellules textuelles protégées contre l'injection de formules, montants restés numériques) |
+| `GET/PUT /v1/admin/settings/finance` | `settings:read` · `settings:update` | Plafond de remise (10 % par défaut), consignes de paiement |
+| `POST /v1/webhooks/payments/{entreprise}/{prestataire}` | public, signé, 300/min | Confirmation de paiement signée ; **404 tant que `PAYMENT_WEBHOOK_PROVIDER` / `PAYMENT_WEBHOOK_SECRET` ne sont pas définis** |
+| `GET /v1/admin/notifications` · `POST …/{id}/retry` · `POST …/process` | `notification:read` · `notification:template_manage` | Journal (statut, canal, événement) ; relance d'un échec ; traitement immédiat |
+| `GET/PUT/DELETE /v1/admin/notification-templates` | `notification:read` · `notification:template_manage` | Modèles effectifs, personnalisation par événement, canal et langue ; retour au défaut |
+| `GET /v1/me/notifications` · `POST …/read-all` · `POST …/{id}/read` | `notification:read_own` | Ma boîte de réception du portail |
+
 ## Règles à connaître
 
 - **Droits évalués à chaque requête** depuis la base : une désactivation, une révocation de session, un changement de rôle ou la suspension de l'entreprise s'appliquent immédiatement, sans attendre l'expiration du jeton d'accès.
@@ -120,3 +144,15 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 - **Manifeste CSV** : UTF-8 avec BOM ; toute cellule commençant par `=`, `+`, `-`, `@`, tabulation ou retour chariot est précédée d'une apostrophe (injection de formules).
 - `POST /v1/admin/packages/{id}/register` accepte `transportMode` pour un colis reçu sans préalerte (sans effet si le mode est déjà connu).
 - Les colis exposent `pickup` (agence, adresse, horaires, `ready`) au client propriétaire et, pour une agence publique, au suivi public : seulement quand le colis est réellement arrivé en agence.
+
+## Règles ajoutées en phase 7
+
+- **Montants** en décimal exact, deux décimales ; une facture est en **une devise** (`CURRENCY_MISMATCH` sinon).
+- **Brouillon** : les lignes de fret et de manutention viennent de la pesée (grille appliquée) ; un colis sans tarif calculé exige une ligne `FREIGHT` saisie (`PACKAGE_NOT_PRICED`), un colis déjà tarifé n'en accepte pas (`PACKAGE_ALREADY_PRICED`). Un colis n'est que dans **une** facture (`ALREADY_INVOICED`, aussi en cas de brouillons simultanés).
+- **Remise** : permission `discount:apply` et plafond de l'entreprise (`DISCOUNT_ABOVE_CAP`, 422).
+- **Émission** : numérotation par entreprise et par année, sans trou même avec des émissions simultanées ; politique `PAY_BEFORE_SHIPMENT` (colis « en attente de paiement ») ou `PAY_BEFORE_RELEASE` (colis « prêts à partir » dès l'émission). Une facture **intégralement payée** libère ses colis (« prêt pour expédition ») avec un événement qui cite la facture.
+- **Paiement** : jamais au-delà du reste dû (`AMOUNT_EXCEEDS_BALANCE`, 422, paiements en attente compris). **Idempotency-Key** (8 à 64 caractères) : même clé et même contenu → même résultat (`replayed: true`), même clé et contenu différent → `IDEMPOTENCY_KEY_REUSED`. Une référence de virement ou de paiement mobile ne se déclare qu'une fois (`DUPLICATE_REFERENCE`).
+- **Caisse** : une seule ouverte par agence (ou pour l'entreprise) ; l'encaissement sans caisse ouverte est refusé (`CASH_SESSION_REQUIRED`) ; l'agent d'une agence ne peut ouvrir, encaisser et clôturer que pour **son** agence ; attendu = fond + espèces − remboursements ; une caisse clôturée ne change plus.
+- **Remboursement** : jamais plus que le montant confirmé non encore remboursé (`REFUND_EXCEEDS_PAYMENT`) ; le solde de la facture suit.
+- **Notifications** : douze événements métier (`prealert.created`, `package.received`, `package.identified`, `payment.required`, `payment.confirmed`, `shipment.prepared`, `shipment.dispatched`, `shipment.arrived`, `package.available_at_agency`, `delivery.scheduled`, `package.delivered`, `package.incident`) ; **`delivery.scheduled` et `package.delivered` n'ont pas encore d'émetteur** (la livraison arrive en phase 8). Canaux : portail et e-mail actifs ; SMS et WhatsApp « ignorés — canal non configuré ». Les préférences du client coupent un canal, sauf pour `payment.confirmed` et `package.incident`. Nouvelles tentatives d'e-mail à +1, +5, +30, +120 minutes puis `FAILED` (5 tentatives au total).
+- Codes ajoutés : `ALREADY_INVOICED`, `PACKAGE_NOT_BILLABLE`, `PACKAGE_CUSTOMER_MISMATCH`, `PACKAGE_NOT_PRICED`, `PACKAGE_ALREADY_PRICED`, `EXTRA_LINE_PACKAGE_UNKNOWN`, `DISCOUNT_ABOVE_CAP`, `DISCOUNT_NOT_ALLOWED`, `CURRENCY_MISMATCH`, `INVOICE_NOT_FOUND`, `INVOICE_NOT_DRAFT`, `INVOICE_IS_DRAFT`, `INVOICE_NOT_ISSUED`, `INVOICE_HAS_PAYMENTS`, `INVOICE_NOT_PAYABLE`, `INVOICE_NOT_CREDITABLE`, `INVOICE_VOID`, `CREDIT_EXCEEDS_UNPAID`, `CASH_SESSION_REQUIRED`, `CASH_SESSION_OPEN`, `CASH_SESSION_CLOSED`, `CASH_SESSION_NOT_FOUND`, `AMOUNT_EXCEEDS_BALANCE`, `DUPLICATE_REFERENCE`, `INVALID_IDEMPOTENCY_KEY`, `IDEMPOTENCY_KEY_REUSED`, `PAYMENT_NOT_FOUND`, `PAYMENT_NOT_PENDING`, `PAYMENT_NOT_REFUNDABLE`, `REFUND_EXCEEDS_PAYMENT`, `RECEIPT_NOT_FOUND`, `INVALID_SIGNATURE` (401), `INVALID_PAYLOAD`, `NOTIFICATION_NOT_FOUND`, `NOT_FAILED`, `TEMPLATE_NOT_FOUND`, `CHANNEL_NOT_CONFIGURED`.

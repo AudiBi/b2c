@@ -194,10 +194,18 @@ const PREFIX_LETTERS = 'ABCDEFGHJKMNPQRSTVWXYZ';
 /** Préfixe de suivi valide (alphabet sans I, L, O, U) et unique avec une probabilité écrasante : 4 lettres aléatoires. */
 const randomTrackingPrefix = () => Array.from({ length: 4 }, () => PREFIX_LETTERS[randomBytes(1)[0] % PREFIX_LETTERS.length]).join('');
 
+/** Préfixe de suivi libre : le préfixe est unique en base, on vérifie donc qu'aucune entreprise ne le porte déjà. */
+async function freePrefix(t: TestApp): Promise<string> {
+  for (;;) {
+    const candidate = randomTrackingPrefix();
+    if (!(await t.admin.company.findFirst({ where: { trackingPrefix: candidate }, select: { id: true } }))) return candidate;
+  }
+}
+
 /** Entreprise de test (préfixe de suivi propre, code client « TT-… ») avec un administrateur connecté. */
-export async function makeTenant(t: TestApp, trackingPrefix = randomTrackingPrefix()) {
+export async function makeTenant(t: TestApp, trackingPrefix?: string) {
   const slug = uniq('t');
-  const created = await t.admin.company.create({ data: { name: `Tenant ${slug}`, slug, trackingPrefix, customerCodePrefix: 'TT' } });
+  const created = await t.admin.company.create({ data: { name: `Tenant ${slug}`, slug, trackingPrefix: trackingPrefix ?? (await freePrefix(t)), customerCodePrefix: 'TT' } });
   const company: Company = { id: created.id, slug };
   const admin = await makeUser(t, { company, roleCode: 'COMPANY_ADMIN' });
   const token = (await login(t, admin)).accessToken;
@@ -339,4 +347,38 @@ export async function readyPackage(
   const ready = await api(t).post(`/v1/admin/packages/${prealert.package.id}/transitions`).set(bearer(world.token)).send({ to: 'READY_TO_SHIP', reason: 'Prépayé (test)' });
   if (ready.status !== 200) throw new Error(`Autorisation refusée : ${JSON.stringify(ready.body)}`);
   return { packageId: prealert.package.id, trackingNumber: prealert.package.trackingNumber, supplier: prealert.supplierTracking };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Aides pour la finance et les notifications (phase 7)
+// ---------------------------------------------------------------------------------------------
+
+export async function customerIdOf(t: TestApp, customer: CustomerSession): Promise<string> {
+  return (await t.admin.customer.findFirstOrThrow({ where: { userId: customer.user.id } })).id;
+}
+
+/** Colis reçu et PESÉ (pas encore autorisé à partir) : prêt à être facturé. Avec la grille de test : fret 8,00 + manutention 1,50. */
+export async function weighedPackage(
+  t: TestApp,
+  world: { token: string },
+  customer: CustomerSession,
+  warehouseId: string,
+  options: { transportMode?: 'AIR' | 'SEA'; description?: string } = {},
+) {
+  const prealert = await makePrealert(t, customer, warehouseId, { transportMode: options.transportMode ?? 'AIR' });
+  const received = await api(t).post('/v1/admin/packages/receive').set(bearer(world.token)).send({ warehouseId, expectedPackageId: prealert.package.id });
+  if (received.status !== 200) throw new Error(`Réception refusée : ${JSON.stringify(received.body)}`);
+  const weighed = await api(t)
+    .post(`/v1/admin/packages/${prealert.package.id}/register`)
+    .set(bearer(world.token))
+    .send({ weight: { value: 2, unit: 'KG' }, dimensions: { length: 30, width: 20, height: 10, unit: 'CM' }, ...(options.description ? { contentDescription: options.description } : {}) });
+  if (weighed.status !== 200) throw new Error(`Pesée refusée : ${JSON.stringify(weighed.body)}`);
+  return { packageId: prealert.package.id as string, trackingNumber: prealert.package.trackingNumber as string, supplier: prealert.supplierTracking as string };
+}
+
+/** Traite l'outbox et les envois d'une entreprise (le traitement de fond est désactivé en test). */
+export async function processNotifications(t: TestApp, companyId: string, now?: Date) {
+  const { NotificationsService } = await import('../src/notifications/notifications.service');
+  // Légère avance : les événements portent l'heure de la base (autre horloge) et doivent être « échus »
+  return t.app.get(NotificationsService).processCompany(companyId, { now: now ?? new Date(Date.now() + 2000) });
 }

@@ -228,6 +228,7 @@ export class ShipmentsService {
       }
       await tx.packageEvent.create({ data: { companyId: auth.companyId, packageId: pkg.id, eventType: 'LOADED', actorUserId: auth.userId, visibility: 'PRIVATE', data: { shipment: shipment.reference } } });
       await this.event(tx, auth, shipmentId, 'PACKAGE_LOADED', { data: { trackingNumber: pkg.trackingNumber } });
+      await this.packages.emitPackageEvent(tx, auth.companyId, pkg, 'shipment.prepared');
       return { outcome: 'LOADED' as const, package: staffPackageDto(pkg) };
     });
   }

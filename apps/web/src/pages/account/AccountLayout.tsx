@@ -4,6 +4,7 @@ import { useI18n } from '../../i18n';
 import { localized } from '../../routes';
 import { usePageMeta } from '../../seo';
 import { LocNavLink } from '../../components/LocLink';
+import { useUnreadCount } from '../finance/queries';
 
 /** Zone réservée : redirige vers la connexion sans session, puis revient à la page demandée. */
 export function AccountLayout() {
@@ -11,6 +12,8 @@ export function AccountLayout() {
   const { status, user, loggedOut } = useAuth();
   const location = useLocation();
   usePageMeta('account');
+  // Les hooks passent avant tout retour anticipé
+  const unread = useUnreadCount(status === 'authenticated' && user?.kind === 'CUSTOMER').data ?? 0;
 
   if (status === 'loading') {
     return (
@@ -46,6 +49,15 @@ export function AccountLayout() {
                 </li>
                 <li>
                   <LocNavLink page="accountPackages">{m.account.nav.packages}</LocNavLink>
+                </li>
+                <li>
+                  <LocNavLink page="accountInvoices">{m.account.nav.invoices}</LocNavLink>
+                </li>
+                <li>
+                  <LocNavLink page="accountNotifications">
+                    {m.account.nav.notifications}
+                    {unread > 0 ? <span className="badge badge-warning" style={{ marginLeft: 6 }}>{unread}</span> : null}
+                  </LocNavLink>
                 </li>
                 <li>
                   <LocNavLink page="accountReceiving">{m.account.nav.receiving}</LocNavLink>
@@ -84,6 +96,21 @@ export function AccountLayout() {
             {isStaff && can('agency:receive') ? (
               <li>
                 <LocNavLink page="accountStaffAgency">{m.staff.nav.agency}</LocNavLink>
+              </li>
+            ) : null}
+            {isStaff && can('invoice:read') ? (
+              <li>
+                <LocNavLink page="accountStaffBilling">{m.staff.nav.billing}</LocNavLink>
+              </li>
+            ) : null}
+            {isStaff && can('payment:read') ? (
+              <li>
+                <LocNavLink page="accountStaffPayments">{m.staff.nav.payments}</LocNavLink>
+              </li>
+            ) : null}
+            {isStaff && can('notification:read') ? (
+              <li>
+                <LocNavLink page="accountStaffNotifications">{m.staff.nav.notifications}</LocNavLink>
               </li>
             ) : null}
             <li>

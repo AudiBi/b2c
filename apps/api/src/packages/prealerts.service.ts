@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, type Package, type Prealert, type Warehouse } from '@prisma/client';
-import type { CreatePrealertInput, PackageStatus, UpdatePrealertInput } from '@b2c/shared';
+import { formatTrackingNumber, type CreatePrealertInput, type PackageStatus, type UpdatePrealertInput } from '@b2c/shared';
 import { AuditService } from '../audit/audit.service';
 import { AppException } from '../common/errors';
 import { CustomersService } from '../customers/customers.service';
 import { DbService, type Tx } from '../database/db.service';
 import type { AuthContext } from '../security/auth.types';
+import { displayName, OutboxService } from '../notifications/outbox.service';
 import { normalizeSupplierTracking, ownerPackageDto, PackagesService, publicEventDto } from './packages.service';
 import { TrackingNumberService } from './tracking-number.service';
 
@@ -39,6 +40,7 @@ export class PrealertsService {
     private readonly customers: CustomersService,
     private readonly packages: PackagesService,
     private readonly tracking: TrackingNumberService,
+    private readonly outbox: OutboxService,
   ) {}
 
   private async customerOf(tx: Tx, auth: AuthContext) {
@@ -116,6 +118,14 @@ export class PrealertsService {
           purchaseCurrency: input.purchaseCurrency,
           description: input.description,
         },
+      });
+      await this.outbox.emit(tx, {
+        companyId: auth.companyId,
+        eventCode: 'prealert.created',
+        aggregateType: 'prealert',
+        aggregateId: prealert.id,
+        customerId: customer.id,
+        payload: { customerName: displayName({ customerType: customer.customerType, user }), trackingNumber: formatTrackingNumber(trackingNumber), storeName: input.storeName },
       });
       // PREALERT_CREATED → AWAITING_RECEIPT : automatique après la création
       await this.packages.transition(tx, auth.companyId, pkg.id, 'AWAITING_RECEIPT', { actor: { userId: auth.userId, bypassPermission: true } });

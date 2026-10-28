@@ -7,11 +7,13 @@ import type { Env } from './config/env';
 import { CustomersModule } from './customers/customers.module';
 import { DatabaseModule } from './database/database.module';
 import { FilesModule } from './files/files.module';
+import { FinanceModule } from './finance/finance.module';
 import { HealthModule } from './health/health.module';
 import { IamModule } from './iam/iam.module';
 import { InfraModule } from './infra/infra.module';
 import { LogisticsModule } from './logistics/logistics.module';
 import { MailModule } from './mail/mail.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PackagesModule } from './packages/packages.module';
 import { PlatformModule } from './platform/platform.module';
 import { PlatformSharedModule } from './platform/platform-shared.module';
@@ -57,6 +59,8 @@ export class AppModule {
         PackagesModule,
         FilesModule,
         LogisticsModule,
+        NotificationsModule,
+        FinanceModule,
         PlatformModule,
         HealthModule,
       ],

@@ -107,38 +107,50 @@ model Company {
   createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  settings           CompanySetting[]
-  users              User[]
-  sessions           Session[]
-  verificationTokens VerificationToken[]
-  roles              Role[]
-  rolePermissions    RolePermission[]
-  userRoles          UserRole[]
-  auditLogs          AuditLog[]
-  idempotencyKeys    IdempotencyKey[]
-  counters           Counter[]
-  customers          Customer[]
-  customerAddresses  CustomerAddress[]
-  beneficiaries      Beneficiary[]
-  warehouses         Warehouse[]
-  receivingAddresses ReceivingAddress[]
-  packageCategories  PackageCategory[]
-  packageGroups      PackageGroup[]
-  packages           Package[]
-  packageEvents      PackageEvent[]
-  packageHolds       PackageHold[]
-  prealerts          Prealert[]
-  rateCards          RateCard[]
-  rateRules          RateRule[]
-  rateSurcharges     RateSurcharge[]
-  quotes             Quote[]
-  fileObjects        FileObject[]
-  warehouseLocations WarehouseLocation[]
-  warehouseMovements WarehouseMovement[]
-  agencies           Agency[]
-  shipments          Shipment[]
-  shipmentPackages   ShipmentPackage[]
-  shipmentEvents     ShipmentEvent[]
+  settings              CompanySetting[]
+  users                 User[]
+  sessions              Session[]
+  verificationTokens    VerificationToken[]
+  roles                 Role[]
+  rolePermissions       RolePermission[]
+  userRoles             UserRole[]
+  auditLogs             AuditLog[]
+  idempotencyKeys       IdempotencyKey[]
+  counters              Counter[]
+  customers             Customer[]
+  customerAddresses     CustomerAddress[]
+  beneficiaries         Beneficiary[]
+  warehouses            Warehouse[]
+  receivingAddresses    ReceivingAddress[]
+  packageCategories     PackageCategory[]
+  packageGroups         PackageGroup[]
+  packages              Package[]
+  packageEvents         PackageEvent[]
+  packageHolds          PackageHold[]
+  prealerts             Prealert[]
+  rateCards             RateCard[]
+  rateRules             RateRule[]
+  rateSurcharges        RateSurcharge[]
+  quotes                Quote[]
+  fileObjects           FileObject[]
+  warehouseLocations    WarehouseLocation[]
+  warehouseMovements    WarehouseMovement[]
+  agencies              Agency[]
+  shipments             Shipment[]
+  shipmentPackages      ShipmentPackage[]
+  shipmentEvents        ShipmentEvent[]
+  invoices              Invoice[]
+  invoiceLines          InvoiceLine[]
+  invoicePackages       InvoicePackage[]
+  creditNotes           CreditNote[]
+  payments              Payment[]
+  receipts              Receipt[]
+  refunds               Refund[]
+  cashSessions          CashSession[]
+  webhookEvents         ProviderWebhookEvent[]
+  notificationTemplates NotificationTemplate[]
+  outboxEvents          OutboxEvent[]
+  notifications         Notification[]
 
   @@map("companies")
 }
@@ -367,6 +379,9 @@ model Customer {
   packageGroups      PackageGroup[]
   prealerts          Prealert[]
   quotes             Quote[]
+  invoices           Invoice[]
+  payments           Payment[]
+  notifications      Notification[]
 
   @@unique([companyId, customerCode])
   @@unique([id, companyId])
@@ -652,18 +667,20 @@ model Package {
   createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  company       Company             @relation(fields: [companyId], references: [id])
-  customer      Customer?           @relation(fields: [customerId, companyId], references: [id, companyId])
-  warehouse     Warehouse           @relation(fields: [originWarehouseId, companyId], references: [id, companyId])
-  category      PackageCategory?    @relation(fields: [categoryId, companyId], references: [id, companyId])
-  group         PackageGroup?       @relation(fields: [groupId, companyId], references: [id, companyId])
-  location      WarehouseLocation?  @relation(fields: [locationId, companyId], references: [id, companyId])
-  agency        Agency?             @relation(fields: [destinationAgencyId, companyId], references: [id, companyId])
-  shipmentLinks ShipmentPackage[]
-  movements     WarehouseMovement[]
-  events        PackageEvent[]
-  holds         PackageHold[]
-  prealert      Prealert?
+  company        Company             @relation(fields: [companyId], references: [id])
+  customer       Customer?           @relation(fields: [customerId, companyId], references: [id, companyId])
+  warehouse      Warehouse           @relation(fields: [originWarehouseId, companyId], references: [id, companyId])
+  category       PackageCategory?    @relation(fields: [categoryId, companyId], references: [id, companyId])
+  group          PackageGroup?       @relation(fields: [groupId, companyId], references: [id, companyId])
+  location       WarehouseLocation?  @relation(fields: [locationId, companyId], references: [id, companyId])
+  agency         Agency?             @relation(fields: [destinationAgencyId, companyId], references: [id, companyId])
+  shipmentLinks  ShipmentPackage[]
+  invoiceLines   InvoiceLine[]
+  invoicePackage InvoicePackage?
+  movements      WarehouseMovement[]
+  events         PackageEvent[]
+  holds          PackageHold[]
+  prealert       Prealert?
 
   @@unique([id, companyId])
   @@index([companyId, status])
@@ -946,9 +963,11 @@ model Agency {
   createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  company   Company    @relation(fields: [companyId], references: [id])
-  packages  Package[]
-  shipments Shipment[]
+  company      Company       @relation(fields: [companyId], references: [id])
+  packages     Package[]
+  shipments    Shipment[]
+  payments     Payment[]
+  cashSessions CashSession[]
 
   @@unique([companyId, code])
   @@unique([id, companyId])
@@ -1026,4 +1045,332 @@ model ShipmentEvent {
 
   @@index([companyId, shipmentId, occurredAt])
   @@map("shipment_events")
+}
+
+// =============================================================================================
+// Phase 7 : factures, paiements, notifications
+// =============================================================================================
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  VOID
+  CREDITED
+}
+
+enum InvoiceLineKind {
+  FREIGHT
+  STORAGE
+  HANDLING
+  INSURANCE
+  TAX
+  CUSTOMS
+  DISCOUNT
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  MOBILE_MONEY
+  CARD_ONLINE
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+  REFUNDED_PARTIAL
+  REFUNDED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+  SKIPPED
+}
+
+// Montants en décimal exact. Le numéro n'est attribué qu'à l'émission (numérotation sans trou).
+model Invoice {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  companyId       String        @map("company_id") @db.Uuid
+  number          String?
+  customerId      String        @map("customer_id") @db.Uuid
+  status          InvoiceStatus @default(DRAFT)
+  currency        String        @db.Char(3)
+  subtotal        Decimal       @default(0) @db.Decimal(14, 2)
+  discountTotal   Decimal       @default(0) @map("discount_total") @db.Decimal(14, 2)
+  taxTotal        Decimal       @default(0) @map("tax_total") @db.Decimal(14, 2)
+  total           Decimal       @default(0) @db.Decimal(14, 2)
+  // Avoirs émis et encaissements nets des remboursements : tenus à jour sous verrou de ligne
+  creditedTotal   Decimal       @default(0) @map("credited_total") @db.Decimal(14, 2)
+  paidTotal       Decimal       @default(0) @map("paid_total") @db.Decimal(14, 2)
+  discountPercent Decimal?      @map("discount_percent") @db.Decimal(5, 2)
+  dueDate         DateTime?     @map("due_date") @db.Date
+  notes           String?
+  issuedAt        DateTime?     @map("issued_at") @db.Timestamptz(6)
+  voidedAt        DateTime?     @map("voided_at") @db.Timestamptz(6)
+  voidReason      String?       @map("void_reason")
+  createdBy       String?       @map("created_by") @db.Uuid
+  version         Int           @default(1)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company  Company          @relation(fields: [companyId], references: [id])
+  customer Customer         @relation(fields: [customerId, companyId], references: [id, companyId])
+  lines    InvoiceLine[]
+  packages InvoicePackage[]
+  credits  CreditNote[]
+  payments Payment[]
+
+  @@unique([companyId, number])
+  @@unique([id, companyId])
+  @@index([companyId, customerId])
+  @@index([companyId, status])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  companyId   String          @map("company_id") @db.Uuid
+  invoiceId   String          @map("invoice_id") @db.Uuid
+  packageId   String?         @map("package_id") @db.Uuid
+  kind        InvoiceLineKind
+  description String
+  quantity    Decimal         @default(1) @db.Decimal(10, 3)
+  unitPrice   Decimal         @map("unit_price") @db.Decimal(14, 2)
+  amount      Decimal         @db.Decimal(14, 2)
+  position    Int
+
+  company Company  @relation(fields: [companyId], references: [id])
+  invoice Invoice  @relation(fields: [invoiceId, companyId], references: [id, companyId])
+  package Package? @relation(fields: [packageId, companyId], references: [id, companyId])
+
+  @@index([companyId, invoiceId])
+  @@map("invoice_lines")
+}
+
+// Un colis n'est facturé qu'une fois : réservé par une facture (brouillon ou émise), libéré à l'annulation.
+model InvoicePackage {
+  id        String @id @default(uuid(7)) @db.Uuid
+  companyId String @map("company_id") @db.Uuid
+  packageId String @unique @map("package_id") @db.Uuid
+  invoiceId String @map("invoice_id") @db.Uuid
+
+  company Company @relation(fields: [companyId], references: [id])
+  invoice Invoice @relation(fields: [invoiceId, companyId], references: [id, companyId])
+  package Package @relation(fields: [packageId, companyId], references: [id, companyId])
+
+  @@unique([packageId, companyId])
+  @@index([companyId, invoiceId])
+  @@map("invoice_packages")
+}
+
+model CreditNote {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  number    String
+  invoiceId String   @map("invoice_id") @db.Uuid
+  amount    Decimal  @db.Decimal(14, 2)
+  reason    String
+  createdBy String?  @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+  invoice Invoice @relation(fields: [invoiceId, companyId], references: [id, companyId])
+
+  @@unique([companyId, number])
+  @@index([companyId, invoiceId])
+  @@map("credit_notes")
+}
+
+// Un paiement règle UNE facture (écart assumé avec la table d'affectations de la conception).
+model Payment {
+  id                 String        @id @default(uuid(7)) @db.Uuid
+  companyId          String        @map("company_id") @db.Uuid
+  customerId         String        @map("customer_id") @db.Uuid
+  invoiceId          String        @map("invoice_id") @db.Uuid
+  method             PaymentMethod
+  status             PaymentStatus @default(PENDING)
+  currency           String        @db.Char(3)
+  amount             Decimal       @db.Decimal(14, 2)
+  provider           String?
+  providerRef        String?       @map("provider_ref")
+  // Référence lisible fournie par le client ou l'employé (n° de virement, de transaction mobile, de bordereau)
+  reference          String?
+  confirmedAt        DateTime?     @map("confirmed_at") @db.Timestamptz(6)
+  recordedBy         String?       @map("recorded_by") @db.Uuid
+  declaredByCustomer Boolean       @default(false) @map("declared_by_customer")
+  agencyId           String?       @map("agency_id") @db.Uuid
+  cashSessionId      String?       @map("cash_session_id") @db.Uuid
+  failureReason      String?       @map("failure_reason")
+  refundedTotal      Decimal       @default(0) @map("refunded_total") @db.Decimal(14, 2)
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company     Company      @relation(fields: [companyId], references: [id])
+  customer    Customer     @relation(fields: [customerId, companyId], references: [id, companyId])
+  invoice     Invoice      @relation(fields: [invoiceId, companyId], references: [id, companyId])
+  agency      Agency?      @relation(fields: [agencyId, companyId], references: [id, companyId])
+  cashSession CashSession? @relation(fields: [cashSessionId, companyId], references: [id, companyId])
+  receipt     Receipt?
+  refunds     Refund[]
+
+  @@unique([provider, providerRef])
+  @@unique([companyId, method, reference])
+  @@unique([id, companyId])
+  @@index([companyId, status])
+  @@index([companyId, invoiceId])
+  @@map("payments")
+}
+
+model Receipt {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  number    String
+  paymentId String   @unique @map("payment_id") @db.Uuid
+  issuedAt  DateTime @default(now()) @map("issued_at") @db.Timestamptz(6)
+  issuedBy  String?  @map("issued_by") @db.Uuid
+
+  company Company @relation(fields: [companyId], references: [id])
+  payment Payment @relation(fields: [paymentId, companyId], references: [id, companyId])
+
+  @@unique([companyId, number])
+  @@unique([paymentId, companyId])
+  @@map("receipts")
+}
+
+model Refund {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  paymentId String   @map("payment_id") @db.Uuid
+  amount    Decimal  @db.Decimal(14, 2)
+  reason    String
+  createdBy String?  @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+  payment Payment @relation(fields: [paymentId, companyId], references: [id, companyId])
+
+  @@index([companyId, paymentId])
+  @@map("refunds")
+}
+
+// Caisse : une session ouverte à la fois par agence (ou pour la caisse de l'entreprise).
+model CashSession {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  companyId      String    @map("company_id") @db.Uuid
+  agencyId       String?   @map("agency_id") @db.Uuid
+  openedBy       String?   @map("opened_by") @db.Uuid
+  openedAt       DateTime  @default(now()) @map("opened_at") @db.Timestamptz(6)
+  openingAmount  Decimal   @default(0) @map("opening_amount") @db.Decimal(14, 2)
+  closedAt       DateTime? @map("closed_at") @db.Timestamptz(6)
+  closedBy       String?   @map("closed_by") @db.Uuid
+  countedAmount  Decimal?  @map("counted_amount") @db.Decimal(14, 2)
+  expectedAmount Decimal?  @map("expected_amount") @db.Decimal(14, 2)
+  difference     Decimal?  @db.Decimal(14, 2)
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  agency   Agency?   @relation(fields: [agencyId, companyId], references: [id, companyId])
+  payments Payment[]
+
+  @@unique([id, companyId])
+  @@map("cash_sessions")
+}
+
+// Empêche le rejeu d'une confirmation de prestataire : (entreprise, prestataire, événement) est unique.
+model ProviderWebhookEvent {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  companyId   String   @map("company_id") @db.Uuid
+  provider    String
+  eventId     String   @map("event_id")
+  payloadHash String   @map("payload_hash")
+  status      String
+  receivedAt  DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, provider, eventId])
+  @@map("provider_webhook_events")
+}
+
+model NotificationTemplate {
+  id        String              @id @default(uuid(7)) @db.Uuid
+  companyId String              @map("company_id") @db.Uuid
+  eventCode String              @map("event_code")
+  channel   NotificationChannel
+  locale    String
+  subject   String?
+  body      String
+  active    Boolean             @default(true)
+  updatedBy String?             @map("updated_by") @db.Uuid
+  updatedAt DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, eventCode, channel, locale])
+  @@map("notification_templates")
+}
+
+// Événement métier écrit DANS la transaction de l'action ; un traitement distinct le transforme en notifications.
+model OutboxEvent {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  companyId     String    @map("company_id") @db.Uuid
+  eventCode     String    @map("event_code")
+  aggregateType String    @map("aggregate_type")
+  aggregateId   String    @map("aggregate_id") @db.Uuid
+  customerId    String?   @map("customer_id") @db.Uuid
+  payload       Json
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  processedAt   DateTime? @map("processed_at") @db.Timestamptz(6)
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, processedAt, nextAttemptAt])
+  @@map("outbox_events")
+}
+
+model Notification {
+  id            String              @id @default(uuid(7)) @db.Uuid
+  companyId     String              @map("company_id") @db.Uuid
+  outboxEventId String?             @map("outbox_event_id") @db.Uuid
+  customerId    String              @map("customer_id") @db.Uuid
+  userId        String              @map("user_id") @db.Uuid
+  eventCode     String              @map("event_code")
+  channel       NotificationChannel
+  locale        String
+  subject       String?
+  body          String
+  status        NotificationStatus  @default(QUEUED)
+  skipReason    String?             @map("skip_reason")
+  attempts      Int                 @default(0)
+  lastError     String?             @map("last_error")
+  nextAttemptAt DateTime?           @map("next_attempt_at") @db.Timestamptz(6)
+  sentAt        DateTime?           @map("sent_at") @db.Timestamptz(6)
+  readAt        DateTime?           @map("read_at") @db.Timestamptz(6)
+  // Une seule notification par (événement, destinataire, canal) : relire un événement ne renvoie rien
+  dedupeKey     String              @map("dedupe_key")
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  customer Customer @relation(fields: [customerId, companyId], references: [id, companyId])
+
+  @@unique([companyId, dedupeKey])
+  @@index([companyId, customerId, createdAt])
+  @@index([status, nextAttemptAt])
+  @@map("notifications")
 }

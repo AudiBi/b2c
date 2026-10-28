@@ -119,12 +119,14 @@ interface RequestOptions {
   /** false pour les routes publiques (inscription, connexion, données publiques). */
   auth?: boolean;
   signal?: AbortSignal;
+  /** En-têtes supplémentaires (ex. Idempotency-Key d'un encaissement). */
+  headers?: Record<string, string>;
 }
 
 /** Appel de l'API avec renouvellement automatique du jeton d'accès (une seule nouvelle tentative). */
 export async function api<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, auth = true, signal } = options;
-  const init = { method, signal, body: body === undefined ? undefined : JSON.stringify(body) };
+  const { method = 'GET', body, auth = true, signal, headers } = options;
+  const init = { method, signal, headers, body: body === undefined ? undefined : JSON.stringify(body) };
 
   let response = await send(path, { ...init, token: auth ? accessToken : null });
   if (response.status === 401 && auth) {

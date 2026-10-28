@@ -9,11 +9,13 @@ import {
   type ReceivePackageInput,
   type RegisterPackageInput,
   type TransitionOwner,
+  type EventCode,
 } from '@b2c/shared';
 import { AuditService } from '../audit/audit.service';
 import { AppException } from '../common/errors';
 import { DbService, type Tx } from '../database/db.service';
 import { CounterService } from '../infra/counter.service';
+import { displayName, OutboxService } from '../notifications/outbox.service';
 import { calculate, PricingError, toDimensionUnit, toWeightUnit } from '../pricing/calculator';
 import { PricingService, toCardData } from '../pricing/pricing.service';
 import type { AuthContext } from '../security/auth.types';
@@ -171,6 +173,7 @@ export class PackagesService {
     private readonly tracking: TrackingNumberService,
     private readonly pricing: PricingService,
     private readonly counters: CounterService,
+    private readonly outbox: OutboxService,
   ) {}
 
   // ---------------------------------------------------------------------------------------------
@@ -247,6 +250,8 @@ export class PackagesService {
         occurredAt: now,
       },
     });
+    // Une reprise après retenue ne ré-annonce pas l'étape déjà annoncée
+    if (!leavingHold) await this.emitForStatus(tx, companyId, updated, to);
     await this.audit.record(tx, {
       companyId,
       action: 'package.status_changed',
@@ -257,6 +262,36 @@ export class PackagesService {
       after: { status: to, reason: reason ?? null },
     });
     return updated;
+  }
+
+  private async emitForStatus(tx: Tx, companyId: string, pkg: PackageWithRelations, to: PackageStatus): Promise<void> {
+    const events: Partial<Record<PackageStatus, EventCode>> = {
+      RECEIVED_AT_WAREHOUSE: 'package.received',
+      IN_TRANSIT: 'shipment.dispatched',
+      ARRIVED_DESTINATION: 'shipment.arrived',
+      READY_FOR_PICKUP: 'package.available_at_agency',
+      ON_HOLD: 'package.incident',
+    };
+    await this.emitPackageEvent(tx, companyId, pkg, events[to]);
+  }
+
+  /** Notification liée à un colis (sans client : rien à notifier). */
+  async emitPackageEvent(tx: Tx, companyId: string, pkg: PackageWithRelations, eventCode: EventCode | undefined): Promise<void> {
+    if (!eventCode || !pkg.customer) return;
+    await this.outbox.emit(tx, {
+      companyId,
+      eventCode,
+      aggregateType: 'package',
+      aggregateId: pkg.id,
+      customerId: pkg.customerId,
+      payload: {
+        customerName: displayName(pkg.customer),
+        trackingNumber: formatTrackingNumber(pkg.trackingNumber),
+        warehouseCity: pkg.warehouse.city,
+        agencyName: pkg.agency?.name ?? '',
+        agencyCity: pkg.agency?.city ?? '',
+      },
+    });
   }
 
   /** Changement de statut demandé par le personnel (API générique : modules PACKAGES et BILLING seulement). */
@@ -401,6 +436,7 @@ export class PackagesService {
       after: { warehouse: warehouse.reference, customerCode: customer?.customerCode ?? null },
     });
     if (input.notes) await this.addNoteInternal(tx, auth, created.id, input.notes);
+    await this.emitPackageEvent(tx, auth.companyId, created, 'package.received');
     return created;
   }
 
@@ -463,6 +499,7 @@ export class PackagesService {
           data: { customerCode: customer.customerCode },
         },
       });
+      await this.emitPackageEvent(tx, auth.companyId, updated, 'package.identified');
       await this.audit.record(tx, { companyId: auth.companyId, action: 'package.identified', entityType: 'package', entityId: pkg.id, after: { customerCode: customer.customerCode } });
       return { package: staffPackageDto(updated), merged: null };
     });

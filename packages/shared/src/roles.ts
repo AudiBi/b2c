@@ -153,7 +153,7 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
     allowedScopes: ['COMPANY'],
     permissions: [
       'profile:read_own', 'profile:update_own', 'prealert:create_own', 'prealert:read_own',
-      'package:read_own', 'invoice:read_own', 'payment:read_own',
+      'package:read_own', 'invoice:read_own', 'payment:read_own', 'payment:declare_own', 'notification:read_own',
       'claim:create_own', 'claim:read_own', 'quote:create',
     ],
   },
@@ -166,7 +166,7 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
     permissions: [
       'profile:read_own', 'profile:update_own', 'team:manage_own',
       'prealert:create_own', 'prealert:read_own', 'package:read_own',
-      'invoice:read_own', 'payment:read_own',
+      'invoice:read_own', 'payment:read_own', 'payment:declare_own', 'notification:read_own',
       'claim:create_own', 'claim:read_own', 'quote:create',
     ],
   },

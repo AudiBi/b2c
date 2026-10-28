@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CustomersModule } from '../customers/customers.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PricingModule } from '../pricing/pricing.module';
 import {
   AdminPackagesController,
@@ -13,7 +14,7 @@ import { PortalPackagesService, PrealertsService } from './prealerts.service';
 import { TrackingNumberService } from './tracking-number.service';
 
 @Module({
-  imports: [CustomersModule, PricingModule],
+  imports: [CustomersModule, PricingModule, NotificationsModule],
   controllers: [AdminPackagesController, PackageGroupsController, PortalPrealertsController, PortalPackagesController, PublicTrackingController],
   providers: [PackagesService, PrealertsService, PortalPackagesService, TrackingNumberService],
   exports: [PackagesService],

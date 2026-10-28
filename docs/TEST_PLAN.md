@@ -20,7 +20,7 @@ Exécutés le 2026-10-27, Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chro
 
 | Suite | Tests | Résultat |
 |---|---|---|
-| `packages/shared` (catalogue, `PermissionSet`, schémas, machine d'états des colis, **des lots**, numéro de suivi) | 66 | ✅ |
+| `packages/shared` (catalogue, `PermissionSet`, schémas, machine d'états des colis, **des lots**, numéro de suivi, **finance et notifications**) | 75 | ✅ |
 | API `rls.spec.ts` (isolation au niveau de la base) | 18 | ✅ |
 | API `auth.spec.ts` | 40 | ✅ |
 | API `iam.spec.ts` (politique des routes, matrice des rôles, invitations, plateforme) | 47 | ✅ |
@@ -31,18 +31,30 @@ Exécutés le 2026-10-27, Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chro
 | API `files.spec.ts` (contenu réel, taille, PDF actif, accès, liens signés, suppression, fusion) | 20 | ✅ |
 | API `warehouse-ops.spec.ts` (emplacements, mouvements, inventaire, anomalies, scan, agences, isolation) | 24 | ✅ |
 | API `shipments.spec.ts` (création, droits, chargement, départ/arrivée/douane/clôture/annulation, agence, manifestes CSV/PDF, base) | 33 | ✅ |
+| API `finance.spec.ts` (brouillon, remise, émission et numérotation simultanées, avoirs, immuabilité en base, caisse, espèces, idempotence, concurrence, déclaration / validation / refus, remboursements, PDF, export CSV, synthèse, isolation) | 38 | ✅ |
+| API `webhooks.spec.ts` (signature, horodatage, altération, rejeu simultané, montant ou devise différents, référence inconnue, échec du prestataire, isolation, ajout seul) | 11 | ✅ |
+| API `notifications.spec.ts` (événements, langue, préférences, SMS ignoré, déduplication, nouvelles tentatives, échec définitif et relance, modèles, injection d'en-têtes, émetteurs, portail, isolation, base) | 24 | ✅ |
 | API `rate-limit.spec.ts` | 7 | ✅ |
 | API `infra.spec.ts` (compteurs, idempotence) | 9 | ✅ |
 | API `app.spec.ts` (santé, en-têtes, CORS, erreurs, configuration) | 14 | ✅ |
-| Site, unitaires (7 fichiers : + `phase6`) | 149 | ✅ |
-| Site, recette navigateur (+ `logistics`) | 86 | ✅ |
-| **Total** | **670** | **670 réussis, 0 échec** |
+| Site, unitaires (8 fichiers : + `phase7`) | 168 | ✅ |
+| Site, recette navigateur (+ `finance`) | 87 | ✅ |
+| **Total** | **772** | **772 réussis, 0 échec** |
 
 La recette navigateur couvre notamment : les **17 pages publiques × 3 langues** (51 pages) avec contrôle automatique d'accessibilité WCAG 2.1 A/AA (axe) sur ordinateur **et** sur téléphone (375 px), absence de défilement horizontal, absence d'erreur console (donc de violation de la CSP) ; le HTML pré-rendu sans JavaScript (titre, description, `canonical`, `hreflang`) ; le sitemap et robots.txt ; la page 404 avec statut 404 ; le sélecteur de langue ; la navigation au clavier (lien d'évitement) ; et tout le parcours client : inscription → e-mail réel → confirmation → connexion → code client → adresses de réception → profil → adresses → bénéficiaires → mot de passe → déconnexion, redirection vers la page demandée, redirection externe refusée, mot de passe oublié, jeton à usage unique, inscription en créole.
 
 La recette de la phase 5 ajoute : calculateur (poids réel, volumétrique, assurance, détail, validation FR/EN, téléphone 375 px, axe) ; parcours complet **préalerte → facture jointe (lien signé vérifié) → réception rapprochée → pesée → frais provisoires → suivi public sans connexion (aucune donnée personnelle dans le texte de la page) → retenue en douane** ; doublon de numéro marchand ; modification et annulation en deux temps ; un client ne peut pas ouvrir le colis d'un autre ; suivi en créole.
 
 La recette de la phase 6 ajoute le parcours complet **préalerte → lecture du code en entrepôt (reçu, relu, inconnu) → pesée → autorisation → rangement → lot (chargement refusé puis accepté) → manifestes CSV et PDF réellement téléchargés → départ → arrivée → clôture refusée → réception en agence → prêt pour retrait → point de retrait chez le client et dans le suivi public**, avec contrôle d'accessibilité sur chaque écran du personnel, l'absence d'accès d'un client aux écrans du personnel (interface et API), la liste publique des agences sur téléphone, et les écrans en créole et en anglais.
+
+La recette de la phase 7 ajoute le parcours complet **client inscrit → colis pesé → le personnel crée un brouillon à partir du colis, l'émet → le client voit « À payer », déclare un virement (référence trop courte refusée) → le paiement reste « en attente » → un agent le valide dans la file → facture « Payée », reçu téléchargeable, colis « prêt pour expédition » → traitement des notifications → le client lit « facture à régler » et « paiement reçu » dans son portail → l'e-mail de paiement est réellement arrivé dans Mailpit → encaissement en espèces d'un second colis (refusé sans caisse ouverte, accepté après ouverture)**, avec contrôle d'accessibilité (axe, WCAG 2.1 A/AA) sur les huit écrans de ce parcours.
+
+### Défauts réels détectés par ces tests pendant la phase 7 (corrigés)
+1. **Impossible de créer le moindre brouillon de facture (500)** : Prisma refusait `company_id` dans la création imbriquée des lignes ; les lignes sont créées à part. Relevé dès le premier test d'API (35 échecs sur 38).
+2. **Export CSV : montants négatifs (remboursements, avoirs) précédés d'une apostrophe** par la protection contre l'injection de formules, ce qui les rendait illisibles comme nombres dans un tableur. Les montants (produits par le serveur, jamais saisis) sont écrits tels quels ; les cellules textuelles restent protégées.
+3. **Règle des hooks violée dans la navigation de l'espace connecté** (pastille des notifications appelée après les retours anticipés) : relevé par les tests d'interface, corrigé.
+4. **Accessibilité** : un bouton « Chercher » dont le nom accessible était « Rechercher (…) » (le texte visible doit figurer dans le nom : WCAG 2.5.3), relevé par axe dans la recette navigateur.
+5. **Défauts de banc de test (pas du produit)** : horloge de la base ≠ horloge du test (un événement créé « maintenant » par la base n'était pas encore échu pour le test), préfixes de suivi aléatoires qui se télescopaient (vérification en base ajoutée), attente à l'intérieur d'une chaîne `supertest` (serveur déjà refermé). Une exécution de la suite complète lancée **en même temps** qu'une autre sur la même base a produit un échec sans rapport : les suites ne doivent jamais se chevaucher.
 
 ### Défauts réels détectés par ces tests pendant la phase 6 (corrigés)
 1. **Colis reçu sans préalerte impossible à peser** : aucun moyen d'en fixer le mode de transport (`register` accepte maintenant `transportMode` quand il manque).
@@ -75,10 +87,11 @@ La recette de la phase 6 ajoute le parcours complet **préalerte → lecture du 
 | 1 | Un client crée son compte et se connecte | ✅ API et navigateur |
 | 2-5, 7 | Préalerte, réception et rapprochement, pesée, calculateur, statuts de colis | ✅ API et navigateur (phase 5) |
 | 6 | Lot de transport, manifeste, propagation aux colis | ✅ API et navigateur (phase 6) |
-| 8-12 | Notifications, paiement, remise, réclamations… | ⏳ phases 7 et 8 |
+| 9, 10 | Paiement (espèces, virement déclaré puis validé), notifications | ✅ API et navigateur (phase 7) |
+| 11, 12 | Remise au client, réclamations | ⏳ phase 8 |
 | 13 | Un client ne peut pas consulter les données d'un autre client | ✅ pour ce qui existe : utilisateurs, journal d'audit, adresses, bénéficiaires, adresses de réception, entrepôts, **préalertes, colis, pièces jointes, estimations** (API et navigateur), base entière via RLS ; à rejouer sur factures |
 | 14 | Un employé ne peut pas faire une opération interdite à son rôle | ✅ matrice sur toutes les routes existantes, portées d'entrepôt, autorisation avant validation, anti-escalade, dernier administrateur |
-| 15 | Erreurs de paiement ou de notification traitées | ◐ l'échec d'envoi d'e-mail est journalisé sans casser l'action (constaté, non couvert par test automatisé) ; paiements en phase 7 |
+| 15 | Erreurs de paiement ou de notification traitées | ✅ échec d'envoi d'e-mail simulé : tentatives espacées, échec visible, relance ; paiement refusé, doublon de référence, surpaiement, rejeu de confirmation, signature invalide. ❌ Non testé : un **vrai** prestataire de paiement ou SMTP de production |
 
 | Autre exigence | État |
 |---|---|
@@ -96,12 +109,13 @@ La recette de la phase 6 ajoute le parcours complet **préalerte → lecture du 
 - `seed-demo` exécuté sur la base de test et refusé en production.
 
 ## Limites des tests actuels
+- **Phase 7** : la confirmation signée est exercée avec un émetteur écrit pour les tests (aucun prestataire réel) ; l'échec d'envoi d'e-mail est simulé (SMTP injoignable réel non testé) ; les PDF de facture et de reçu sont vérifiés (document valide) mais pas visuellement ; pas de test de charge sur l'émission simultanée au-delà de 4 factures ; les écrans de finance ne sont testés que dans Chromium.
 - **Phase 6** : le PDF du manifeste est vérifié (document valide, taille), pas visuellement ; le lecteur de codes-barres est simulé par la saisie ; aucun test de charge sur les scans (phase 9) ; les écrans du personnel ne sont testés que dans Chromium.
 - **Phase 5 (levée en phase 6 pour les écrans)** : les opérations du personnel (réception, pesée…) sont testées par l'API, pas par une interface (elle n'existe pas). Aucun antivirus ni stockage S3 n'a été exercé. Les tests de transport, d'agence et de livraison attendent leurs modules. Charge et énumération des numéros de suivi : phase 9.
 - **L'accessibilité automatisée (axe) ne détecte qu'une partie des problèmes.** Aucun test avec lecteur d'écran ni audit manuel n'a eu lieu : ne pas annoncer de conformité WCAG avant cet audit.
 - Navigateurs testés : Chromium (et Edge pour le repli). Ni Firefox ni Safari. Pas de test sur un vrai téléphone ni sur un réseau lent.
 - **Les traductions créoles n'ont pas été relues par un locuteur natif** ; les tests vérifient la structure, pas la qualité de la langue.
-- Aucun test de performance : le fichier JavaScript principal pèse environ 235 Ko compressés (voir WEB.md).
+- Aucun test de performance : le fichier JavaScript principal pèse environ 267 Ko compressés (voir WEB.md).
 - Les tests de concurrence couvrent les cas écrits, pas tous les entrelacements possibles.
 - Le pré-rendu et la CSP sont testés avec le serveur de `scripts/serve-dist.mjs`, pas avec un vrai nginx ou Apache.
 - La base de test est partagée entre les fichiers (exécutés l'un après l'autre) ; l'isolation repose sur des identifiants aléatoires.

@@ -5474,6 +5474,1663 @@
         ]
       }
     },
+    "/v1/admin/notifications": {
+      "get": {
+        "operationId": "AdminNotificationsController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "QUEUED",
+                "SENT",
+                "FAILED",
+                "SKIPPED"
+              ]
+            }
+          },
+          {
+            "name": "channel",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "IN_APP",
+                "EMAIL",
+                "SMS",
+                "WHATSAPP"
+              ]
+            }
+          },
+          {
+            "name": "eventCode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "prealert.created",
+                "package.received",
+                "package.identified",
+                "payment.required",
+                "payment.confirmed",
+                "shipment.prepared",
+                "shipment.dispatched",
+                "shipment.arrived",
+                "package.available_at_agency",
+                "delivery.scheduled",
+                "package.delivered",
+                "package.incident"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Journal des notifications (statut, tentatives, dernière erreur)",
+        "tags": [
+          "Notifications (personnel)"
+        ],
+        "x-permissions": [
+          "notification:read"
+        ]
+      }
+    },
+    "/v1/admin/notifications/{id}/retry": {
+      "post": {
+        "operationId": "AdminNotificationsController_retry",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Relance une notification en échec",
+        "tags": [
+          "Notifications (personnel)"
+        ],
+        "x-permissions": [
+          "notification:template_manage"
+        ]
+      }
+    },
+    "/v1/admin/notifications/process": {
+      "post": {
+        "description": "Le traitement de fond le fait déjà à intervalle régulier ; utile pour vérifier une configuration.",
+        "operationId": "AdminNotificationsController_process",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lance immédiatement un tour de traitement pour votre entreprise",
+        "tags": [
+          "Notifications (personnel)"
+        ],
+        "x-permissions": [
+          "notification:template_manage"
+        ]
+      }
+    },
+    "/v1/admin/notification-templates": {
+      "get": {
+        "operationId": "AdminNotificationsController_templates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modèles effectifs (défaut ou personnalisé) par événement, canal et langue",
+        "tags": [
+          "Notifications (personnel)"
+        ],
+        "x-permissions": [
+          "notification:read"
+        ]
+      },
+      "put": {
+        "description": "Variables limitées à celles de l’événement ; texte brut ; SMS et WhatsApp refusés (aucun prestataire).",
+        "operationId": "AdminNotificationsController_saveTemplate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "eventCode": {
+                    "type": "string",
+                    "enum": [
+                      "prealert.created",
+                      "package.received",
+                      "package.identified",
+                      "payment.required",
+                      "payment.confirmed",
+                      "shipment.prepared",
+                      "shipment.dispatched",
+                      "shipment.arrived",
+                      "package.available_at_agency",
+                      "delivery.scheduled",
+                      "package.delivered",
+                      "package.incident"
+                    ]
+                  },
+                  "channel": {
+                    "type": "string",
+                    "enum": [
+                      "IN_APP",
+                      "EMAIL",
+                      "SMS",
+                      "WHATSAPP"
+                    ]
+                  },
+                  "locale": {
+                    "type": "string",
+                    "enum": [
+                      "fr",
+                      "ht",
+                      "en"
+                    ]
+                  },
+                  "subject": {
+                    "type": "string",
+                    "maxLength": 150
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "active": {
+                    "default": true,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "eventCode",
+                  "channel",
+                  "locale",
+                  "body"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crée ou remplace un modèle personnalisé",
+        "tags": [
+          "Notifications (personnel)"
+        ],
+        "x-permissions": [
+          "notification:template_manage"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminNotificationsController_resetTemplate",
+        "parameters": [
+          {
+            "name": "eventCode",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "prealert.created",
+                "package.received",
+                "package.identified",
+                "payment.required",
+                "payment.confirmed",
+                "shipment.prepared",
+                "shipment.dispatched",
+                "shipment.arrived",
+                "package.available_at_agency",
+                "delivery.scheduled",
+                "package.delivered",
+                "package.incident"
+              ]
+            }
+          },
+          {
+            "name": "channel",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "IN_APP",
+                "EMAIL",
+                "SMS",
+                "WHATSAPP"
+              ]
+            }
+          },
+          {
+            "name": "locale",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fr",
+                "ht",
+                "en"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Supprime un modèle personnalisé (retour au modèle par défaut)",
+        "tags": [
+          "Notifications (personnel)"
+        ],
+        "x-permissions": [
+          "notification:template_manage"
+        ]
+      }
+    },
+    "/v1/me/notifications": {
+      "get": {
+        "operationId": "PortalNotificationsController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "unread",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mes notifications du portail et le nombre de non lues",
+        "tags": [
+          "Espace client"
+        ],
+        "x-permissions": [
+          "notification:read_own"
+        ]
+      }
+    },
+    "/v1/me/notifications/read-all": {
+      "post": {
+        "operationId": "PortalNotificationsController_readAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Marque toutes mes notifications comme lues",
+        "tags": [
+          "Espace client"
+        ],
+        "x-permissions": [
+          "notification:read_own"
+        ]
+      }
+    },
+    "/v1/me/notifications/{id}/read": {
+      "post": {
+        "operationId": "PortalNotificationsController_read",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Marque une notification comme lue",
+        "tags": [
+          "Espace client"
+        ],
+        "x-permissions": [
+          "notification:read_own"
+        ]
+      }
+    },
+    "/v1/admin/invoices": {
+      "get": {
+        "operationId": "AdminInvoicesController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DRAFT",
+                "ISSUED",
+                "PARTIALLY_PAID",
+                "PAID",
+                "VOID",
+                "CREDITED"
+              ]
+            }
+          },
+          {
+            "name": "customerId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Factures (filtres : statut, client, numéro ou code client)",
+        "tags": [
+          "Facturation (personnel)"
+        ],
+        "x-permissions": [
+          "invoice:read"
+        ]
+      },
+      "post": {
+        "description": "Les frais des colis viennent de la pesée (grille appliquée). Un colis sans tarif calculé exige une ligne FREIGHT saisie. Une remise exige discount:apply et respecte le plafond de l'entreprise. Un colis n'est facturé qu'une fois.",
+        "operationId": "AdminInvoicesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "customerId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "packageIds": {
+                    "default": [],
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "extraLines": {
+                    "default": [],
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "FREIGHT",
+                            "STORAGE",
+                            "HANDLING",
+                            "INSURANCE",
+                            "CUSTOMS",
+                            "OTHER"
+                          ]
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "amount": {
+                          "type": "number",
+                          "minimum": 0,
+                          "exclusiveMinimum": true,
+                          "maximum": 10000000
+                        },
+                        "packageId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "description",
+                        "amount"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "discountPercent": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "customerId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crée une facture en BROUILLON",
+        "tags": [
+          "Facturation (personnel)"
+        ],
+        "x-permissions": [
+          "invoice:create"
+        ]
+      }
+    },
+    "/v1/admin/invoices/{id}": {
+      "get": {
+        "operationId": "AdminInvoicesController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Détail : lignes, paiements, avoirs, colis, solde",
+        "tags": [
+          "Facturation (personnel)"
+        ],
+        "x-permissions": [
+          "invoice:read"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminInvoicesController_remove",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Supprime un brouillon",
+        "tags": [
+          "Facturation (personnel)"
+        ],
+        "x-permissions": [
+          "invoice:create"
+        ]
+      }
+    },
+    "/v1/admin/invoices/{id}/issue": {
+      "post": {
+        "description": "Selon la politique de l'entreprise, les colis passent « en attente de paiement » ou « prêts pour expédition ». Le client est notifié. Une facture émise n'est plus modifiable.",
+        "operationId": "AdminInvoicesController_issue",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Émet la facture (numéro sans trou) ",
+        "tags": [
+          "Facturation (personnel)"
+        ],
+        "x-permissions": [
+          "invoice:create"
+        ]
+      }
+    },
+    "/v1/admin/invoices/{id}/void": {
+      "post": {
+        "operationId": "AdminInvoicesController_void",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Annule une facture émise sans encaissement (motif obligatoire)",
+        "tags": [
+          "Facturation (personnel)"
+        ],
+        "x-permissions": [
+          "invoice:void"
+        ]
+      }
+    },
+    "/v1/admin/invoices/{id}/credit-notes": {
+      "post": {
+        "operationId": "AdminInvoicesController_credit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 10000000
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "amount",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Émet un avoir (limité à ce qui n’est ni encaissé ni en attente)",
+        "tags": [
+          "Facturation (personnel)"
+        ],
+        "x-permissions": [
+          "invoice:void"
+        ]
+      }
+    },
+    "/v1/admin/invoices/{id}/pdf": {
+      "get": {
+        "operationId": "AdminInvoicesController_pdf",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Facture en PDF",
+        "tags": [
+          "Facturation (personnel)"
+        ],
+        "x-permissions": [
+          "invoice:read"
+        ]
+      }
+    },
+    "/v1/me/invoices": {
+      "get": {
+        "operationId": "PortalFinanceController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DRAFT",
+                "ISSUED",
+                "PARTIALLY_PAID",
+                "PAID",
+                "VOID",
+                "CREDITED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mes factures émises (jamais les brouillons)",
+        "tags": [
+          "Espace client"
+        ],
+        "x-permissions": [
+          "invoice:read_own"
+        ]
+      }
+    },
+    "/v1/me/invoices/{id}": {
+      "get": {
+        "operationId": "PortalFinanceController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ma facture avec ses lignes, paiements et solde (la facture d’un autre : 404)",
+        "tags": [
+          "Espace client"
+        ],
+        "x-permissions": [
+          "invoice:read_own"
+        ]
+      }
+    },
+    "/v1/me/invoices/{id}/pdf": {
+      "get": {
+        "operationId": "PortalFinanceController_pdf",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ma facture en PDF",
+        "tags": [
+          "Espace client"
+        ],
+        "x-permissions": [
+          "invoice:read_own"
+        ]
+      }
+    },
+    "/v1/me/invoices/{id}/payments": {
+      "post": {
+        "description": "Le paiement reste EN ATTENTE : il n'est confirmé que par le personnel (qui voit l'argent) ou par une confirmation signée d'un prestataire configuré. Rien n'est débité par la plateforme.",
+        "operationId": "PortalFinanceController_declare",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "BANK_TRANSFER",
+                      "MOBILE_MONEY"
+                    ]
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 10000000
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 60,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]*$"
+                  }
+                },
+                "required": [
+                  "method",
+                  "amount",
+                  "reference"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Déclare un paiement par virement ou mobile",
+        "tags": [
+          "Espace client"
+        ],
+        "x-permissions": [
+          "payment:declare_own"
+        ]
+      }
+    },
+    "/v1/me/payments": {
+      "get": {
+        "operationId": "PortalFinanceController_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mes paiements (en attente, confirmés, refusés) et leurs reçus",
+        "tags": [
+          "Espace client"
+        ],
+        "x-permissions": [
+          "payment:read_own"
+        ]
+      }
+    },
+    "/v1/me/payments/{id}": {
+      "delete": {
+        "operationId": "PortalFinanceController_cancel",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retire un paiement déclaré tant qu’il est en attente",
+        "tags": [
+          "Espace client"
+        ],
+        "x-permissions": [
+          "payment:declare_own"
+        ]
+      }
+    },
+    "/v1/me/payments/{id}/receipt.pdf": {
+      "get": {
+        "operationId": "PortalFinanceController_receipt",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mon reçu en PDF",
+        "tags": [
+          "Espace client"
+        ],
+        "x-permissions": [
+          "payment:read_own"
+        ]
+      }
+    },
+    "/v1/me/payment-options": {
+      "get": {
+        "description": "Le paiement en ligne par carte n’existe pas (aucun prestataire) : online vaut toujours false.",
+        "operationId": "PortalFinanceController_options",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Moyens de paiement réellement disponibles",
+        "tags": [
+          "Espace client"
+        ],
+        "x-permissions": [
+          "payment:read_own"
+        ]
+      }
+    },
+    "/v1/admin/payments": {
+      "get": {
+        "operationId": "AdminPaymentsController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "CONFIRMED",
+                "FAILED",
+                "CANCELLED",
+                "REFUNDED_PARTIAL",
+                "REFUNDED"
+              ]
+            }
+          },
+          {
+            "name": "method",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CASH",
+                "BANK_TRANSFER",
+                "MOBILE_MONEY",
+                "CARD_ONLINE"
+              ]
+            }
+          },
+          {
+            "name": "invoiceId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Paiements (filtres : statut, mode, facture)",
+        "tags": [
+          "Paiements (personnel)"
+        ],
+        "x-permissions": [
+          "payment:read"
+        ]
+      }
+    },
+    "/v1/admin/payments/cash": {
+      "post": {
+        "description": "Exige une caisse ouverte. Reçu numéroté immédiat. En-tête Idempotency-Key (8-64 caractères) : une requête rejouée ne double pas l'encaissement.",
+        "operationId": "AdminPaymentsController_cash",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 10000000
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 60,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]*$"
+                  },
+                  "agencyId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "invoiceId",
+                  "amount"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enregistre un paiement en espèces",
+        "tags": [
+          "Paiements (personnel)"
+        ],
+        "x-permissions": [
+          "payment:record_cash"
+        ]
+      }
+    },
+    "/v1/admin/payments/{id}/confirm": {
+      "post": {
+        "operationId": "AdminPaymentsController_confirm",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Valide un virement ou un paiement mobile déclaré (rapprochement manuel)",
+        "tags": [
+          "Paiements (personnel)"
+        ],
+        "x-permissions": [
+          "payment:reconcile"
+        ]
+      }
+    },
+    "/v1/admin/payments/{id}/reject": {
+      "post": {
+        "operationId": "AdminPaymentsController_reject",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Refuse un paiement déclaré (motif obligatoire)",
+        "tags": [
+          "Paiements (personnel)"
+        ],
+        "x-permissions": [
+          "payment:reconcile"
+        ]
+      }
+    },
+    "/v1/admin/payments/{id}/refunds": {
+      "post": {
+        "operationId": "AdminPaymentsController_refund",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 10000000
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "amount",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enregistre un remboursement (l’argent est rendu hors de la plateforme)",
+        "tags": [
+          "Paiements (personnel)"
+        ],
+        "x-permissions": [
+          "payment:refund"
+        ]
+      }
+    },
+    "/v1/admin/payments/{id}/receipt.pdf": {
+      "get": {
+        "operationId": "AdminPaymentsController_receipt",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reçu en PDF",
+        "tags": [
+          "Paiements (personnel)"
+        ],
+        "x-permissions": [
+          "payment:read"
+        ]
+      }
+    },
+    "/v1/admin/cash-sessions": {
+      "get": {
+        "operationId": "AdminPaymentsController_sessions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sessions de caisse (périmètre respecté)",
+        "tags": [
+          "Paiements (personnel)"
+        ],
+        "x-permissions": [
+          "payment:read"
+        ]
+      },
+      "post": {
+        "operationId": "AdminPaymentsController_open",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agencyId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "openingAmount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 10000000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ouvre une caisse (une seule à la fois par agence, ou pour l’entreprise)",
+        "tags": [
+          "Paiements (personnel)"
+        ],
+        "x-permissions": [
+          "payment:record_cash"
+        ]
+      }
+    },
+    "/v1/admin/cash-sessions/{id}/close": {
+      "post": {
+        "operationId": "AdminPaymentsController_close",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "countedAmount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100000000
+                  }
+                },
+                "required": [
+                  "countedAmount"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Clôture la caisse : montant attendu, compté et écart",
+        "tags": [
+          "Paiements (personnel)"
+        ],
+        "x-permissions": [
+          "payment:record_cash"
+        ]
+      }
+    },
+    "/v1/admin/finance/summary": {
+      "get": {
+        "operationId": "AdminPaymentsController_summary",
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Synthèse de rapprochement par mode et par devise",
+        "tags": [
+          "Paiements (personnel)"
+        ],
+        "x-permissions": [
+          "payment:reconcile"
+        ]
+      }
+    },
+    "/v1/admin/finance/export.csv": {
+      "get": {
+        "operationId": "AdminPaymentsController_export",
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Registre comptable en CSV (factures, paiements, remboursements, avoirs)",
+        "tags": [
+          "Paiements (personnel)"
+        ],
+        "x-permissions": [
+          "payment:export"
+        ]
+      }
+    },
+    "/v1/admin/settings/finance": {
+      "get": {
+        "operationId": "FinanceSettingsController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Plafond de remise et consignes de paiement",
+        "tags": [
+          "Administration : paramètres"
+        ],
+        "x-permissions": [
+          "settings:read"
+        ]
+      },
+      "put": {
+        "operationId": "FinanceSettingsController_put",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "maxDiscountPercent": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "paymentInstructions": {
+                    "nullable": true,
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifie le plafond de remise et/ou les consignes de paiement (texte affiché au client)",
+        "tags": [
+          "Administration : paramètres"
+        ],
+        "x-permissions": [
+          "settings:update"
+        ]
+      }
+    },
+    "/v1/webhooks/payments/{slug}/{provider}": {
+      "post": {
+        "description": "En-tête X-Signature : t=<secondes>,v1=<HMAC-SHA256 hex de « t.corps »>. 404 tant qu’aucun prestataire n’est configuré ; 401 si la signature est invalide ou périmée (5 min) ; un événement déjà reçu répond DUPLICATE sans effet.",
+        "operationId": "PaymentWebhookController_handle",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Confirmation de paiement signée d’un prestataire",
+        "tags": [
+          "Public"
+        ]
+      }
+    },
     "/v1/platform/companies": {
       "post": {
         "description": "Réservé à l'équipe de la plateforme. L'administrateur reçoit un lien d'activation par e-mail.",

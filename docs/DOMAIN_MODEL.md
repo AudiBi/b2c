@@ -74,13 +74,13 @@ Un **agrégat** est un groupe d'objets modifié ensemble et protégé par des r�
 - I21. Montants en décimal exact (jamais flottant) avec devise ; pas d'addition de devises différentes sans taux enregistré.
 - I22. Une facture émise n'est plus modifiable ; une correction passe par un avoir.
 - I23. Numérotation des factures et reçus sans trou, par entreprise et année.
-- I24. Somme des affectations d'un paiement ≤ son montant ; solde d'une facture = total − paiements confirmés + remboursements.
+- I24. **Réalisé** : un paiement règle **une** facture (pas d'affectation multiple) ; la somme des paiements ouverts (en attente ou confirmés) d'une facture ≤ son dû (vérifié par le service sous verrou de la facture et au commit par un déclencheur) ; solde = total − avoirs − (paiements confirmés − remboursements).
 - I25. Un paiement passe `CONFIRMED` seulement sur confirmation vérifiée ; une même confirmation rejouée n'a aucun effet supplémentaire.
 - I26. Un remboursement ne dépasse pas le montant confirmé non encore remboursé.
 
 ### Notifications
 - I27. Une notification est liée à un événement, un canal et une langue ; elle a un statut (`QUEUED`, `SENT`, `FAILED`, `SKIPPED`) et un nombre de tentatives.
-- I28. Pour un même (événement, destinataire, canal), un seul envoi est effectué (clé d'idempotence).
+- I28. Pour un même (événement, destinataire, canal), un seul envoi est effectué (clé d'idempotence `<événement>:<canal>`). **Réalisé en phase 7** : l'événement est écrit dans la transaction de l'action (outbox), traité par un traitement de fond (verrous `SKIP LOCKED`, plusieurs instances possibles), puis les e-mails sont envoyés avec nouvelles tentatives à +1, +5, +30, +120 minutes avant l'état `FAILED` visible.
 
 ## 4. Machine d'états du colis
 

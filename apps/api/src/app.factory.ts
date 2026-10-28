@@ -26,7 +26,7 @@ export function buildOpenApi(app: NestExpressApplication): OpenAPIObject {
 
 /** Construit l'application (partagée par main.ts, le script OpenAPI et les tests). N'ouvre pas de port. */
 export async function createApp(env: Env): Promise<NestExpressApplication> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(env), { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(env), { bufferLogs: true, rawBody: true });
   app.useLogger(app.get(Logger));
   app.set('trust proxy', env.TRUST_PROXY ? 1 : false);
   app.disable('x-powered-by');

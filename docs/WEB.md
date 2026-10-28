@@ -79,9 +79,22 @@ Dans l'espace connecté (`/<langue>/account/staff/…`), le menu n'affiche que c
 - **Agence** : réception par lecture, « prêt pour retrait ».
 Les textes sont dans les trois langues (créole à relire). Pas d'impression d'étiquettes ni de scan par caméra.
 
+## Écrans de la finance et des notifications (phase 7)
+
+**Espace client** (`/<langue>/account/…`) :
+- **Mes factures** (`invoices`) : liste des factures émises (jamais les brouillons) avec statut et reste à payer ; détail avec lignes, totaux, colis, avoirs, paiements, **facture en PDF** et **reçu en PDF**.
+- **Payer** : les consignes de paiement de l'entreprise, puis la **déclaration** d'un virement ou d'un paiement mobile (montant et référence contrôlés avec le schéma partagé). Le paiement reste « en attente de validation » : la facture n'est pas « payée » avant la validation d'un agent. Le client peut retirer sa déclaration tant qu'elle est en attente. Le texte précise honnêtement que le paiement par carte en ligne n'est **pas** disponible.
+- **Notifications** (`notifications`) : boîte de réception du portail, pastille du nombre de non lues dans le menu, « marquer comme lu » (une ou toutes).
+
+**Espace du personnel** (menu selon les droits) :
+- **Factures** : liste (statut, numéro, code client) ; nouveau brouillon (recherche du client, choix de ses colis pesés, lignes supplémentaires, remise si `discount:apply`, échéance) ; fiche : émission, suppression d'un brouillon (en deux temps), annulation avec motif, avoir, PDF, encaissement en espèces (clé d'idempotence générée par saisie), validation ou refus (motif) d'un paiement déclaré, remboursement.
+- **Paiements** : file des paiements (par défaut « en attente »), **caisse** (ouverture avec fond, clôture avec montant compté, attendu et écart), **synthèse de la période** par mode et devise, **export CSV**, réglages de facturation (plafond de remise, consignes de paiement).
+- **Notifications** : journal des envois (statut, tentatives, dernière erreur, prochaine tentative), relance d'un échec, traitement immédiat, **éditeur de modèles** par événement, canal et langue (variables autorisées affichées, retour au modèle par défaut).
+Textes en trois langues (créole à relire). Le total de la facture et le solde sont affichés avec la devise de la facture ; les montants de caisse n'ont pas de symbole car la caisse n'enregistre pas de devise.
+
 ## Limites connues
 
-- **Poids du JavaScript** : environ 235 Ko compressés pour le fichier principal (React, React Router, zod, TanStack Query, les trois catalogues de textes). Le contenu s'affiche avant (pré-rendu) mais l'interactivité attend ce fichier. Pistes : charger seulement la langue courante, remplacer TanStack Query par un petit utilitaire, alléger zod côté navigateur.
+- **Poids du JavaScript** : environ 267 Ko compressés pour le fichier principal (les écrans connectés, dont 38 Ko compressés, sont chargés à la demande) (React, React Router, zod, TanStack Query, les trois catalogues de textes). Le contenu s'affiche avant (pré-rendu) mais l'interactivité attend ce fichier. Pistes : charger seulement la langue courante, remplacer TanStack Query par un petit utilitaire, alléger zod côté navigateur.
 - Pas de mode sombre. Pas de PWA ni de mode hors ligne.
 - Une seule marque et une seule entreprise par construction.
 - Les routes d'authentification non pré-référencées (`/forgot-password`, etc.) sont pré-rendues en `noindex`.

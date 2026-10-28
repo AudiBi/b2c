@@ -11,15 +11,18 @@ Plateforme multi-entreprises de gestion de colis, d'expéditions aériennes et m
 | 4 | Site public (17 pages, FR/HT/EN), espace client, code client, adresses de réception | ☑ testée |
 | **5** | **Colis, préalertes, suivi public, calculateur de frais, pièces jointes** | **☑ implémentée et testée (579 tests au total)** |
 | **6** | **Entrepôts (scan, emplacements, inventaire), lots de transport et manifestes, agences, écrans du personnel** | **☑ implémentée et testée (670 tests au total)** |
-| 7-10 | Finance, notifications, livraison, intégrations, déploiement | ☐ non commencées |
+| **7** | **Factures (numérotation sans trou, avoirs, PDF), paiements (espèces avec caisse, virement / mobile déclaré puis validé, confirmation signée si un prestataire est configuré), remboursements, export comptable, notifications (portail + e-mail avec nouvelles tentatives, modèles FR/HT/EN)** | **☑ implémentée et testée (772 tests au total)** |
+| 8-10 | Livraison, intégrations, déploiement | ☐ non commencées |
 
 Ce qui existe :
-- une **API REST** (`/v1`) : inscription/connexion/sessions, 12 rôles et 69 permissions, administration des utilisateurs, création des entreprises, journal d'audit immuable, isolement des entreprises par Row-Level Security PostgreSQL ; profil client avec **code client unique**, adresses, bénéficiaires, entrepôts et **adresses de réception personnalisées** ;
+- une **API REST** (`/v1`) : inscription/connexion/sessions, 12 rôles et 71 permissions, administration des utilisateurs, création des entreprises, journal d'audit immuable, isolement des entreprises par Row-Level Security PostgreSQL ; profil client avec **code client unique**, adresses, bénéficiaires, entrepôts et **adresses de réception personnalisées** ;
 - un **site web** (`apps/web`) : 17 pages publiques en français, créole haïtien et anglais (pré-rendues pour le référencement), inscription, connexion, mot de passe oublié, et un espace client. Depuis la phase 5 : **calculateur de frais** (grille tarifaire de l'entreprise, jamais de prix inventé), **suivi public par numéro**, **préalertes** avec facture jointe et **Mes colis** (historique, frais provisoires) ;
 - **personnel** (phase 6) : réception par scan, pesée, rangement, inventaire, anomalies, **lots de transport** (chargement contrôlé, départ/arrivée qui font avancer les colis, manifeste CSV et PDF), **agences** (réception par scan, prêt pour retrait) ;
 - côté API : **colis** à 17 statuts et machine d'états contrôlée (aussi en base), réception avec rapprochement automatique/manuel, colis non identifiés, pesée avec frais, regroupement, retenue, **grilles tarifaires versionnées**, pièces jointes à liens signés.
 
-**Il n'y a pas encore** de facturation, de paiements, de notifications, de tournées ni de remise au client avec preuve (phases 7 et 8), ni d'intégration de transporteur. Les pièces jointes sont stockées sur disque local (pas de S3). Voir [docs/ROADMAP.md](docs/ROADMAP.md) pour les réserves.
+- **finance et notifications** (phase 7) : factures en brouillon puis émises (numéro `INV-AAAA-NNNNNN` sans trou, immuables), avoirs, PDF de facture et de reçu, paiements **en espèces** (caisse ouverte exigée, Idempotency-Key, caisse par agence) et **virement / paiement mobile déclaré par le client puis validé par un agent**, remboursements enregistrés, synthèse de rapprochement et export CSV, point d'entrée de **confirmation signée** (actif seulement si un prestataire est configuré) ; notifications par **portail et e-mail** (file en base, nouvelles tentatives, journal, relance, modèles FR/HT/EN modifiables), SMS et WhatsApp « ignorés — canal non configuré ».
+
+**Il n'y a pas encore** de tournées ni de remise au client avec preuve (phase 8), de paiement en ligne (aucun prestataire choisi), d'envoi par SMS ou WhatsApp, ni d'intégration de transporteur. Les pièces jointes sont stockées sur disque local (pas de S3). Voir [docs/ROADMAP.md](docs/ROADMAP.md) pour les réserves.
 
 ## Prérequis
 

@@ -46,6 +46,16 @@ export const envSchema = z
 
     /** Dossier des pièces jointes (stockage disque local). Hors du dossier public ; à sauvegarder avec la base. */
     FILES_DIR: z.string().min(1).default('./.data/files'),
+
+    /** Intervalle du traitement de fond des notifications (ms). 0 : désactivé (tests, ou traitement externe). */
+    NOTIFICATION_WORKER_INTERVAL_MS: z.coerce.number().int().min(0).default(10_000),
+
+    /**
+     * Confirmations de paiement par un prestataire : le point d'entrée n'existe que si ces deux variables sont renseignées.
+     * Le secret signe chaque notification (HMAC-SHA256) ; il se partage avec le prestataire, jamais dans le dépôt.
+     */
+    PAYMENT_WEBHOOK_PROVIDER: z.string().regex(/^[a-z][a-z0-9_-]{1,30}$/).optional(),
+    PAYMENT_WEBHOOK_SECRET: z.string().min(32).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;

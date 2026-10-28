@@ -118,9 +118,9 @@ Test obligatoire (phase 3) : deux entreprises, mêmes données, vérification qu
 ## 9. Événements et notifications (outbox)
 
 1. La transaction métier écrit une ligne `outbox_events`.
-2. Un relais lit l'outbox (verrou `SKIP LOCKED`) et crée les tâches BullMQ.
+2. Le traitement de fond lit l'outbox (verrou `SKIP LOCKED`) et crée une `notification` par canal (**réalisé sans BullMQ**, voir § écarts).
 3. Le service de notification résout le modèle (événement, canal, langue du client), enregistre une `notification` et appelle le fournisseur du canal.
-4. Échec → nouvelle tentative avec délai exponentiel, jusqu'à N fois, puis statut `FAILED` visible et alerte. Les fournisseurs reçoivent une clé d'idempotence pour éviter les doublons.
+4. Échec → nouvelle tentative après 1, 5, 30 puis 120 minutes (5 tentatives au total), puis statut `FAILED` visible dans le journal et relançable par le personnel (**pas d'alerte automatique**). Un envoi n'est jamais déduit deux fois côté base (clé de déduplication), mais **un e-mail peut être renvoyé en double si le serveur s'arrête entre l'envoi SMTP et son enregistrement** (livraison « au moins une fois »).
 
 Une notification n'est jamais perdue si le processus s'arrête après le commit, puisque l'outbox est dans la base.
 
@@ -161,7 +161,7 @@ Réalisé et testé (voir [TEST_PLAN.md](TEST_PLAN.md)) : monorepo npm workspace
 | Droits | « claims dans le jeton » | Le jeton ne contient que utilisateur, entreprise et session ; les droits sont relus en base à chaque requête (3 requêtes) pour une révocation immédiate. À mettre en cache court si la charge l'exige |
 | Validation | `class-validator` / zod | zod partagé (`packages/shared`), appliqué par un intercepteur global (`@Validate`) qui alimente aussi OpenAPI |
 | Express 5 | non prévu | `req.query` est en lecture seule : les données validées sont exposées par `@VBody() / @VQuery() / @VParams()` |
-| Files de tâches | BullMQ dès la phase 3 | **Non implémentées** : les e-mails d'authentification sont envoyés directement après la transaction (échec journalisé, sans nouvelle tentative). Outbox + BullMQ en phase 7 |
+| Files de tâches | BullMQ dès la phase 3 | **File dans PostgreSQL, pas BullMQ** (phase 7) : table `outbox_events` écrite dans la transaction de l'action, puis table `notifications` traitée par un traitement de fond (intervalle `NOTIFICATION_WORKER_INTERVAL_MS`, verrous `SKIP LOCKED`, plusieurs instances sans doublon). Une dépendance et un point de panne de moins ; Redis reste réservé aux limites de débit. Les e-mails d'authentification (inscription, mot de passe) sont toujours envoyés directement après la transaction, sans nouvelle tentative |
 | Stockage S3 | MinIO dans le compose | Profil `storage` optionnel et non vérifié (image MinIO introuvable) ; sans objet avant la phase 5 |
 | Authentification | TOTP du personnel | Colonne prévue, **fonction non implémentée** |
 | Tests | Vitest | Jest + ts-jest (chemin standard avec les décorateurs NestJS) |
