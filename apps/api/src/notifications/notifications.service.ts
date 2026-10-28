@@ -22,6 +22,7 @@ type Locale = 'fr' | 'ht' | 'en';
 const TEMPLATE_CHANNELS: NotificationChannel[] = ['IN_APP', 'EMAIL'];
 const LOCALES: Locale[] = ['fr', 'ht', 'en'];
 const FANOUT_ORDER: NotificationChannel[] = ['IN_APP', 'EMAIL', 'SMS', 'WHATSAPP'];
+const MAX_ROUNDS = 20;
 
 export interface ProcessResult {
   fannedOut: number;
@@ -128,8 +129,22 @@ export class NotificationsService {
   // Traitement : outbox → notifications → envoi
   // ---------------------------------------------------------------------------------------------
 
-  /** Un tour de traitement pour une entreprise. `now` est injectable pour tester les nouvelles tentatives sans attendre. */
+  /**
+   * Traite une entreprise : plusieurs tours (50 événements et 20 e-mails au plus chacun) tant qu'il y a du travail, dans la limite
+   * de MAX_ROUNDS tours, pour qu'un afflux d'événements ne retarde pas les messages suivants d'un tour par intervalle.
+   * `now` est injectable pour tester les nouvelles tentatives sans attendre.
+   */
   async processCompany(companyId: string, options: { now?: Date; batch?: number } = {}): Promise<ProcessResult> {
+    const total: ProcessResult = { fannedOut: 0, sent: 0, failed: 0, retried: 0, skipped: 0 };
+    for (let round = 0; round < MAX_ROUNDS; round += 1) {
+      const result = await this.processRound(companyId, options);
+      for (const key of Object.keys(total) as (keyof ProcessResult)[]) total[key] += result[key];
+      if (result.fannedOut + result.sent + result.failed + result.retried === 0) break;
+    }
+    return total;
+  }
+
+  private async processRound(companyId: string, options: { now?: Date; batch?: number }): Promise<ProcessResult> {
     const now = options.now ?? new Date();
     const batch = options.batch ?? 50;
     const result: ProcessResult = { fannedOut: 0, sent: 0, failed: 0, retried: 0, skipped: 0 };

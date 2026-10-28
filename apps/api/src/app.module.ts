@@ -7,6 +7,9 @@ import type { Env } from './config/env';
 import { CustomersModule } from './customers/customers.module';
 import { DatabaseModule } from './database/database.module';
 import { FilesModule } from './files/files.module';
+import { ClaimsModule } from './claims/claims.module';
+import { DeliveryModule } from './delivery/delivery.module';
+import { ReportsModule } from './reports/reports.module';
 import { FinanceModule } from './finance/finance.module';
 import { HealthModule } from './health/health.module';
 import { IamModule } from './iam/iam.module';
@@ -61,6 +64,9 @@ export class AppModule {
         LogisticsModule,
         NotificationsModule,
         FinanceModule,
+    DeliveryModule,
+    ClaimsModule,
+    ReportsModule,
         PlatformModule,
         HealthModule,
       ],

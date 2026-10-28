@@ -40,6 +40,12 @@ export const paths = {
   accountStaffBilling: '/account/staff/billing',
   accountStaffPayments: '/account/staff/payments',
   accountStaffNotifications: '/account/staff/notifications',
+  accountClaims: '/account/claims',
+  accountStaffRoutes: '/account/staff/routes',
+  accountStaffMyRoutes: '/account/staff/my-routes',
+  accountStaffClaims: '/account/staff/claims',
+  accountStaffDashboard: '/account/staff/dashboard',
+  accountStaffAudit: '/account/staff/audit',
   accountSecurity: '/account/security',
 } as const;
 

@@ -15,7 +15,7 @@ Légende : ☐ à faire · ◐ en cours · ☑ terminé et testé
 | 5 | Colis, préalertes, suivi, calculateur | ☑ 579 tests au total ; réserves ci-dessous |
 | 6 | Entrepôts, lots, manifestes, agences | ☑ 670 tests au total ; réserves ci-dessous |
 | 7 | Facturation, paiements, notifications | ☑ 772 tests au total ; réserves ci-dessous |
-| 8 | Livraisons, réclamations, tableaux de bord | ☐ |
+| 8 | Livraisons, réclamations, tableaux de bord | ☑ 856 tests au total ; réserves ci-dessous |
 | 9 | Intégrations, tests de sécurité, tests de charge | ☐ |
 | 10 | Documentation finale, déploiement, préparation à la production | ☐ |
 
@@ -152,7 +152,39 @@ Critère de sortie : tests verts exécutés, migration appliquée à une base vi
 - Le créole des nouveaux écrans et des modèles n'a pas été relu par un locuteur natif.
 
 ### Phase 8 : livraison, réclamations, tableaux de bord
-Tournées, OTP, preuves, tentatives échouées (DEL-01 à 05) ; réclamations (ADM-04) ; indicateurs réels (ADM-02) ; journal d'audit consultable (ADM-03) ; tests parcours 11 et 12.
+| # | Tâche | Exigences |
+|---|---|---|
+| 8.1 | Tournées, affectation d'un livreur, arrêts, départ, clôture | DEL-01 |
+| 8.2 | Remise : code (OTP), pièce d'identité, photo, bénéficiaire, au comptoir et par le livreur | DEL-02 |
+| 8.3 | Livraison non aboutie, motif, reprogrammation, retour en agence | DEL-03 |
+| 8.4 | Un livreur ne voit que ses tournées | DEL-04 |
+| 8.5 | Remise bloquée si solde dû, dérogation permise et tracée | DEL-05 |
+| 8.6 | Réclamations : ouverture, affectation, échanges, notes internes, clôture | CLI-13, ADM-04 |
+| 8.7 | Tableau de bord : indicateurs calculés sur les données réelles | ADM-02 |
+| 8.8 | Journal d'audit consultable (écran) | ADM-03 |
+| 8.9 | Tests : parcours 11 et 12 ; OTP forcé, solde dû, livreur d'un autre, réclamation | – |
+
+**Réalisé en phase 8** : 8.1 à 8.9, avec les écrans.
+- **Tournées** (`TOU-AAAA-NNNNNN`) : planifiées par le responsable d'une agence pour un livreur ; un colis arrivé (ou prêt pour retrait) devient un **arrêt** avec l'adresse de livraison **figée** à la planification ; le client est prévenu (`delivery.scheduled`, avec la date) ; le **départ** fait passer tous les colis « en cours de livraison » (tout ou rien) ; clôture seulement quand tous les arrêts sont traités ; annulation d'une tournée planifiée libère les colis. Cycle de vie et arrêts protégés par des déclencheurs (une tournée close ne change plus, un arrêt traité non plus, un colis n'est que sur un arrêt en attente à la fois).
+- **Remise** (au comptoir ou par le livreur) : règle de preuves **par entreprise** (code du client, pièce d'identité — type et **4 derniers caractères seulement** —, photo de preuve), bénéficiaire autorisé (actif, dans ses dates, pièce concordante) ou client, tentative **en ajout seul** avec l'auteur. Le **code de remise** (6 chiffres) est généré par le client dans son espace, **montré une fois**, conservé sous forme d'empreinte HMAC, valable 72 h, annulé par un nouveau code, **verrouillé après 5 essais erronés** (les essais sont comptés même quand l'opération échoue), 5 codes par colis et par heure au plus.
+- **Solde dû** : la remise est refusée (`BALANCE_DUE`) s'il reste un solde sur une facture active du colis, ou si le colis n'est pas facturé quand l'entreprise fait payer à la remise ; **dérogation** réservée à `delivery:override_balance`, motif obligatoire, inscrite dans la tentative et le journal d'audit (`delivery.completed_with_override`).
+- **Le livreur** ne voit et ne traite que **ses** tournées (« Mes tournées ») ; l'arrêt, la tournée ou le colis d'un autre sont des 404 ; il n'a aucun accès aux montants ni à la remise au comptoir.
+- **Livraison non aboutie** : motif de la liste (client absent, adresse, refus, accès, solde, autre), précision interne, date de reprogrammation indicative ; le colis revient « prêt pour retrait » à l'agence et le client reçoit **un** message adapté (`delivery.failed`) ; au 3e échec l'interface propose le retour du colis.
+- **Réclamations** : ouvertes par le client (éventuellement sur un de ses colis), numérotées `CLM-AAAA-NNNNNN`, échanges de messages, **notes internes jamais montrées au client**, affectation, clôture (résolue ou rejetée) avec résolution obligatoire, réouverture possible ; le client est prévenu (`claim.updated`) ; messages en ajout seul.
+- **Tableau de bord** (`report:read` sur toute l'entreprise) : clients, colis reçus / en transit / en attente de paiement / à livrer / remis, expéditions par mode, volumes par entrepôt, encaissé / remboursé / facturé / impayé **par devise**, retenues et réclamations, **délais moyens** (entrepôt, transport, agence) avec le nombre de colis mesurés, performance par agence et par livreur. Aucune valeur de remplacement : une moyenne sans mesure vaut `null` et l'écran dit « Pas de mesure ».
+- **Journal d'audit** : écran en lecture seule (filtres action et type d'objet, détails avant / après).
+- **Site** : « Mes réclamations » et le code de remise (fiche du colis) pour le client ; « Tournées », « Mes tournées », « Réclamations », « Tableau de bord », « Journal d'audit » et, sur la fiche d'un colis, la remise au comptoir avec l'historique des tentatives, pour le personnel (menu selon les droits).
+- Quatre événements de notification supplémentaires ou complétés : `delivery.scheduled` (avec date), `package.delivered`, `delivery.failed`, `claim.updated` (14 événements au total).
+- Défaut trouvé par la recette : l'**administrateur de l'entreprise ne pouvait pas inviter un livreur** (anti-escalade : il ne détenait pas `delivery:read_assigned`) ; il le détient désormais (il ne donne accès qu'aux tournées confiées à soi-même).
+
+**Réserves de la phase 8 (reportées)** :
+- **Pas de signature** de remise (preuves : code, pièce, photo) ; la photo est une pièce jointe PHOTO du colis, **ajoutée par le personnel depuis la fiche du colis** (le livreur ne peut pas la prendre depuis son écran). Le code n'est lisible que dans l'espace du client : aucun envoi par SMS (aucun prestataire) ; un client sans accès à son espace ne peut pas remettre de code (la règle peut être assouplie pour toute l'entreprise, pas colis par colis).
+- **Pas de zones de livraison, de transporteurs, de services ni de taxes configurables** (reste de ADM-01) ; pas d'optimisation d'itinéraire, de carte, de position GPS ni d'heure d'arrivée ; ordre des arrêts non modifiable ; un arrêt retiré ne se rajoute pas à la même tournée ; pas d'application mobile ni de mode hors ligne pour le livreur. La portée `ROUTE` des rôles n'est pas utilisée (le livreur est désigné par la tournée).
+- **Retour à l'expéditeur / au fournisseur** : seul le retour du colis à l'agence après un échec est automatique ; le passage à `RETURNED` reste une décision du personnel (transition générique).
+- **Solde** : les factures actives d'un colis sont additionnées **sans conversion de devise** ; la devise affichée est celle de la dernière facture.
+- **Tableau de bord** : réservé aux droits portant sur toute l'entreprise (un responsable d'agence reçoit un 403 explicite, pas de tableau limité à son agence) ; pas de graphique, de tendance ni d'export (`report:export` non utilisé) ; période de 366 jours au plus ; moyennes seulement (ni médiane ni percentiles).
+- **Réclamations** : pas de pièces jointes, de délai de réponse suivi (SLA), d'escalade ni de mesure de satisfaction ; affectation possible à tout membre actif du personnel ; le client n'est prévenu que des réponses visibles et des changements d'état.
+- Les données de démonstration (`seed-demo`) ne contiennent pas encore de tournées, de remises ni de réclamations. Le créole des nouveaux écrans et des nouveaux modèles de messages n'a pas été relu par un locuteur natif.
 
 ### Phase 9 : intégrations et robustesse
 Revue de sécurité (OWASP ASVS niveau 2 comme guide), tests de charge du suivi et du calculateur, tests de restauration de sauvegarde, intégrations réelles uniquement avec des comptes de test.

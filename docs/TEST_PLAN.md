@@ -20,7 +20,7 @@ Exécutés le 2026-10-27, Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chro
 
 | Suite | Tests | Résultat |
 |---|---|---|
-| `packages/shared` (catalogue, `PermissionSet`, schémas, machine d'états des colis, **des lots**, numéro de suivi, **finance et notifications**) | 75 | ✅ |
+| `packages/shared` (catalogue, `PermissionSet`, schémas, machine d'états des colis, des lots, numéro de suivi, finance et notifications, **remise, tournées, réclamations, période du tableau de bord**) | 88 | ✅ |
 | API `rls.spec.ts` (isolation au niveau de la base) | 18 | ✅ |
 | API `auth.spec.ts` | 40 | ✅ |
 | API `iam.spec.ts` (politique des routes, matrice des rôles, invitations, plateforme) | 47 | ✅ |
@@ -33,13 +33,16 @@ Exécutés le 2026-10-27, Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chro
 | API `shipments.spec.ts` (création, droits, chargement, départ/arrivée/douane/clôture/annulation, agence, manifestes CSV/PDF, base) | 33 | ✅ |
 | API `finance.spec.ts` (brouillon, remise, émission et numérotation simultanées, avoirs, immuabilité en base, caisse, espèces, idempotence, concurrence, déclaration / validation / refus, remboursements, PDF, export CSV, synthèse, isolation) | 38 | ✅ |
 | API `webhooks.spec.ts` (signature, horodatage, altération, rejeu simultané, montant ou devise différents, référence inconnue, échec du prestataire, isolation, ajout seul) | 11 | ✅ |
-| API `notifications.spec.ts` (événements, langue, préférences, SMS ignoré, déduplication, nouvelles tentatives, échec définitif et relance, modèles, injection d'en-têtes, émetteurs, portail, isolation, base) | 24 | ✅ |
+| API `notifications.spec.ts` (événements, langue, préférences, SMS ignoré, déduplication, nouvelles tentatives, échec définitif et relance, modèles, injection d'en-têtes, file vidée en un traitement, émetteurs, portail, isolation, base) | 25 | ✅ |
+| API `delivery.spec.ts` (tournées, droits, arrêts, départ « tout ou rien », livreur limité à ses tournées, code de remise et verrouillage, preuves, bénéficiaires, photo, solde dû et dérogation, remise au comptoir, échecs, base, isolation) | 28 | ✅ |
+| API `claims.spec.ts` (ouverture, isolation, notes internes, affectation, responsables affectables, clôture et réouverture, notifications, base) | 10 | ✅ |
+| API `reports.spec.ts` (tableau de bord vide, chiffres réels, revenus et impayés par devise, incidents, période, droits, livreurs) | 7 | ✅ |
 | API `rate-limit.spec.ts` | 7 | ✅ |
 | API `infra.spec.ts` (compteurs, idempotence) | 9 | ✅ |
 | API `app.spec.ts` (santé, en-têtes, CORS, erreurs, configuration) | 14 | ✅ |
-| Site, unitaires (8 fichiers : + `phase7`) | 168 | ✅ |
-| Site, recette navigateur (+ `finance`) | 87 | ✅ |
-| **Total** | **772** | **772 réussis, 0 échec** |
+| Site, unitaires (9 fichiers : + `phase8`) | 192 | ✅ |
+| Site, recette navigateur (+ `delivery`) | 88 | ✅ |
+| **Total** | **856** | **856 réussis, 0 échec** |
 
 La recette navigateur couvre notamment : les **17 pages publiques × 3 langues** (51 pages) avec contrôle automatique d'accessibilité WCAG 2.1 A/AA (axe) sur ordinateur **et** sur téléphone (375 px), absence de défilement horizontal, absence d'erreur console (donc de violation de la CSP) ; le HTML pré-rendu sans JavaScript (titre, description, `canonical`, `hreflang`) ; le sitemap et robots.txt ; la page 404 avec statut 404 ; le sélecteur de langue ; la navigation au clavier (lien d'évitement) ; et tout le parcours client : inscription → e-mail réel → confirmation → connexion → code client → adresses de réception → profil → adresses → bénéficiaires → mot de passe → déconnexion, redirection vers la page demandée, redirection externe refusée, mot de passe oublié, jeton à usage unique, inscription en créole.
 
@@ -48,6 +51,16 @@ La recette de la phase 5 ajoute : calculateur (poids réel, volumétrique, assur
 La recette de la phase 6 ajoute le parcours complet **préalerte → lecture du code en entrepôt (reçu, relu, inconnu) → pesée → autorisation → rangement → lot (chargement refusé puis accepté) → manifestes CSV et PDF réellement téléchargés → départ → arrivée → clôture refusée → réception en agence → prêt pour retrait → point de retrait chez le client et dans le suivi public**, avec contrôle d'accessibilité sur chaque écran du personnel, l'absence d'accès d'un client aux écrans du personnel (interface et API), la liste publique des agences sur téléphone, et les écrans en créole et en anglais.
 
 La recette de la phase 7 ajoute le parcours complet **client inscrit → colis pesé → le personnel crée un brouillon à partir du colis, l'émet → le client voit « À payer », déclare un virement (référence trop courte refusée) → le paiement reste « en attente » → un agent le valide dans la file → facture « Payée », reçu téléchargeable, colis « prêt pour expédition » → traitement des notifications → le client lit « facture à régler » et « paiement reçu » dans son portail → l'e-mail de paiement est réellement arrivé dans Mailpit → encaissement en espèces d'un second colis (refusé sans caisse ouverte, accepté après ouverture)**, avec contrôle d'accessibilité (axe, WCAG 2.1 A/AA) sur les huit écrans de ce parcours.
+
+La recette de la phase 8 ajoute le parcours complet **colis arrivé et « prêt pour retrait » → le client obtient son code (lu à l'écran) → le personnel tente un code faux (refusé), puis le bon : colis remis, tentative et historique visibles → un livreur invité (rôle « Livreur ») se connecte et ne voit que « Mes tournées » → le personnel planifie une tournée de deux colis et la fait partir → le livreur remet un colis avec le code du client et déclare un échec « client absent » pour l'autre (le colis revient « prêt pour retrait ») → le personnel termine la tournée → le client ouvre une réclamation depuis le colis, le service répond puis clôture avec une résolution (refusée sans résolution) → tableau de bord et journal d'audit**, avec contrôle d'accessibilité sur les écrans de ce parcours.
+
+### Défauts réels détectés par ces tests pendant la phase 8 (corrigés)
+1. **L'administrateur de l'entreprise ne pouvait pas inviter un livreur** (403 anti-escalade : il ne détenait pas `delivery:read_assigned`) — révélé par la recette navigateur, verrouillé ensuite par un test d'API.
+2. **Utilisateur de test créé avec le mauvais type** : l'aide de test considérait « CUSTOMER_SERVICE » (personnel) comme un client parce que son nom commence par CUSTOMER ; le bogue ne touchait que le banc de test, mais il cachait l'impossibilité d'affecter une réclamation à un agent du service client.
+3. Messages de validation de la phase 8 (« résolution obligatoire », « bénéficiaire obligatoire ») affichés « Valeur invalide » au lieu de « Ce champ est obligatoire » : codes ajoutés à la traduction des erreurs.
+4. Noms accessibles en double (formulaires de réponse et de recherche portant le nom de leur champ) sur les écrans de réclamations : relevés par les tests d'interface, corrigés.
+5. **Traitement des notifications limité à 20 e-mails par tour** (un tour toutes les 10 secondes) : un afflux d'événements retardait les messages suivants (relevé quand la recette complète a dépassé le délai d'attente d'un e-mail de paiement). Le traitement enchaîne maintenant des tours (au plus 20) tant qu'il y a du travail ; un test envoie 60 e-mails en un seul traitement.
+6. **Recette navigateur : deux parcours qui se marchent dessus** (le parcours de livraison créait des lots dans l'entreprise de recette partagée, et la liste des lots d'un autre parcours montrait ce lot en tête) : le parcours de livraison tourne désormais dans un projet qui passe après les autres.
 
 ### Défauts réels détectés par ces tests pendant la phase 7 (corrigés)
 1. **Impossible de créer le moindre brouillon de facture (500)** : Prisma refusait `company_id` dans la création imbriquée des lignes ; les lignes sont créées à part. Relevé dès le premier test d'API (35 échecs sur 38).
@@ -88,7 +101,7 @@ La recette de la phase 7 ajoute le parcours complet **client inscrit → colis p
 | 2-5, 7 | Préalerte, réception et rapprochement, pesée, calculateur, statuts de colis | ✅ API et navigateur (phase 5) |
 | 6 | Lot de transport, manifeste, propagation aux colis | ✅ API et navigateur (phase 6) |
 | 9, 10 | Paiement (espèces, virement déclaré puis validé), notifications | ✅ API et navigateur (phase 7) |
-| 11, 12 | Remise au client, réclamations | ⏳ phase 8 |
+| 11, 12 | Remise au client (code, pièces, solde dû, tournée du livreur), réclamations | ✅ API et navigateur (phase 8) |
 | 13 | Un client ne peut pas consulter les données d'un autre client | ✅ pour ce qui existe : utilisateurs, journal d'audit, adresses, bénéficiaires, adresses de réception, entrepôts, **préalertes, colis, pièces jointes, estimations** (API et navigateur), base entière via RLS ; à rejouer sur factures |
 | 14 | Un employé ne peut pas faire une opération interdite à son rôle | ✅ matrice sur toutes les routes existantes, portées d'entrepôt, autorisation avant validation, anti-escalade, dernier administrateur |
 | 15 | Erreurs de paiement ou de notification traitées | ✅ échec d'envoi d'e-mail simulé : tentatives espacées, échec visible, relance ; paiement refusé, doublon de référence, surpaiement, rejeu de confirmation, signature invalide. ❌ Non testé : un **vrai** prestataire de paiement ou SMTP de production |
@@ -109,13 +122,14 @@ La recette de la phase 7 ajoute le parcours complet **client inscrit → colis p
 - `seed-demo` exécuté sur la base de test et refusé en production.
 
 ## Limites des tests actuels
+- **Phase 8** : le code de remise est lu à l'écran du client (aucun SMS) ; la photo de preuve est simulée par une pièce jointe insérée en base (le chemin de dépôt de fichier est testé par la phase 5) ; les tournées ne sont testées que sur de petits volumes (2 à 3 arrêts) ; aucune mesure de performance des requêtes du tableau de bord sur un grand volume de données ; pas de test sur un téléphone réel pour l'écran du livreur.
 - **Phase 7** : la confirmation signée est exercée avec un émetteur écrit pour les tests (aucun prestataire réel) ; l'échec d'envoi d'e-mail est simulé (SMTP injoignable réel non testé) ; les PDF de facture et de reçu sont vérifiés (document valide) mais pas visuellement ; pas de test de charge sur l'émission simultanée au-delà de 4 factures ; les écrans de finance ne sont testés que dans Chromium.
 - **Phase 6** : le PDF du manifeste est vérifié (document valide, taille), pas visuellement ; le lecteur de codes-barres est simulé par la saisie ; aucun test de charge sur les scans (phase 9) ; les écrans du personnel ne sont testés que dans Chromium.
 - **Phase 5 (levée en phase 6 pour les écrans)** : les opérations du personnel (réception, pesée…) sont testées par l'API, pas par une interface (elle n'existe pas). Aucun antivirus ni stockage S3 n'a été exercé. Les tests de transport, d'agence et de livraison attendent leurs modules. Charge et énumération des numéros de suivi : phase 9.
 - **L'accessibilité automatisée (axe) ne détecte qu'une partie des problèmes.** Aucun test avec lecteur d'écran ni audit manuel n'a eu lieu : ne pas annoncer de conformité WCAG avant cet audit.
 - Navigateurs testés : Chromium (et Edge pour le repli). Ni Firefox ni Safari. Pas de test sur un vrai téléphone ni sur un réseau lent.
 - **Les traductions créoles n'ont pas été relues par un locuteur natif** ; les tests vérifient la structure, pas la qualité de la langue.
-- Aucun test de performance : le fichier JavaScript principal pèse environ 267 Ko compressés (voir WEB.md).
+- Aucun test de performance : le fichier JavaScript principal pèse environ 277 Ko compressés (plus 51 Ko pour les écrans connectés, chargés à la demande) (voir WEB.md).
 - Les tests de concurrence couvrent les cas écrits, pas tous les entrelacements possibles.
 - Le pré-rendu et la CSP sont testés avec le serveur de `scripts/serve-dist.mjs`, pas avec un vrai nginx ou Apache.
 - La base de test est partagée entre les fichiers (exécutés l'un après l'autre) ; l'isolation repose sur des identifiants aléatoires.

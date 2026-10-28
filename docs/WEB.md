@@ -92,9 +92,22 @@ Les textes sont dans les trois langues (créole à relire). Pas d'impression d'�
 - **Notifications** : journal des envois (statut, tentatives, dernière erreur, prochaine tentative), relance d'un échec, traitement immédiat, **éditeur de modèles** par événement, canal et langue (variables autorisées affichées, retour au modèle par défaut).
 Textes en trois langues (créole à relire). Le total de la facture et le solde sont affichés avec la devise de la facture ; les montants de caisse n'ont pas de symbole car la caisse n'enregistre pas de devise.
 
+## Écrans de la livraison, des réclamations et du pilotage (phase 8)
+
+**Espace client** : le **code de remise** sur la fiche d'un colis en agence ou en livraison (bouton « Obtenir mon code », montré une seule fois avec sa validité), un lien « Signaler un problème » qui préremplit le colis, « Mes réclamations » (liste, ouverture, échanges, réclamation clôturée sans formulaire).
+
+**Personnel** (menu selon les droits) :
+- **Remise au comptoir** (fiche du colis « prêt pour retrait ») : client ou bénéficiaire autorisé de la liste, pièce (type et 4 derniers caractères), code, photo de preuve choisie parmi les photos du colis, **solde dû affiché** et remise bloquée tant que la dérogation motivée n'est pas cochée (si le droit existe) ; historique des tentatives.
+- **Tournées** : liste et création, règle des preuves à cocher (enregistrement immédiat), détail avec ajout / retrait d'arrêts, départ, clôture, annulation (en deux temps) ; par arrêt : adresse figée, instructions, solde, « Remettre » (même formulaire qu'au comptoir) et « Échec » (motif, précision, reprogrammation).
+- **Mes tournées** (livreur) : ses tournées uniquement, sans actions de gestion.
+- **Réclamations** : liste filtrée, détail avec notes internes signalées, affectation, réponse ou note, changement d'état (résolution obligatoire pour clôturer).
+- **Tableau de bord** : période libre (30 jours par défaut), sections colis, expéditions et entrepôts, revenus et soldes par devise, incidents, délais moyens, agences et livreurs ; états vides explicites (« Aucune donnée », « Pas de mesure »).
+- **Journal d'audit** : lecture seule, filtres, détails avant / après.
+Textes en trois langues (créole à relire). Pas de carte ni d'itinéraire, pas d'application mobile pour le livreur (écran responsive seulement).
+
 ## Limites connues
 
-- **Poids du JavaScript** : environ 267 Ko compressés pour le fichier principal (les écrans connectés, dont 38 Ko compressés, sont chargés à la demande) (React, React Router, zod, TanStack Query, les trois catalogues de textes). Le contenu s'affiche avant (pré-rendu) mais l'interactivité attend ce fichier. Pistes : charger seulement la langue courante, remplacer TanStack Query par un petit utilitaire, alléger zod côté navigateur.
+- **Poids du JavaScript** : environ 277 Ko compressés pour le fichier principal (les écrans connectés, dont 51 Ko compressés, sont chargés à la demande) (React, React Router, zod, TanStack Query, les trois catalogues de textes). Le contenu s'affiche avant (pré-rendu) mais l'interactivité attend ce fichier. Pistes : charger seulement la langue courante, remplacer TanStack Query par un petit utilitaire, alléger zod côté navigateur.
 - Pas de mode sombre. Pas de PWA ni de mode hors ligne.
 - Une seule marque et une seule entreprise par construction.
 - Les routes d'authentification non pré-référencées (`/forgot-password`, etc.) sont pré-rendues en `noindex`.

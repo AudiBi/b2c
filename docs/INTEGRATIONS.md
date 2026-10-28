@@ -1,6 +1,6 @@
 # Intégrations externes
 
-Phases 3 à 7. Une intégration n'est dite **active** que si elle a été exercée avec un service réel.
+Phases 3 à 8. Une intégration n'est dite **active** que si elle a été exercée avec un service réel.
 
 | Intégration | État | Détail |
 |---|---|---|
@@ -13,6 +13,8 @@ Phases 3 à 7. Une intégration n'est dite **active** que si elle a été exerc�
 | SMS | ❌ non configuré | Aucun fournisseur choisi. Le canal existe dans le journal : une notification SMS demandée par le client est enregistrée « ignorée — canal non configuré » (`CHANNEL_NOT_CONFIGURED`) ; **rien n'est envoyé ni simulé** |
 | WhatsApp Business | ❌ non configuré | Aucun compte. Même comportement que le SMS : « ignorée — canal non configuré » |
 | Paiement en ligne (cartes, mobile money) | ❌ non configuré | Aucun prestataire choisi : **aucun paiement en ligne n'est proposé** (`/v1/me/payment-options` répond `online: false`). Le client paie en espèces auprès du personnel, ou **déclare** un virement / paiement mobile qu'un agent valide à la main après vérification. Un point d'entrée de **confirmation signée** (`POST /v1/webhooks/payments/:entreprise/:prestataire`, HMAC-SHA256 horodaté, rejeu sans effet) existe mais **n'est actif que si `PAYMENT_WEBHOOK_PROVIDER` et `PAYMENT_WEBHOOK_SECRET` sont définis** ; il n'a été exercé qu'avec un émetteur simulé par les tests (aucun prestataire réel), et il n'y a **pas d'adaptateur** de prestataire (création de paiement, remboursement chez le prestataire) |
+| Code de remise (OTP) | ◐ **portail seulement** | Généré par le client dans son espace ; **aucun envoi par SMS ou WhatsApp** (aucun prestataire) |
+| Cartographie / itinéraires / GPS | ❌ aucun | Ni carte, ni optimisation de tournée, ni position du livreur ; adresses saisies par les clients |
 | Transporteurs aériens / maritimes | ❌ non configuré | Aucun suivi automatique : départ et arrivée des lots sont **saisis par le personnel** (phase 6) ; aucune date prévue, aucune position |
 | Génération de PDF (manifestes, factures, reçus) | ✅ active | Bibliothèque `pdfkit` (locale, sans service externe) ; tests : le document est un PDF valide, sans contrôle visuel automatisé |
 | Lecteur de codes-barres | ✅ par clavier | Un lecteur qui « tape » le code puis Entrée suffit (champ focalisé) ; testé par saisie simulée, **pas avec un lecteur matériel** ; pas de scan par caméra |

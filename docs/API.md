@@ -1,6 +1,6 @@
 # API
 
-Phases 3 à 7. Spécification machine : [openapi.json](openapi.json) (régénérée par `npm run docs:openapi`) ; interface interactive : `/docs` quand `ENABLE_DOCS=true`. Les routes de livraison seront ajoutées avec la phase 8.
+Phases 3 à 8. Spécification machine : [openapi.json](openapi.json) (régénérée par `npm run docs:openapi`) ; interface interactive : `/docs` quand `ENABLE_DOCS=true`. Les routes de la phase 8 (livraison, réclamations, tableau de bord) sont ci-dessous.
 
 ## Conventions
 
@@ -119,6 +119,26 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 | `GET/PUT/DELETE /v1/admin/notification-templates` | `notification:read` · `notification:template_manage` | Modèles effectifs, personnalisation par événement, canal et langue ; retour au défaut |
 | `GET /v1/me/notifications` · `POST …/read-all` · `POST …/{id}/read` | `notification:read_own` | Ma boîte de réception du portail |
 
+### Livraison, réclamations, tableau de bord (phase 8)
+
+| Méthode et chemin | Accès | Rôle |
+|---|---|---|
+| `GET/POST /v1/admin/routes` · `GET …/{id}` | `delivery:read` · `delivery:assign` | Tournées des agences gérées ; planification (`TOU-AAAA-NNNNNN`, livreur actif ayant le rôle) ; détail avec arrêts, règle de preuves, bénéficiaires, soldes |
+| `POST /v1/admin/routes/{id}/stops` · `DELETE …/stops/{stopId}` | `delivery:assign` | Ajoute un colis arrivé (adresse figée, client prévenu) · retire un arrêt (tournée planifiée) |
+| `POST /v1/admin/routes/{id}/start` · `/complete` · `/cancel` | `delivery:assign` | Départ (colis « en cours de livraison », tout ou rien) · clôture (arrêts tous traités) · annulation (planifiée) |
+| `GET /v1/admin/my-routes` · `GET …/{id}` | `delivery:read_assigned` | **Mes tournées** du livreur (seulement les siennes, sans montants) |
+| `POST /v1/admin/route-stops/{id}/deliver` · `/fail` | `delivery:confirm` | Remise d'un arrêt (preuves) · livraison non aboutie (motif, reprogrammation). Livreur de la tournée ou responsable de l'agence, sinon 404 |
+| `POST /v1/admin/packages/{id}/handover` | `delivery:confirm` | Remise au comptoir d'un colis « prêt pour retrait » (responsables de l'agence, pas les livreurs) |
+| `GET /v1/admin/packages/{id}/handover-info` · `GET …/delivery-attempts` | `delivery:confirm` · `delivery:read` | Avant la remise : règle, bénéficiaires, solde, échecs ; historique des tentatives |
+| `GET /v1/admin/drivers` | `delivery:assign` | Livreurs actifs affectables |
+| `GET/PUT /v1/admin/settings/delivery` | `settings:read` · `settings:update` | Preuves exigées (code, pièce, photo) |
+| `POST /v1/me/packages/{id}/handover-code` | `package:read_own` | Génère mon code de remise (montré une seule fois) |
+| `GET/POST /v1/me/claims` · `GET …/{id}` · `POST …/{id}/messages` | `claim:read_own` · `claim:create_own` | Mes réclamations et leurs échanges (sans notes internes) |
+| `GET /v1/admin/claims` · `GET …/{id}` · `GET …/assignees` | `claim:read` · `claim:manage` | Réclamations (statut, catégorie, responsable, numéro, code client) ; détail avec notes internes |
+| `POST /v1/admin/claims/{id}/assign` · `/messages` · `/status` | `claim:manage` | Affecte · répond ou note (`internal: true`) · change l'état (clôture = résolution obligatoire) |
+| `GET /v1/admin/dashboard` | `report:read` (toute l'entreprise) | Indicateurs sur une période (30 jours par défaut, 366 au plus) |
+| `GET /v1/audit` | `audit:read` | Journal d'audit (déjà en phase 3) : maintenant aussi dans l'interface |
+
 ## Règles à connaître
 
 - **Droits évalués à chaque requête** depuis la base : une désactivation, une révocation de session, un changement de rôle ou la suspension de l'entreprise s'appliquent immédiatement, sans attendre l'expiration du jeton d'accès.
@@ -156,3 +176,15 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 - **Remboursement** : jamais plus que le montant confirmé non encore remboursé (`REFUND_EXCEEDS_PAYMENT`) ; le solde de la facture suit.
 - **Notifications** : douze événements métier (`prealert.created`, `package.received`, `package.identified`, `payment.required`, `payment.confirmed`, `shipment.prepared`, `shipment.dispatched`, `shipment.arrived`, `package.available_at_agency`, `delivery.scheduled`, `package.delivered`, `package.incident`) ; **`delivery.scheduled` et `package.delivered` n'ont pas encore d'émetteur** (la livraison arrive en phase 8). Canaux : portail et e-mail actifs ; SMS et WhatsApp « ignorés — canal non configuré ». Les préférences du client coupent un canal, sauf pour `payment.confirmed` et `package.incident`. Nouvelles tentatives d'e-mail à +1, +5, +30, +120 minutes puis `FAILED` (5 tentatives au total).
 - Codes ajoutés : `ALREADY_INVOICED`, `PACKAGE_NOT_BILLABLE`, `PACKAGE_CUSTOMER_MISMATCH`, `PACKAGE_NOT_PRICED`, `PACKAGE_ALREADY_PRICED`, `EXTRA_LINE_PACKAGE_UNKNOWN`, `DISCOUNT_ABOVE_CAP`, `DISCOUNT_NOT_ALLOWED`, `CURRENCY_MISMATCH`, `INVOICE_NOT_FOUND`, `INVOICE_NOT_DRAFT`, `INVOICE_IS_DRAFT`, `INVOICE_NOT_ISSUED`, `INVOICE_HAS_PAYMENTS`, `INVOICE_NOT_PAYABLE`, `INVOICE_NOT_CREDITABLE`, `INVOICE_VOID`, `CREDIT_EXCEEDS_UNPAID`, `CASH_SESSION_REQUIRED`, `CASH_SESSION_OPEN`, `CASH_SESSION_CLOSED`, `CASH_SESSION_NOT_FOUND`, `AMOUNT_EXCEEDS_BALANCE`, `DUPLICATE_REFERENCE`, `INVALID_IDEMPOTENCY_KEY`, `IDEMPOTENCY_KEY_REUSED`, `PAYMENT_NOT_FOUND`, `PAYMENT_NOT_PENDING`, `PAYMENT_NOT_REFUNDABLE`, `REFUND_EXCEEDS_PAYMENT`, `RECEIPT_NOT_FOUND`, `INVALID_SIGNATURE` (401), `INVALID_PAYLOAD`, `NOTIFICATION_NOT_FOUND`, `NOT_FAILED`, `TEMPLATE_NOT_FOUND`, `CHANNEL_NOT_CONFIGURED`.
+
+## Règles ajoutées en phase 8
+
+- **Remise** : `DELIVERED` n'est écrit que par le module de livraison. Le colis doit être « prêt pour retrait » (comptoir) ou « en cours de livraison » (arrêt d'une tournée en cours). Preuves selon `/v1/admin/settings/delivery` (code, pièce, photo ; par défaut code et pièce) : `OTP_REQUIRED`, `ID_DOCUMENT_REQUIRED`, `PROOF_PHOTO_REQUIRED`. Un bénéficiaire doit être actif et dans ses dates (`BENEFICIARY_INVALID`) et sa pièce concorder (`ID_MISMATCH`). Un code faux répond `OTP_INVALID` avec `details.remaining` ; au 5e échec le code est annulé (`OTP_NOT_AVAILABLE` ensuite, il faut en générer un nouveau) ; `OTP_LOCKED` si le verrou est atteint avec un code encore actif.
+- **Solde** : `BALANCE_DUE` (409, `details` : montant, devise, `unbilled`) ; avec `overrideBalance: { reason }`, la remise passe si l'utilisateur détient `delivery:override_balance` (sinon 403 `OVERRIDE_NOT_ALLOWED`).
+- **Code de remise** : `POST /v1/me/packages/{id}/handover-code` renvoie `{ code, expiresAt }` une seule fois ; 5 codes par colis et par heure (`TOO_MANY_CODES`, 429) ; colis pas encore en agence : `INVALID_STATE`.
+- **Tournées** : `ROUTE_NOT_PLANNED`, `ROUTE_NOT_IN_PROGRESS`, `ROUTE_EMPTY`, `ROUTE_HAS_PENDING_STOPS`, `STOP_ALREADY_HANDLED`, `ALREADY_ON_ROUTE`, `NO_DELIVERY_ADDRESS`, `DRIVER_INVALID`, `PACKAGES_NOT_READY` (départ refusé, rien ne bouge).
+- **Échec de livraison** : `{ failed, failedAttempts, returnSuggested }` (suggestion à partir de 3 échecs).
+- **Réclamations** : `CLAIM_NOT_FOUND`, `CLAIM_CLOSED` (le client ne répond plus à une réclamation clôturée), `CLAIM_STATUS_UNCHANGED`, `ASSIGNEE_INVALID`.
+- **Tableau de bord** : `REPORT_SCOPE` (403) pour un droit limité à une agence ou un entrepôt. Les montants sont des chaînes à deux décimales groupées par devise ; les délais moyens valent `null` sans mesure.
+- Notifications : `delivery.scheduled` porte `plannedDate` ; nouveaux événements `delivery.failed` et `claim.updated` (`claimNumber`).
+- `COMPANY_ADMIN` détient désormais `delivery:read_assigned` (nécessaire pour attribuer le rôle de livreur).

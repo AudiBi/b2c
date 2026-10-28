@@ -58,14 +58,24 @@ export const DEFAULT_TEMPLATES: Record<EventCode, Record<Locale, Text>> = {
     ht: { subject: 'Kolis pare pou ranmase', body: 'Bonjou {customerName}, kolis ou a {trackingNumber} pare pou ranmase nan ajans {agencyName} ({agencyCity}).' },
   },
   'delivery.scheduled': {
-    fr: { subject: 'Livraison programmée', body: 'Bonjour {customerName}, la livraison de votre colis {trackingNumber} est programmée.' },
-    en: { subject: 'Delivery scheduled', body: 'Hello {customerName}, the delivery of your package {trackingNumber} is scheduled.' },
-    ht: { subject: 'Livrezon pwograme', body: 'Bonjou {customerName}, livrezon kolis ou a {trackingNumber} pwograme.' },
+    fr: { subject: 'Livraison programmée', body: 'Bonjour {customerName}, la livraison de votre colis {trackingNumber} est programmée le {plannedDate}. Pour la recevoir, gardez votre code de remise (disponible dans votre espace) et une pièce d’identité.' },
+    en: { subject: 'Delivery scheduled', body: 'Hello {customerName}, the delivery of your package {trackingNumber} is scheduled for {plannedDate}. To receive it, keep your handover code (available in your account) and an ID document.' },
+    ht: { subject: 'Livrezon pwograme', body: 'Bonjou {customerName}, livrezon kolis ou a {trackingNumber} pwograme pou {plannedDate}. Pou resevwa l, kenbe kòd livrezon ou an (nan espas ou) ak yon pyès idantite.' },
   },
   'package.delivered': {
     fr: { subject: 'Colis remis', body: 'Bonjour {customerName}, votre colis {trackingNumber} a été remis.' },
     en: { subject: 'Package delivered', body: 'Hello {customerName}, your package {trackingNumber} has been delivered.' },
     ht: { subject: 'Kolis livre', body: 'Bonjou {customerName}, kolis ou a {trackingNumber} livre.' },
+  },
+  'delivery.failed': {
+    fr: { subject: 'Livraison non aboutie', body: 'Bonjour {customerName}, la livraison de votre colis {trackingNumber} n’a pas pu aboutir. Il reste disponible en agence ; consultez son suivi.' },
+    en: { subject: 'Delivery not completed', body: 'Hello {customerName}, the delivery of your package {trackingNumber} could not be completed. It remains available at the agency; see its tracking page.' },
+    ht: { subject: 'Livrezon pa fèt', body: 'Bonjou {customerName}, livrezon kolis ou a {trackingNumber} pa t kapab fèt. L rete disponib nan ajans la ; gade swivi li a.' },
+  },
+  'claim.updated': {
+    fr: { subject: 'Votre réclamation {claimNumber} a évolué', body: 'Bonjour {customerName}, il y a du nouveau sur votre réclamation {claimNumber}. Consultez-la dans votre espace.' },
+    en: { subject: 'Your claim {claimNumber} has an update', body: 'Hello {customerName}, there is news on your claim {claimNumber}. See it in your account.' },
+    ht: { subject: 'Reklamasyon ou a {claimNumber} gen nouvèl', body: 'Bonjou {customerName}, gen nouvèl sou reklamasyon ou a {claimNumber}. Gade l nan espas ou.' },
   },
   'package.incident': {
     fr: { subject: 'Votre colis nécessite une vérification', body: 'Bonjour {customerName}, votre colis {trackingNumber} est retenu pour vérification. Consultez son suivi pour le motif.' },

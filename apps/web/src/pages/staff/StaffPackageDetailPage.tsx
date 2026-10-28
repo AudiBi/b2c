@@ -13,6 +13,7 @@ import { Button } from '../../components/ui/Button';
 import { FormMessage, RadioGroupField, SelectField, TextAreaField, TextField } from '../../components/ui/Fields';
 import { StatusBadge, statusLabel } from '../../components/PackageParts';
 import { FilesPanel } from '../account/FilesPanel';
+import { HandoverPanel } from '../delivery/HandoverPanel';
 import { staffKeys, useAgencies, useCan, useLocations, useStaffPackage, type StaffPackageDetail, type TransportMode } from './queries';
 
 /** Cadre d'action avec son propre message de succès ou d'erreur, annoncé aux lecteurs d'écran. */
@@ -79,6 +80,7 @@ export function StaffPackageDetailPage() {
           <TransitionPanel pkg={pkg} onDone={refresh} />
           <LocationPanel pkg={pkg} onDone={refresh} />
           <AgencyPanel pkg={pkg} onDone={refresh} />
+          <HandoverPanel packageId={pkg.id} status={pkg.status} onDone={refresh} />
           <NotePanel pkg={pkg} onDone={refresh} />
 
           <section className="card">

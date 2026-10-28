@@ -69,8 +69,8 @@ describe('finance : schémas et numéros', () => {
 });
 
 describe('notifications : événements et modèles', () => {
-  it('12 événements, chacun avec ses variables ; les événements obligatoires existent', () => {
-    expect(EVENT_CODES).toHaveLength(12);
+  it('14 événements, chacun avec ses variables ; les événements obligatoires existent', () => {
+    expect(EVENT_CODES).toHaveLength(14);
     expect(Object.keys(EVENT_VARIABLES).sort()).toEqual([...EVENT_CODES].sort());
     for (const e of MANDATORY_EVENTS) expect(EVENT_CODES).toContain(e);
   });

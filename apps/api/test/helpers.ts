@@ -108,7 +108,7 @@ export async function makeUser(t: TestApp, options: MakeUserOptions): Promise<Te
   const user = await t.admin.user.create({
     data: {
       companyId: options.company.id,
-      kind: options.kind ?? (options.roleCode.startsWith('CUSTOMER') ? 'CUSTOMER' : 'STAFF'),
+      kind: options.kind ?? (/^CUSTOMER_(INDIVIDUAL|BUSINESS)$/.test(options.roleCode) ? 'CUSTOMER' : 'STAFF'),
       email,
       firstName: 'Test',
       lastName: options.roleCode,

@@ -39,7 +39,9 @@ const TENANT_PERMISSIONS = PERMISSION_CODES.filter(
   (code) => !code.startsWith('company:') && !code.startsWith('platform:'),
 );
 // Les permissions « _own » concernent les comptes clients, pas le personnel.
-const STAFF_ALL = TENANT_PERMISSIONS.filter((code) => !code.endsWith('_own') && !code.endsWith('_assigned'));
+// `delivery:read_assigned` (voir ses propres tournées) en fait partie : sans lui, l'administrateur ne pourrait pas
+// attribuer le rôle de livreur (une personne ne peut pas attribuer des droits qu'elle ne détient pas). Il ne donne accès qu'aux tournées confiées à soi-même.
+const STAFF_ALL = TENANT_PERMISSIONS.filter((code) => (!code.endsWith('_own') && !code.endsWith('_assigned')) || code === 'delivery:read_assigned');
 
 export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
   {

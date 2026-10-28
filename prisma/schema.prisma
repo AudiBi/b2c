@@ -151,6 +151,12 @@ model Company {
   notificationTemplates NotificationTemplate[]
   outboxEvents          OutboxEvent[]
   notifications         Notification[]
+  routes                Route[]
+  routeStops            RouteStop[]
+  deliveryAttempts      DeliveryAttempt[]
+  handoverCodes         HandoverCode[]
+  claims                Claim[]
+  claimMessages         ClaimMessage[]
 
   @@map("companies")
 }
@@ -192,6 +198,8 @@ model User {
   sessions           Session[]
   verificationTokens VerificationToken[]
   userRoles          UserRole[]
+  drivenRoutes       Route[]
+  assignedClaims     Claim[]
   customer           Customer?
 
   @@unique([companyId, email])
@@ -382,6 +390,9 @@ model Customer {
   invoices           Invoice[]
   payments           Payment[]
   notifications      Notification[]
+  routeStops         RouteStop[]
+  handoverCodes      HandoverCode[]
+  claims             Claim[]
 
   @@unique([companyId, customerCode])
   @@unique([id, companyId])
@@ -677,6 +688,10 @@ model Package {
   shipmentLinks  ShipmentPackage[]
   invoiceLines   InvoiceLine[]
   invoicePackage InvoicePackage?
+  routeStops     RouteStop[]
+  deliveryAttempts DeliveryAttempt[]
+  handoverCodes  HandoverCode[]
+  claims         Claim[]
   movements      WarehouseMovement[]
   events         PackageEvent[]
   holds          PackageHold[]
@@ -968,6 +983,7 @@ model Agency {
   shipments    Shipment[]
   payments     Payment[]
   cashSessions CashSession[]
+  routes       Route[]
 
   @@unique([companyId, code])
   @@unique([id, companyId])
@@ -1373,4 +1389,210 @@ model Notification {
   @@index([companyId, customerId, createdAt])
   @@index([status, nextAttemptAt])
   @@map("notifications")
+}
+
+// =============================================================================================
+// Phase 8 : tournées, remise, réclamations
+// =============================================================================================
+
+enum RouteStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum StopStatus {
+  PENDING
+  DELIVERED
+  FAILED
+  REMOVED
+}
+
+enum DeliveryChannel {
+  ROUTE
+  AGENCY
+}
+
+enum AttemptOutcome {
+  SUCCEEDED
+  FAILED
+}
+
+enum RecipientKind {
+  CUSTOMER
+  BENEFICIARY
+}
+
+enum ClaimStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+}
+
+enum ClaimCategory {
+  DAMAGED
+  LOST
+  DELAYED
+  BILLING
+  SERVICE
+  OTHER
+}
+
+enum ClaimAuthorKind {
+  CUSTOMER
+  STAFF
+}
+
+// Tournée de livraison d'une agence, confiée à un livreur
+model Route {
+  id           String      @id @default(uuid(7)) @db.Uuid
+  companyId    String      @map("company_id") @db.Uuid
+  reference    String
+  agencyId     String      @map("agency_id") @db.Uuid
+  driverUserId String      @map("driver_user_id") @db.Uuid
+  plannedDate  DateTime    @map("planned_date") @db.Date
+  status       RouteStatus @default(PLANNED)
+  notes        String?
+  startedAt    DateTime?   @map("started_at") @db.Timestamptz(6)
+  completedAt  DateTime?   @map("completed_at") @db.Timestamptz(6)
+  createdBy    String?     @map("created_by") @db.Uuid
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company Company     @relation(fields: [companyId], references: [id])
+  agency  Agency      @relation(fields: [agencyId, companyId], references: [id, companyId])
+  driver  User        @relation(fields: [driverUserId, companyId], references: [id, companyId])
+  stops   RouteStop[]
+
+  @@unique([companyId, reference])
+  @@unique([id, companyId])
+  @@index([companyId, driverUserId, plannedDate])
+  @@index([companyId, agencyId, status])
+  @@map("routes")
+}
+
+model RouteStop {
+  id              String     @id @default(uuid(7)) @db.Uuid
+  companyId       String     @map("company_id") @db.Uuid
+  routeId         String     @map("route_id") @db.Uuid
+  packageId       String     @map("package_id") @db.Uuid
+  customerId      String     @map("customer_id") @db.Uuid
+  sequence        Int
+  status          StopStatus @default(PENDING)
+  // Adresse de livraison au moment de la planification (une copie : l'adresse du client peut changer ensuite)
+  addressSnapshot Json       @map("address_snapshot")
+  instructions    String?
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  route    Route    @relation(fields: [routeId, companyId], references: [id, companyId])
+  package  Package  @relation(fields: [packageId, companyId], references: [id, companyId])
+  customer Customer @relation(fields: [customerId, companyId], references: [id, companyId])
+
+  @@unique([routeId, packageId])
+  @@unique([id, companyId])
+  @@index([companyId, routeId, sequence])
+  @@map("route_stops")
+}
+
+// Tentative de remise ou de livraison : ajout seul
+model DeliveryAttempt {
+  id                String          @id @default(uuid(7)) @db.Uuid
+  companyId         String          @map("company_id") @db.Uuid
+  packageId         String          @map("package_id") @db.Uuid
+  routeStopId       String?         @map("route_stop_id") @db.Uuid
+  channel           DeliveryChannel
+  outcome           AttemptOutcome
+  failureReason     String?         @map("failure_reason")
+  note              String?
+  rescheduleFor     DateTime?       @map("reschedule_for") @db.Date
+  recipientKind     RecipientKind?  @map("recipient_kind")
+  recipientName     String?         @map("recipient_name")
+  beneficiaryId     String?         @map("beneficiary_id") @db.Uuid
+  idDocumentType    String?         @map("id_document_type")
+  // Seulement les 4 derniers caractères de la pièce
+  idDocumentLast4   String?         @map("id_document_last4")
+  otpVerified       Boolean         @default(false) @map("otp_verified")
+  balanceOverridden Boolean         @default(false) @map("balance_overridden")
+  overrideReason    String?         @map("override_reason")
+  proofFileId       String?         @map("proof_file_id") @db.Uuid
+  actorUserId       String?         @map("actor_user_id") @db.Uuid
+  attemptedAt       DateTime        @default(now()) @map("attempted_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+  package Package @relation(fields: [packageId, companyId], references: [id, companyId])
+
+  @@index([companyId, packageId, attemptedAt])
+  @@index([companyId, actorUserId, attemptedAt])
+  @@map("delivery_attempts")
+}
+
+// Code de remise (6 chiffres) : seule l'empreinte est conservée ; un seul code actif par colis
+model HandoverCode {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  companyId      String    @map("company_id") @db.Uuid
+  packageId      String    @map("package_id") @db.Uuid
+  customerId     String    @map("customer_id") @db.Uuid
+  codeHash       String    @map("code_hash")
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(6)
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  usedAt         DateTime? @map("used_at") @db.Timestamptz(6)
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  package  Package  @relation(fields: [packageId, companyId], references: [id, companyId])
+  customer Customer @relation(fields: [customerId, companyId], references: [id, companyId])
+
+  @@index([companyId, packageId])
+  @@map("handover_codes")
+}
+
+model Claim {
+  id         String        @id @default(uuid(7)) @db.Uuid
+  companyId  String        @map("company_id") @db.Uuid
+  number     String
+  customerId String        @map("customer_id") @db.Uuid
+  packageId  String?       @map("package_id") @db.Uuid
+  category   ClaimCategory
+  subject    String
+  status     ClaimStatus   @default(OPEN)
+  assignedTo String?       @map("assigned_to") @db.Uuid
+  resolution String?
+  openedAt   DateTime      @default(now()) @map("opened_at") @db.Timestamptz(6)
+  resolvedAt DateTime?     @map("resolved_at") @db.Timestamptz(6)
+  updatedAt  DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company  Company        @relation(fields: [companyId], references: [id])
+  customer Customer       @relation(fields: [customerId, companyId], references: [id, companyId])
+  package  Package?       @relation(fields: [packageId, companyId], references: [id, companyId])
+  assignee User?          @relation(fields: [assignedTo, companyId], references: [id, companyId])
+  messages ClaimMessage[]
+
+  @@unique([companyId, number])
+  @@unique([id, companyId])
+  @@index([companyId, status])
+  @@index([companyId, customerId])
+  @@map("claims")
+}
+
+// Message d'une réclamation : ajout seul ; une note interne n'est jamais montrée au client
+model ClaimMessage {
+  id           String          @id @default(uuid(7)) @db.Uuid
+  companyId    String          @map("company_id") @db.Uuid
+  claimId      String          @map("claim_id") @db.Uuid
+  authorKind   ClaimAuthorKind @map("author_kind")
+  authorUserId String?         @map("author_user_id") @db.Uuid
+  body         String
+  internal     Boolean         @default(false)
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+  claim   Claim   @relation(fields: [claimId, companyId], references: [id, companyId])
+
+  @@index([companyId, claimId, createdAt])
+  @@map("claim_messages")
 }

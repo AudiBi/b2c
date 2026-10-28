@@ -60,6 +60,9 @@ export function AccountLayout() {
                   </LocNavLink>
                 </li>
                 <li>
+                  <LocNavLink page="accountClaims">{m.account.nav.claims}</LocNavLink>
+                </li>
+                <li>
                   <LocNavLink page="accountReceiving">{m.account.nav.receiving}</LocNavLink>
                 </li>
                 <li>
@@ -98,6 +101,26 @@ export function AccountLayout() {
                 <LocNavLink page="accountStaffAgency">{m.staff.nav.agency}</LocNavLink>
               </li>
             ) : null}
+            {isStaff && can('report:read') ? (
+              <li>
+                <LocNavLink page="accountStaffDashboard">{m.staff.nav.dashboard}</LocNavLink>
+              </li>
+            ) : null}
+            {isStaff && can('delivery:read') ? (
+              <li>
+                <LocNavLink page="accountStaffRoutes">{m.staff.nav.routes}</LocNavLink>
+              </li>
+            ) : null}
+            {isStaff && can('delivery:read_assigned') ? (
+              <li>
+                <LocNavLink page="accountStaffMyRoutes">{m.staff.nav.myRoutes}</LocNavLink>
+              </li>
+            ) : null}
+            {isStaff && can('claim:read') ? (
+              <li>
+                <LocNavLink page="accountStaffClaims">{m.staff.nav.claims}</LocNavLink>
+              </li>
+            ) : null}
             {isStaff && can('invoice:read') ? (
               <li>
                 <LocNavLink page="accountStaffBilling">{m.staff.nav.billing}</LocNavLink>
@@ -111,6 +134,11 @@ export function AccountLayout() {
             {isStaff && can('notification:read') ? (
               <li>
                 <LocNavLink page="accountStaffNotifications">{m.staff.nav.notifications}</LocNavLink>
+              </li>
+            ) : null}
+            {isStaff && can('audit:read') ? (
+              <li>
+                <LocNavLink page="accountStaffAudit">{m.staff.nav.audit}</LocNavLink>
               </li>
             ) : null}
             <li>

@@ -12,7 +12,10 @@ type Issue = ZodError['issues'][number];
 function fromCode(code: string, m: Messages): string | undefined {
   const v = m.validation;
   switch (code) {
-    case 'required': return v.required;
+    case 'required':
+    case 'resolution_required':
+    case 'beneficiary_required':
+      return v.required;
     case 'password_min': return format(v.minLength, { n: 10 });
     case 'password_max': return format(v.maxLength, { n: 128 });
     case 'password_common': return v.passwordCommon;

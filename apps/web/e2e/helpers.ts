@@ -93,5 +93,19 @@ export async function adminApi(request: APIRequestContext) {
   return {
     get: (path: string) => request.get(path, { headers }),
     post: (path: string, data?: unknown) => request.post(path, { headers, data }),
+    put: (path: string, data?: unknown) => request.put(path, { headers, data }),
+  };
+}
+
+/** Session d'API d'un client déjà inscrit (les écrans de recette passent par l'interface, la préparation de données par l'API). */
+export async function customerApi(request: APIRequestContext, customer: Pick<NewCustomer, 'email' | 'password'>) {
+  const ip = fakeIp();
+  const login = await request.post('/v1/auth/login', { headers: { 'X-Forwarded-For': ip }, data: { companySlug: 'e2e', email: customer.email, password: customer.password } });
+  expect(login.status()).toBe(200);
+  const { accessToken } = await login.json();
+  const headers = { Authorization: `Bearer ${accessToken}`, 'X-Forwarded-For': ip };
+  return {
+    get: (path: string) => request.get(path, { headers }),
+    post: (path: string, data?: unknown) => request.post(path, { headers, data }),
   };
 }

@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { SelectField, TextField } from '../../components/ui/Fields';
 import { StatusBadge, Timeline, statusLabel } from '../../components/PackageParts';
 import { countryName } from '../LocationsPage';
+import { HandoverCodeCard } from '../delivery/HandoverCodeCard';
 import { FilesPanel } from './FilesPanel';
 import { usePackage, usePackages } from './queries';
 
@@ -95,6 +96,12 @@ export function PackageDetailPage() {
     <>
       <p>
         <Link to={localizedPath(lang, '/account/packages')}>← {d.back}</Link>
+        {data ? (
+          <>
+            {' · '}
+            <Link to={localizedPath(lang, `/account/claims?package=${data.id}`)}>{m.delivery.claims.report}</Link>
+          </>
+        ) : null}
       </p>
       {pkg.isPending ? <p role="status">{m.common.loading}</p> : null}
       {pkg.isError ? <Alert tone="danger">{m.auth.errors.PACKAGE_NOT_FOUND}</Alert> : null}
@@ -165,6 +172,8 @@ export function PackageDetailPage() {
               </dl>
             </div>
           ) : null}
+
+          {['RECEIVED_AT_AGENCY', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'].includes(data.status) ? <HandoverCodeCard packageId={data.id} /> : null}
 
           <div className="card">
             <h2 style={{ fontSize: '1.1rem' }}>{d.measures}</h2>

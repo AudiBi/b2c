@@ -62,7 +62,12 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: channel ?? 'chromium', use: { ...devices['Desktop Chrome'], channel } }],
+  // Le parcours de livraison crée des lots dans l'entreprise partagée de recette : il passe APRÈS les autres (sinon un lot
+  // créé par lui pourrait apparaître en tête de la liste d'un autre parcours).
+  projects: [
+    { name: channel ?? 'chromium', testIgnore: /delivery\.spec/, use: { ...devices['Desktop Chrome'], channel } },
+    { name: `${channel ?? 'chromium'}-livraison`, testMatch: /delivery\.spec/, dependencies: [channel ?? 'chromium'], use: { ...devices['Desktop Chrome'], channel } },
+  ],
   webServer: [
     {
       command: 'node ../api/dist/main.js',

@@ -6,7 +6,7 @@ import type { Tx } from '../database/db.service';
 export interface OutboxInput {
   companyId: string;
   eventCode: EventCode;
-  aggregateType: 'package' | 'invoice' | 'payment' | 'prealert';
+  aggregateType: 'package' | 'invoice' | 'payment' | 'prealert' | 'claim';
   aggregateId: string;
   customerId: string | null | undefined;
   /** Valeurs des variables du modèle : jamais de secret ni de donnée inutile (ce JSON est conservé). */

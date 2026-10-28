@@ -109,6 +109,17 @@ describe('Notifications : outbox, envoi, tentatives, modèles, portail', () => {
       expect(mailsTo(t, w.customer.user.email)).toHaveLength(1);
     });
 
+    it('un afflux d’événements est vidé en un seul traitement (plus de 20 e-mails, plus de 50 événements)', async () => {
+      const w = await setup();
+      for (let i = 0; i < 60; i += 1) await emitDirect(w, 'prealert.created', { customerName: 'Marie', trackingNumber: `T-${i}`, storeName: 'Boutique' });
+      const result = await processNotifications(t, w.company.id);
+      expect(result.fannedOut).toBe(60);
+      expect(result.sent).toBe(60);
+      expect(mailsTo(t, w.customer.user.email)).toHaveLength(60);
+      expect(await t.admin.outboxEvent.count({ where: { companyId: w.company.id, processedAt: null } })).toBe(0);
+      expect(await t.admin.notification.count({ where: { companyId: w.company.id, status: 'QUEUED' } })).toBe(0);
+    });
+
     it('un événement dont le client a disparu est écarté avec une erreur lisible, sans bloquer la file', async () => {
       const w = await setup();
       const orphan = await t.admin.outboxEvent.create({ data: { companyId: w.company.id, eventCode: 'prealert.created', aggregateType: 'package', aggregateId: uuidv7(), customerId: uuidv7(), payload: { customerName: 'X' } } });
@@ -203,7 +214,7 @@ describe('Notifications : outbox, envoi, tentatives, modèles, portail', () => {
       const w = await setup();
       const res = await api(t).get('/v1/admin/notification-templates').set(bearer(w.token));
       expect(res.status).toBe(200);
-      expect(res.body.items).toHaveLength(12 * 2 * 3);
+      expect(res.body.items).toHaveLength(14 * 2 * 3);
       const one = res.body.items.find((i: any) => i.eventCode === 'payment.confirmed' && i.channel === 'EMAIL' && i.locale === 'fr');
       expect(one).toMatchObject({ source: 'DEFAULT', active: true, mandatory: true, subject: 'Paiement reçu : {receiptNumber}' });
       expect(one.variables).toEqual(['customerName', 'invoiceNumber', 'receiptNumber', 'amount', 'currency']);

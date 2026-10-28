@@ -59,7 +59,7 @@ Un **agrégat** est un groupe d'objets modifié ensemble et protégé par des r�
 - I12. Un colis ne peut pas être `READY_TO_SHIP` sans poids réel, dimensions et client (ou mise en anomalie `ON_HOLD`).
 - I13. Un colis ne peut appartenir qu'à un seul lot non terminé à la fois.
 - I14. Un colis non identifié n'a pas de client ; il ne peut pas avancer au-delà de `UNDER_INSPECTION` avant rattachement.
-- I15. Une remise (`DELIVERED`) exige : un récupérateur identifié, la preuve exigée par la règle de l'entreprise (OTP, signature ou photo) et un solde nul, sauf dérogation tracée.
+- I15. Une remise (`DELIVERED`) exige : un récupérateur identifié, la preuve exigée par la règle de l'entreprise (**code de remise du client, pièce d'identité, photo** ; la signature n'est pas réalisée) et un solde nul, sauf dérogation tracée. **Réalisé en phase 8** : seul `DeliveryService` écrit `DELIVERED` (l'API générique répond `TRANSITION_NOT_AVAILABLE`) ; le solde est celui des factures actives du colis, et un colis jamais facturé est bloqué quand l'entreprise fait payer à la remise.
 
 ### Préalertes
 - I16. Une préalerte rapprochée référence au plus un colis ; un colis est rapproché d'au plus une préalerte par défaut (regroupement explicite sinon).
@@ -148,7 +148,9 @@ La politique de paiement est une option de l'entreprise : `PAY_BEFORE_SHIPMENT` 
 | Lot | `DRAFT`, `LOADING`, `CLOSED`, `DISPATCHED`, `ARRIVED`, `IN_CUSTOMS`, `RECEIVED`, `CANCELLED` |
 | Facture | `DRAFT`, `ISSUED`, `PARTIALLY_PAID`, `PAID`, `VOID`, `CREDITED` |
 | Paiement | `PENDING`, `CONFIRMED`, `FAILED`, `CANCELLED`, `REFUNDED_PARTIAL`, `REFUNDED` |
-| Tentative de livraison | `SCHEDULED`, `SUCCEEDED`, `FAILED`, `RESCHEDULED` |
+| Tournée | `PLANNED` → `IN_PROGRESS` → `COMPLETED`, ou `PLANNED` → `CANCELLED` |
+| Arrêt de tournée | `PENDING` → `DELIVERED` / `FAILED` / `REMOVED` |
+| Tentative de remise | `SUCCEEDED` ou `FAILED` (ajout seul ; `SCHEDULED` et `RESCHEDULED` de la conception ne sont pas des états : la date de reprogrammation est une indication portée par l'échec) |
 | Réclamation | `OPEN`, `IN_PROGRESS`, `RESOLVED`, `REJECTED` |
 | Notification | `QUEUED`, `SENT`, `FAILED`, `SKIPPED` |
 

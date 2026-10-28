@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { LOCALES } from './schemas/auth';
 
-/** Les 12 événements de notification (DOMAIN_MODEL §6). `delivery.*` n'a pas encore d'émetteur (phase 8). */
+/** Les 14 événements de notification (DOMAIN_MODEL §6). */
 export const EVENT_CODES = [
   'prealert.created',
   'package.received',
@@ -15,6 +15,8 @@ export const EVENT_CODES = [
   'delivery.scheduled',
   'package.delivered',
   'package.incident',
+  'delivery.failed',
+  'claim.updated',
 ] as const;
 export type EventCode = (typeof EVENT_CODES)[number];
 
@@ -39,9 +41,11 @@ export const EVENT_VARIABLES: Record<EventCode, readonly string[]> = {
   'shipment.dispatched': [...PACKAGE_VARS],
   'shipment.arrived': [...PACKAGE_VARS],
   'package.available_at_agency': [...PACKAGE_VARS, 'agencyName', 'agencyCity'],
-  'delivery.scheduled': [...PACKAGE_VARS],
+  'delivery.scheduled': [...PACKAGE_VARS, 'plannedDate'],
   'package.delivered': [...PACKAGE_VARS],
   'package.incident': [...PACKAGE_VARS],
+  'delivery.failed': [...PACKAGE_VARS],
+  'claim.updated': ['customerName', 'claimNumber'],
 };
 
 const PLACEHOLDER = /\{(\w+)\}/g;

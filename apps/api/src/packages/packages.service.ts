@@ -40,6 +40,8 @@ export interface TransitionOptions {
   visibility?: 'PUBLIC' | 'PRIVATE';
   /** Lieu affiché dans l'historique ; absent : ville de l'entrepôt d'origine. null : aucun lieu. */
   locationLabel?: string | null;
+  /** L'appelant envoie lui-même la notification adaptée (évite le message automatique de ce statut). */
+  skipNotification?: boolean;
 }
 
 type PackageWithRelations = Package & { warehouse: Warehouse; agency: Agency | null; customer: (Customer & { user: { firstName: string; lastName: string; businessName: string | null } }) | null };
@@ -251,7 +253,7 @@ export class PackagesService {
       },
     });
     // Une reprise après retenue ne ré-annonce pas l'étape déjà annoncée
-    if (!leavingHold) await this.emitForStatus(tx, companyId, updated, to);
+    if (!leavingHold && !options.skipNotification) await this.emitForStatus(tx, companyId, updated, to);
     await this.audit.record(tx, {
       companyId,
       action: 'package.status_changed',
@@ -271,6 +273,7 @@ export class PackagesService {
       ARRIVED_DESTINATION: 'shipment.arrived',
       READY_FOR_PICKUP: 'package.available_at_agency',
       ON_HOLD: 'package.incident',
+      DELIVERED: 'package.delivered',
     };
     await this.emitPackageEvent(tx, companyId, pkg, events[to]);
   }
