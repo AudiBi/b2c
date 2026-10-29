@@ -256,16 +256,20 @@ describe('Rôles, permissions et administration des utilisateurs', () => {
           permissions: new PermissionSet(permissions.map((permission) => ({ permission, scopeType: 'COMPANY', scopeId: null }))),
         }) as any;
 
+      const def = (code: RoleCode) => {
+        const d = ROLE_BY_CODE.get(code)!;
+        return { code: d.code, name: d.name, audience: d.audience, allowedScopes: d.allowedScopes, permissions: d.permissions, custom: false };
+      };
       const limited = actor(['user:create', 'role:assign', 'invoice:read']);
-      expect(() => checkAssignment(limited, 'STAFF', { roleCode: 'BILLING_AGENT', scopeType: 'COMPANY' })).toThrow(/droits/);
-      expect(() => checkAssignment(limited, 'STAFF', { roleCode: 'COMPANY_ADMIN', scopeType: 'COMPANY' })).toThrow(/droits/);
+      expect(() => checkAssignment(limited, 'STAFF', { roleCode: 'BILLING_AGENT', scopeType: 'COMPANY' }, def('BILLING_AGENT'))).toThrow(/droits/);
+      expect(() => checkAssignment(limited, 'STAFF', { roleCode: 'COMPANY_ADMIN', scopeType: 'COMPANY' }, def('COMPANY_ADMIN'))).toThrow(/droits/);
 
       const full = actor([...ROLE_BY_CODE.get('COMPANY_ADMIN')!.permissions]);
-      expect(checkAssignment(full, 'STAFF', { roleCode: 'AUDITOR', scopeType: 'COMPANY' }).code).toBe('AUDITOR');
+      expect(checkAssignment(full, 'STAFF', { roleCode: 'AUDITOR', scopeType: 'COMPANY' }, def('AUDITOR')).code).toBe('AUDITOR');
 
       // Portée seulement « entrepôt » : ne couvre pas l'entreprise entière
       const scoped = { ...full, permissions: new PermissionSet([{ permission: 'package:receive', scopeType: 'WAREHOUSE', scopeId: uuidv7() }]) };
-      expect(() => checkAssignment(scoped as any, 'STAFF', { roleCode: 'RECEPTION_AGENT', scopeType: 'WAREHOUSE', scopeId: uuidv7() })).toThrow();
+      expect(() => checkAssignment(scoped as any, 'STAFF', { roleCode: 'RECEPTION_AGENT', scopeType: 'WAREHOUSE', scopeId: uuidv7() }, def('RECEPTION_AGENT'))).toThrow();
     });
 
     it("un administrateur ne peut pas attribuer de rôle à un client (les rôles clients viennent de l'inscription)", async () => {

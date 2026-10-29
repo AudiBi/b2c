@@ -14,6 +14,7 @@ export const PERMISSIONS = {
   'user:disable': 'Désactiver ou réactiver un utilisateur',
   'role:read': 'Lire les rôles et leurs permissions',
   'role:assign': 'Attribuer et retirer des rôles',
+  'role:manage': 'Créer, modifier et supprimer les rôles personnalisés',
   'audit:read': "Consulter le journal d'audit",
   'settings:read': "Lire les paramètres de l'entreprise",
   'settings:update': "Modifier les paramètres de l'entreprise",

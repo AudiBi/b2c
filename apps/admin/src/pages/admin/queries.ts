@@ -28,9 +28,14 @@ export interface UserItem {
 export interface RoleItem {
   code: string;
   name: string;
-  description: string;
+  description: string | null;
   isSystem: boolean;
+  /** Rôle créé par l'entreprise (modifiable) ; faux pour les 12 rôles système. */
+  custom?: boolean;
+  allowedScopes?: ('COMPANY' | 'WAREHOUSE' | 'AGENCY' | 'ROUTE')[];
   permissions: string[];
+  /** Nombre d'attributions dans l'entreprise. */
+  holders?: number;
 }
 
 export interface CompanyItem {

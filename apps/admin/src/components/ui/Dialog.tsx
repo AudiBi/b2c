@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 
 /** Fenêtre modale : se ferme avec Échap ou un clic à l'extérieur ; le focus y est placé à l'ouverture. */
-export function Dialog({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
+export function Dialog({ title, onClose, children, wide }: { title: string; onClose(): void; children: ReactNode; wide?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -17,7 +17,7 @@ export function Dialog({ title, onClose, children }: { title: string; onClose():
   }, [onClose]);
   return (
     <div className="dialog-scrim" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className="dialog" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={ref}>
+      <div className={wide ? 'dialog dialog-wide' : 'dialog'} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={ref}>
         <h2>{title}</h2>
         {children}
       </div>

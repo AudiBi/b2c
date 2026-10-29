@@ -346,6 +346,93 @@ describe('rôles et droits', () => {
   });
 });
 
+describe('rôles personnalisés', () => {
+  const MANAGER = [...ADMIN, 'role:manage', 'warehouse:read', 'invoice:read'];
+  const custom = (overrides: Record<string, unknown> = {}) => ({
+    code: 'custom-controle-abc123', name: 'Contrôle qualité', description: 'Lecture des colis', isSystem: false, custom: true, allowedScopes: ['COMPANY'], permissions: ['package:read'], holders: 0, ...overrides,
+  });
+  const handlers = (items: unknown[]) => ({ 'GET /v1/admin/roles': [...roleItems, ...items] });
+
+  it('sans le droit « role:manage » : ni création, ni modification, ni suppression', async () => {
+    signedIn(me('STAFF', ADMIN), handlers([custom()]));
+    renderAt('/roles');
+    await screen.findByRole('heading', { name: 'Contrôle qualité' });
+    expect(screen.queryByRole('button', { name: new RegExp(fr.admin.roles.editor.create) })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: fr.common.edit })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: fr.common.delete })).not.toBeInTheDocument();
+  });
+
+  it('création : nom et droits contrôlés avant tout envoi ; les droits qu’on ne détient pas ne se cochent pas ; envoi avec portée et droits triés', async () => {
+    signedIn(me('STAFF', MANAGER), { ...handlers([]), 'POST /v1/admin/roles': () => json(201, custom()) });
+    renderAt('/roles');
+    await userEvent.click(await screen.findByRole('button', { name: new RegExp(fr.admin.roles.editor.create) }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: fr.admin.roles.editor.create }));
+    expect(calls('POST /v1/admin/roles')).toHaveLength(0);
+    expect(within(dialog).getByText(fr.admin.roles.editor.permissionsRequired)).toBeInTheDocument();
+
+    // un droit que l'on ne détient pas (paiements) est grisé
+    expect(within(dialog).getByRole('checkbox', { name: /payment:read/ })).toBeDisabled();
+    expect(within(dialog).getByRole('checkbox', { name: /invoice:read/ })).toBeEnabled();
+
+    await userEvent.type(within(dialog).getByLabelText(fr.admin.roles.editor.name), 'Contrôle qualité');
+    await userEvent.selectOptions(within(dialog).getByLabelText(fr.admin.roles.editor.scope), 'WAREHOUSE');
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: /package:read/ }));
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: /invoice:read/ }));
+    await userEvent.click(within(dialog).getByRole('button', { name: fr.admin.roles.editor.create }));
+    await waitFor(() => expect(calls('POST /v1/admin/roles')).toHaveLength(1));
+    expect(bodyOf(calls('POST /v1/admin/roles')[0])).toEqual({ name: 'Contrôle qualité', scopeType: 'WAREHOUSE', permissions: ['invoice:read', 'package:read'] });
+    expect(await screen.findByText(fr.admin.roles.editor.created)).toBeInTheDocument();
+  });
+
+  it('modification : droits préremplis, envoi du nom, de la description et des droits', async () => {
+    signedIn(me('STAFF', MANAGER), { ...handlers([custom({ holders: 2 })]), 'PATCH /v1/admin/roles/custom-controle-abc123': () => json(200, custom()) });
+    renderAt('/roles');
+    const card = (await screen.findByRole('heading', { name: 'Contrôle qualité' })).closest('li')!;
+    expect(within(card).getByText('2 titulaire(s)')).toBeInTheDocument();
+    await userEvent.click(within(card).getByRole('button', { name: fr.common.edit }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('checkbox', { name: /package:read/ })).toBeChecked();
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: /invoice:read/ }));
+    await userEvent.clear(within(dialog).getByLabelText(new RegExp(fr.admin.roles.editor.description)));
+    await userEvent.click(within(dialog).getByRole('button', { name: fr.common.save }));
+    await waitFor(() => expect(calls('PATCH /v1/admin/roles/custom-controle-abc123')).toHaveLength(1));
+    expect(bodyOf(calls('PATCH /v1/admin/roles/custom-controle-abc123')[0])).toEqual({ name: 'Contrôle qualité', description: null, permissions: ['invoice:read', 'package:read'] });
+  });
+
+  it('un nom déjà pris est expliqué', async () => {
+    signedIn(me('STAFF', MANAGER), { ...handlers([]), 'POST /v1/admin/roles': () => json(409, { error: { code: 'ROLE_NAME_TAKEN', message: 'x' } }) });
+    renderAt('/roles');
+    await userEvent.click(await screen.findByRole('button', { name: new RegExp(fr.admin.roles.editor.create) }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText(fr.admin.roles.editor.name), 'Livreur');
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: /package:read/ }));
+    await userEvent.click(within(dialog).getByRole('button', { name: fr.admin.roles.editor.create }));
+    expect(await within(dialog).findByText(fr.auth.errors.ROLE_NAME_TAKEN)).toBeInTheDocument();
+  });
+
+  it('suppression en deux temps ; un rôle encore attribué est refusé avec explication', async () => {
+    signedIn(me('STAFF', MANAGER), { ...handlers([custom()]), 'DELETE /v1/admin/roles/custom-controle-abc123': () => json(409, { error: { code: 'ROLE_IN_USE', message: 'x' } }) });
+    renderAt('/roles');
+    const card = (await screen.findByRole('heading', { name: 'Contrôle qualité' })).closest('li')!;
+    await userEvent.click(within(card).getByRole('button', { name: fr.common.delete }));
+    expect(calls('DELETE /v1/admin/roles/custom-controle-abc123')).toHaveLength(0);
+    await userEvent.click(within(card).getByRole('button', { name: fr.admin.roles.editor.confirm }));
+    await waitFor(() => expect(calls('DELETE /v1/admin/roles/custom-controle-abc123')).toHaveLength(1));
+    expect(await screen.findByText(fr.auth.errors.ROLE_IN_USE)).toBeInTheDocument();
+  });
+
+  it('les rôles personnalisés sont proposés à l’invitation, avec la portée imposée par le rôle', async () => {
+    signedIn(me('STAFF', MANAGER), { 'GET /v1/admin/users': { items: [], nextCursor: null }, ...handlers([custom({ allowedScopes: ['WAREHOUSE'] })]), 'GET /v1/admin/warehouses': warehouses, 'GET /v1/admin/agencies': { items: [] } });
+    renderAt('/users');
+    await userEvent.click(await screen.findByRole('button', { name: new RegExp(fr.admin.users.invite) }));
+    const dialog = await screen.findByRole('dialog');
+    await waitFor(() => expect(within(within(dialog).getByLabelText(fr.admin.users.role)).getByRole('option', { name: /Contrôle qualité/ })).toBeInTheDocument());
+    await userEvent.selectOptions(within(dialog).getByLabelText(fr.admin.users.role), 'custom-controle-abc123');
+    expect(await within(dialog).findByLabelText(fr.admin.users.scopeTarget)).toBeInTheDocument();
+  });
+});
+
 describe('entreprises (plateforme)', () => {
   const company = (overrides: Record<string, unknown> = {}) => ({
     id: U2, name: 'Société Test', slug: 'societe-test', status: 'ACTIVE', trackingPrefix: 'ST', customerCodePrefix: 'ST', defaultCurrency: 'USD', defaultLocale: 'fr', paymentPolicy: 'PAY_BEFORE_SHIPMENT', createdAt: '2026-10-01T10:00:00Z', ...overrides,

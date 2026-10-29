@@ -55,7 +55,10 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 | `POST /v1/admin/users/{id}/roles` | `role:assign` | Attribue un rôle et sa portée |
 | `DELETE /v1/admin/users/{id}/roles/{userRoleId}` | `role:assign` | Retire une attribution |
 | `POST /v1/admin/users/{id}/disable` · `/enable` | `user:disable` | Désactive (révoque les sessions) / réactive |
-| `GET /v1/admin/roles` | `role:read` | Rôles et permissions |
+| `GET /v1/admin/roles` | `role:read` | Rôles système **et personnalisés** : code, nom, portées possibles, droits, nombre de titulaires |
+| `POST /v1/admin/roles` | `role:manage` | Crée un rôle personnalisé (`name`, `description?`, `scopeType` COMPANY / WAREHOUSE / AGENCY, `permissions`). Anti-escalade ; codes d'erreur `ROLE_NAME_TAKEN`, `TOO_MANY_ROLES`, `PRIVILEGE_ESCALATION` |
+| `PATCH /v1/admin/roles/{code}` | `role:manage` | Modifie nom, description, droits d'un rôle personnalisé (effet immédiat) |
+| `DELETE /v1/admin/roles/{code}` | `role:manage` | Supprime un rôle personnalisé non attribué (`ROLE_IN_USE` sinon) |
 | `GET /v1/audit` | `audit:read` | Journal d'audit de l'entreprise (filtres `action`, `entityType`, `entityId`, `actorUserId`) |
 | `POST /v1/platform/companies` | `company:manage` | Crée une entreprise et invite son administrateur |
 | `GET /v1/platform/companies` | `company:manage` | Liste des entreprises (aucune donnée métier) |

@@ -15,7 +15,7 @@ import { FormMessage, SelectField, TextField } from '../../components/ui/Fields'
 import { Icon } from '../../components/ui/Icon';
 import { PageHead } from '../../components/ui/PageHead';
 import { useAgencies, useCan, useWarehouses } from '../staff/queries';
-import { adminKeys, useRoleNames, useUsers, type UserItem } from './queries';
+import { adminKeys, useRoleNames, useRoles, useUsers, type UserItem } from './queries';
 
 export const statusTone = (status: UserItem['status']) => (status === 'ACTIVE' ? ' badge-success' : status === 'PENDING' ? ' badge-warning' : ' badge-danger');
 
@@ -39,8 +39,14 @@ export function RoleScopePicker({
   // reçoit des rôles « personnel », l'équipe plateforme des rôles « plateforme ». Le serveur reste l'autorité (anti-escalade, portée).
   const definitions = new Map(ROLE_DEFINITIONS.map((r) => [r.code as string, r]));
   const audience = user?.kind === 'PLATFORM' ? 'PLATFORM' : 'STAFF';
-  const options = ROLE_DEFINITIONS.filter((r) => r.audience === audience).map((r) => ({ code: r.code as string, name: roleName.get(r.code) ?? r.name }));
-  const allowed = (definitions.get(roleCode)?.allowedScopes ?? ['COMPANY']) as readonly ScopeType[];
+  const roles = useRoles();
+  const customRoles = (roles.data ?? []).filter((r) => r.custom);
+  const options = [
+    ...ROLE_DEFINITIONS.filter((r) => r.audience === audience).map((r) => ({ code: r.code as string, name: roleName.get(r.code) ?? r.name })),
+    ...(audience === 'STAFF' ? customRoles.map((r) => ({ code: r.code, name: `${r.name} (${m.admin.roles.custom.toLowerCase()})` })) : []),
+  ];
+  const customScopes = new Map(customRoles.map((r) => [r.code, (r.allowedScopes ?? ['COMPANY']) as readonly ScopeType[]]));
+  const allowed = (customScopes.get(roleCode) ?? definitions.get(roleCode)?.allowedScopes ?? ['COMPANY']) as readonly ScopeType[];
   const targets = scopeType === 'WAREHOUSE' ? (warehouses.data?.items ?? []).map((w) => ({ value: w.id, label: `${w.name} (${w.reference})` })) : scopeType === 'AGENCY' ? (agencies.data?.items ?? []).map((a) => ({ value: a.id, label: a.name })) : [];
 
   return (
@@ -51,7 +57,7 @@ export function RoleScopePicker({
         value={roleCode}
         error={errors?.roleCode}
         onChange={(value) => {
-          const next = (definitions.get(value)?.allowedScopes ?? ['COMPANY']) as readonly ScopeType[];
+          const next = (customScopes.get(value) ?? definitions.get(value)?.allowedScopes ?? ['COMPANY']) as readonly ScopeType[];
           onChange({ roleCode: value, scopeType: next[0], scopeId: '' });
         }}
         options={[{ value: '', label: u.selectTarget }, ...options.map((r) => ({ value: r.code, label: r.name }))]}

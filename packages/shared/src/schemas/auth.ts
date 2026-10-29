@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { COMMON_PASSWORDS } from '../common-passwords';
-import { ROLE_CODES, SCOPE_TYPES } from '../roles';
+import { CUSTOM_ROLE_PERMISSIONS, CUSTOM_ROLE_SCOPES, ROLE_CODES, SCOPE_TYPES, isCustomRoleCode } from '../roles';
 
 export const LOCALES = ['fr', 'ht', 'en'] as const;
 export type Locale = (typeof LOCALES)[number];
@@ -91,7 +91,8 @@ export const logoutSchema = z.strictObject({ allSessions: z.boolean().default(fa
 
 export const roleAssignmentSchema = z
   .strictObject({
-    roleCode: z.enum(ROLE_CODES),
+    // Un rôle système (ROLE_CODES) ou un rôle personnalisé de l'entreprise (`custom-…`)
+    roleCode: z.string().refine((code) => (ROLE_CODES as readonly string[]).includes(code) || isCustomRoleCode(code), 'unknown_role'),
     scopeType: z.enum(SCOPE_TYPES).default('COMPANY'),
     scopeId: uuidSchema.optional(),
   })
@@ -104,6 +105,32 @@ export const roleAssignmentSchema = z
     }
   });
 export type RoleAssignmentInput = z.infer<typeof roleAssignmentSchema>;
+
+const customPermissions = z
+  .array(z.string().refine((code) => (CUSTOM_ROLE_PERMISSIONS as readonly string[]).includes(code), 'unknown_permission'))
+  .min(1, 'permissions_required')
+  .max(CUSTOM_ROLE_PERMISSIONS.length)
+  .refine((list) => new Set(list).size === list.length, 'permissions_duplicate');
+
+/** Création d'un rôle personnalisé. */
+export const createCustomRoleSchema = z.strictObject({
+  name: z.string().trim().min(2).max(60),
+  description: z.string().trim().max(300).optional(),
+  scopeType: z.enum(CUSTOM_ROLE_SCOPES).default('COMPANY'),
+  permissions: customPermissions,
+});
+export type CreateCustomRoleInput = z.infer<typeof createCustomRoleSchema>;
+
+/** Modification : la portée d'un rôle ne change pas (des attributions existent peut-être déjà avec cette portée). */
+export const updateCustomRoleSchema = z
+  .strictObject({
+    name: z.string().trim().min(2).max(60).optional(),
+    description: z.string().trim().max(300).nullable().optional(),
+    permissions: customPermissions.optional(),
+  })
+  .refine((v) => v.name !== undefined || v.description !== undefined || v.permissions !== undefined, { path: ['name'], message: 'required' });
+export type UpdateCustomRoleInput = z.infer<typeof updateCustomRoleSchema>;
+export const roleCodeParamSchema = z.strictObject({ code: z.string().refine(isCustomRoleCode, 'unknown_role') });
 
 export const createStaffSchema = z.strictObject({
   email: emailSchema,

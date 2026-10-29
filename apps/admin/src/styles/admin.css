@@ -284,6 +284,18 @@ a:hover { color: var(--brand-800); }
 .dialog-scrim { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgb(8 18 30 / 0.55); }
 .dialog { width: min(560px, 100%); max-height: 92vh; overflow: auto; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow-lg); padding: 22px 24px; }
 .dialog h2 { margin-bottom: 12px; }
+.dialog-wide { width: min(860px, 100%); }
+.perm-editor { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin: 0; min-width: 0; }
+.perm-editor legend { padding: 0 6px; font-weight: 650; color: var(--ink-900); }
+.perm-groups { display: grid; gap: 12px; max-height: 340px; overflow: auto; padding-right: 4px; }
+.perm-group { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; background: var(--surface-alt); }
+.perm-group-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+.perm-group-head h3 { margin: 0; font-size: 0.82rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-500); }
+.perm-item { display: flex; gap: 10px; align-items: flex-start; padding: 5px 0; cursor: pointer; }
+.perm-item input { width: 17px; height: 17px; margin-top: 3px; accent-color: var(--brand-700); flex: none; }
+.perm-item.locked { opacity: 0.6; cursor: not-allowed; }
+.perm-desc { display: block; font-size: 0.9rem; }
+.perm-item code.perm { font-size: 0.72rem; }
 
 /* ---------- Connexion ---------- */
 .auth-page { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); background: var(--surface); }

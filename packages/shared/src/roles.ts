@@ -43,6 +43,16 @@ const TENANT_PERMISSIONS = PERMISSION_CODES.filter(
 // attribuer le rôle de livreur (une personne ne peut pas attribuer des droits qu'elle ne détient pas). Il ne donne accès qu'aux tournées confiées à soi-même.
 const STAFF_ALL = TENANT_PERMISSIONS.filter((code) => (!code.endsWith('_own') && !code.endsWith('_assigned')) || code === 'delivery:read_assigned');
 
+/**
+ * Rôles PERSONNALISÉS d'une entreprise (créés par son administrateur) : un nom, des permissions choisies parmi celles du personnel,
+ * et une portée unique (toute l'entreprise, un entrepôt ou une agence). Leur code est généré par le serveur : `custom-<nom>-<suffixe>`.
+ * Les 12 rôles système restent définis ici et ne se modifient pas.
+ */
+export const CUSTOM_ROLE_PERMISSIONS: readonly PermissionCode[] = STAFF_ALL;
+export const CUSTOM_ROLE_SCOPES = ['COMPANY', 'WAREHOUSE', 'AGENCY'] as const;
+export const CUSTOM_ROLE_CODE_PATTERN = /^custom-[a-z0-9]+(-[a-z0-9]+)*$/;
+export const isCustomRoleCode = (code: string): boolean => CUSTOM_ROLE_CODE_PATTERN.test(code) && code.length <= 64;
+
 export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
   {
     code: 'SUPER_ADMIN',

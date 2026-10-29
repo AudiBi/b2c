@@ -44,6 +44,7 @@ Exécutés le 2026-10-28 (suites automatisées rejouées à la fin de la phase 1
 | API `reports.spec.ts` (tableau de bord vide, chiffres réels, revenus et impayés par devise, incidents, période, droits, livreurs) | 7 | ✅ |
 | API `rate-limit.spec.ts` | 7 | ✅ |
 | API `infra.spec.ts` (compteurs, idempotence) | 9 | ✅ |
+| API `custom-roles.spec.ts` (rôles personnalisés : création et liste, validation, noms uniques, droit `role:manage`, anti-escalade à la création / modification / suppression / attribution, effet immédiat sur les droits, portée entrepôt, invitation, suppression refusée tant qu'attribué, isolation entre entreprises, rôles système intouchables, garde-fous en base) | 15 | ✅ |
 | API `mail.spec.ts` (gabarit HTML : logo, titre, bouton, lien de secours, trois langues, échappement de toute valeur saisie, pièce jointe du logo en SMTP) | 5 | ✅ |
 | API `app.spec.ts` (santé, en-têtes, CORS, erreurs, configuration, **variables vides**) | 15 | ✅ |
 | API `totp.spec.ts` + `two-factor.spec.ts` (vecteurs officiels RFC 6238, fenêtre, rejeu, chiffrement du secret, codes de secours, activation / désactivation, connexion en deux temps, verrouillage, obligation du personnel, base) | 31 | ✅ |
@@ -51,7 +52,7 @@ Exécutés le 2026-10-28 (suites automatisées rejouées à la fin de la phase 1
 | Site, unitaires (10 fichiers : pages publiques et espace client ; les écrans du personnel sont dans le panel) | 157 | ✅ |
 | **Panel d'administration, unitaires** (5 fichiers : écrans du personnel repris de `phase6` à `phase9` + `admin.test.tsx` : accès, connexion, utilisateurs, rôles, entreprises, textes) | 86 | ✅ |
 | Site, recette navigateur | 88 | ✅ |
-| **Total de la suite standard** | **950** | **950 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
+| **Total de la suite standard** | **972** | **972 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
 
 Stockage S3 contre un **vrai SeaweedFS** (`npm run test:s3`) : **10 tests sur 10 réussis** (3 de configuration + 7 de stockage, dont le parcours API complet), exécutés le 2026-10-28. Ils sont ignorés par `npm test` pour ne pas exiger ce service : la suite l'affiche comme « ignorés », elle ne les compte pas comme vérifiés.
 
@@ -115,7 +116,7 @@ La recette de la phase 8 ajoute le parcours complet **colis arrivé et « prêt 
 
 ## Panel d'administration séparé
 
-- **Recette navigateur** : second serveur sur le port 4174 (panel construit pour l'entreprise de recette) ; les parcours du personnel (logistique, finance, livraison) s'y déroulent ; deux parcours nouveaux (un client refusé sur le panel et API 403 ; un compte du personnel connecté sur le site dirigé vers le panel) ; le panel en créole et en anglais. **89 scénarios réussis.**
+- **Recette navigateur** : second serveur sur le port 4174 (panel construit pour l'entreprise de recette) ; les parcours du personnel (logistique, finance, livraison) s'y déroulent ; deux parcours nouveaux (un client refusé sur le panel et API 403 ; un compte du personnel connecté sur le site dirigé vers le panel) ; le panel en créole et en anglais ; **un parcours de gestion des accès** (création d’un rôle personnalisé par l’interface avec contrôle d’accessibilité, invitation avec ce rôle, activation du compte par le lien du panel, menu limité aux droits du rôle, modification du rôle avec effet à la page suivante, suppression refusée puis acceptée). **90 scénarios réussis.**
 - **API** : cookies distincts du panel (un cookie du site ne renouvelle pas une session du panel, et inversement), liens de réinitialisation du personnel vers le panel et du client vers le site, lien d'invitation vers le panel.
 - **Contrôle de fumée de production étendu** (`SMOKE_ADMIN_URL`) sur la pile Docker locale : **29 contrôles sur 29 réussis** (panel servi, CSP, cadres interdits, jamais indexé, chemin d'écran résolu, ressources en cache immuable, API joignable, le site ne sert pas le panel, cookies du panel distincts, puis tout le parcours de la plateforme par le panel : second facteur obligatoire, activation, rejeu refusé, création d'une entreprise) ; l'e-mail d'invitation de l'administrateur de l'entreprise pointe bien vers le panel.
 

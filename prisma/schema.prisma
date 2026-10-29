@@ -263,6 +263,8 @@ model Role {
   name        String
   description String?
   isSystem    Boolean  @default(false) @map("is_system")
+  // Portée unique d'un rôle PERSONNALISÉ (les rôles système ont plusieurs portées possibles, définies dans le code)
+  scopeType   ScopeType @default(COMPANY) @map("scope_type")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 

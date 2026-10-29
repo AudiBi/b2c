@@ -2,11 +2,10 @@ import { Injectable } from '@nestjs/common';
 import type { Prisma, Role, User, UserRole } from '@prisma/client';
 import {
   PLATFORM_COMPANY_ID,
-  ROLE_BY_CODE,
+  isCustomRoleCode,
   type CreateStaffInput,
   type Locale,
   type RoleAssignmentInput,
-  type RoleCode,
   type listUsersQuerySchema,
 } from '@b2c/shared';
 import type { z } from 'zod';
@@ -17,7 +16,7 @@ import { DbService, type Tx } from '../database/db.service';
 import { MailService } from '../mail/mail.service';
 import type { AuthContext } from '../security/auth.types';
 import { OneTimeTokenService } from '../security/one-time-token.service';
-import { checkAssignment, LAST_HOLDER_ROLES, scopeKeyOf } from './role-rules';
+import { checkAssignment, LAST_HOLDER_ROLES, resolveRole, scopeKeyOf } from './role-rules';
 
 type UserWithRoles = User & { userRoles: (UserRole & { role: Role })[] };
 
@@ -93,9 +92,8 @@ export class AdminUsersService {
   /** Invite un membre du personnel : le compte reste PENDING jusqu'à ce qu'il choisisse son mot de passe. */
   async createStaff(auth: AuthContext, input: CreateStaffInput) {
     const kind = auth.companyId === PLATFORM_COMPANY_ID ? 'PLATFORM' : 'STAFF';
-    for (const assignment of input.roles) checkAssignment(auth, kind, assignment);
-
     const created = await this.db.run({ companyId: auth.companyId }, async (tx) => {
+      for (const assignment of input.roles) checkAssignment(auth, kind, assignment, await resolveRole(tx, auth.companyId, assignment.roleCode));
       const duplicate = await tx.user.findUnique({
         where: { companyId_email: { companyId: auth.companyId, email: input.email } },
       });
@@ -137,7 +135,7 @@ export class AdminUsersService {
     return this.db.run({ companyId: auth.companyId }, async (tx) => {
       const user = await tx.user.findUnique({ where: { id: userId } });
       if (!user) throw AppException.notFound('USER_NOT_FOUND', 'Utilisateur introuvable');
-      checkAssignment(auth, user.kind, assignment);
+      checkAssignment(auth, user.kind, assignment, await resolveRole(tx, auth.companyId, assignment.roleCode));
       await this.attachRole(tx, auth, userId, assignment);
       await this.audit.record(tx, {
         companyId: auth.companyId,
@@ -160,7 +158,7 @@ export class AdminUsersService {
       if (!assignment) throw AppException.notFound('ROLE_ASSIGNMENT_NOT_FOUND', "Attribution introuvable");
 
       // On ne peut retirer que des droits qu'on détient soi-même (même règle que pour l'attribution).
-      if (!this.actorCoversRole(auth, assignment.role.code)) throw AppException.forbidden('PRIVILEGE_ESCALATION', 'Vous ne détenez pas les droits de ce rôle');
+      if (!(await this.actorCoversRole(tx, auth, assignment.role.code))) throw AppException.forbidden('PRIVILEGE_ESCALATION', 'Vous ne détenez pas les droits de ce rôle');
 
       if (LAST_HOLDER_ROLES.includes(assignment.role.code) && assignment.user.status === 'ACTIVE') {
         const holders = await tx.userRole.count({ where: { roleId: assignment.roleId, user: { status: 'ACTIVE' } } });
@@ -217,8 +215,9 @@ export class AdminUsersService {
   }
 
   private async attachRole(tx: Tx, auth: AuthContext, userId: string, assignment: RoleAssignmentInput): Promise<void> {
+    // Un rôle système vit dans l'entreprise plateforme (partagé) ; un rôle personnalisé, dans l'entreprise qui l'a créé
     const role = await tx.role.findUnique({
-      where: { companyId_code: { companyId: PLATFORM_COMPANY_ID, code: assignment.roleCode } },
+      where: { companyId_code: { companyId: isCustomRoleCode(assignment.roleCode) ? auth.companyId : PLATFORM_COMPANY_ID, code: assignment.roleCode } },
     });
     if (!role) throw new Error('Rôles système absents : exécuter npm run db:seed');
     // La portée doit désigner un objet qui existe dans CETTE entreprise (la RLS cache ceux des autres)
@@ -249,9 +248,13 @@ export class AdminUsersService {
     }
   }
 
-  private actorCoversRole(auth: AuthContext, roleCode: string): boolean {
-    const definition = ROLE_BY_CODE.get(roleCode as RoleCode);
-    return !!definition && auth.permissions.coversCompanyWide(definition.permissions);
+  private async actorCoversRole(tx: Tx, auth: AuthContext, roleCode: string): Promise<boolean> {
+    try {
+      const definition = await resolveRole(tx, auth.companyId, roleCode);
+      return auth.permissions.coversCompanyWide(definition.permissions);
+    } catch {
+      return false;
+    }
   }
 
   /** Sérialise les opérations qui peuvent retirer le dernier administrateur (verrou fondé sur l'entreprise). */
