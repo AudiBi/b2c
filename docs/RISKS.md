@@ -14,7 +14,7 @@ Verdict : **la plateforme n'est pas prête à être ouverte au public en l'état
 | A4 | **Aucune supervision ni alerte** | Une panne (base, API, notifications bloquées, certificat expiré, disque plein) ne prévient personne | Surveillance externe de `/health/ready`, alertes disque, certificat, sauvegarde ; centralisation et rotation des journaux |
 | A5 | **Textes juridiques à l'état de projet** | Conditions générales et politique de confidentialité portent un bandeau « Projet de texte : à faire valider par un juriste » ; la collecte de données personnelles et d'identité exige un cadre juridique valide | Rédaction et validation par un juriste (droit applicable, conservation, droits des personnes) |
 | A6 | **Pas de test d'intrusion ni d'audit externe** | La revue de sécurité a été faite par lecture du code et des tests (guide ASVS niveau 2), jamais par un tiers ; une plateforme qui garde identités, adresses et paiements doit être éprouvée | Test d'intrusion par un tiers avant l'ouverture ; correction des constats |
-| A7 | **Marque, contacts et contenus provisoires** | La marque « TransitHaïti », les coordonnées et les textes de présentation sont provisoires ou à configurer (`BRAND_NAME`, coordonnées publiques) | Fournir marque, textes, coordonnées, entrepôts et agences réels ; reconstruire l'image `web` |
+| A7 | **Marque, contacts et contenus provisoires** | Le logo B2C est en place (WEB.md), mais le **nom** affiché (« TransitHaïti »), les coordonnées et les textes de présentation sont provisoires ou à configurer (`BRAND_NAME`, coordonnées publiques) : harmoniser nom et logo | Fournir marque, textes, coordonnées, entrepôts et agences réels ; reconstruire l'image `web` |
 | A8 | **Aucun tarif réel** | Par conception, aucun tarif n'est inventé : tant que l'entreprise n'a pas saisi et activé sa grille, le calculateur répond « tarif indisponible » et aucun colis ne peut être chiffré | L'entreprise saisit ses vraies grilles (et les valide par des exemples chiffrés connus) |
 
 ## B. Décisions à prendre (le logiciel fonctionne sans, mais le métier en dépend)
@@ -47,7 +47,7 @@ Verdict : **la plateforme n'est pas prête à être ouverte au public en l'état
 
 ## D. Ce qui est solide (vérifié par des tests exécutés)
 
-Isolation des entreprises par la base (RLS forcée, 52 tables) ; sessions et verrouillage ; double authentification TOTP ; machine d'états des colis protégée en base ; factures immuables et numérotées sans trou ; remise avec code, solde dû bloquant et dérogation journalisée ; livreur limité à ses tournées ; journal d'audit en ajout seul ; limite de débit exacte ; aucune erreur serveur sous charge ; restauration de sauvegarde et reconstruction après sinistre essayées ; production refusant les réglages dangereux ; 899 tests automatisés (partagé 88, API 523 + 7 ignorés, site 200, navigateur 88).
+Isolation des entreprises par la base (RLS forcée, 52 tables) ; sessions et verrouillage ; double authentification TOTP ; machine d'états des colis protégée en base ; factures immuables et numérotées sans trou ; remise avec code, solde dû bloquant et dérogation journalisée ; livreur limité à ses tournées ; journal d'audit en ajout seul ; limite de débit exacte ; aucune erreur serveur sous charge ; restauration de sauvegarde et reconstruction après sinistre essayées ; production refusant les réglages dangereux ; 902 tests automatisés (partagé 88, API 523 + 7 ignorés, site 203, navigateur 88).
 
 ## Ordre conseillé
 

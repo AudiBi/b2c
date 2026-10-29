@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit';
+import { drawLogo } from '../branding/pdf-logo';
 
 export interface ManifestRow {
   n: number;
@@ -79,7 +80,8 @@ export function manifestPdf(data: ManifestData): Promise<Buffer> {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    doc.font('Helvetica-Bold').fontSize(16).text(`Manifeste du lot ${data.reference}`);
+    const logo = drawLogo(doc, 72);
+    doc.font('Helvetica-Bold').fontSize(16).text(`Manifeste du lot ${data.reference}`, { width: doc.page.width - doc.page.margins.left - doc.page.margins.right - logo - 12 });
     doc.moveDown(0.3).font('Helvetica').fontSize(9);
     doc.text(`Mode : ${data.transportMode}   ·   Statut : ${data.status}   ·   Origine : ${data.origin}   ·   Destination : ${data.destination}`);
     doc.text(`Transporteur : ${data.carrierName || '—'}   ·   Connaissement / LTA : ${data.transportRef || '—'}`);

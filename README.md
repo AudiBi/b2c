@@ -72,7 +72,7 @@ Crée l'entreprise `demo` (nom préfixé « DEMO », préfixe de code client `DM
 ## Tests
 
 ```bash
-npm test          # package partagé (88) + API (523, plus 7 de stockage S3 ignorés) + site (200)
+npm test          # package partagé (88) + API (523, plus 7 de stockage S3 ignorés) + site (203)
 npm run test:e2e  # recette navigateur : construit l'API et le site, puis Playwright (88 scénarios)
 npm run loadtest  # tests de charge (suivi, calculateur, limite de débit) : sème des colis dans la base de TEST
 npm run backup:check # sauvegarde la base de test, la restaure dans une copie et compare (RLS, audit, droits)

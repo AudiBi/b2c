@@ -608,6 +608,8 @@ describe('Lots de transport, manifestes et réception en agence', () => {
       expect(res.headers['content-disposition']).toMatch(/^attachment; filename="manifeste-/);
       const body = Buffer.from(res.body);
       expect(body.subarray(0, 5).toString()).toBe('%PDF-');
+      // le logo B2C est intégré au document (image PNG)
+      expect(Buffer.from(body).includes('/Subtype /Image')).toBe(true);
       expect(body.subarray(-8).toString()).toContain('%%EOF');
       expect(body.length).toBeGreaterThan(1500);
     });

@@ -105,6 +105,23 @@ Textes en trois langues (créole à relire). Le total de la facture et le solde 
 - **Journal d'audit** : lecture seule, filtres, détails avant / après.
 Textes en trois langues (créole à relire). Pas de carte ni d'itinéraire, pas d'application mobile pour le livreur (écran responsive seulement).
 
+## Logo B2C
+
+Le logo fourni (`IMG-20260326-WA0026.svg`, 294 Ko : une trame vectorisée automatiquement en 870 tracés, avec un fond gris clair et des filets parasites) a été **retracé proprement** : deux couleurs (bleu #03526F, gris #878787), fond transparent, contours lissés, filet clair entre le « 2 » et les lettres comblé. Résultat dans `apps/web/public/` :
+
+| Fichier | Poids | Emploi |
+|---|---|---|
+| `logo.svg` | 7,9 Ko (3,7 Ko compressé) | logo complet avec « Business to Customer » : pied de page, aperçu des réseaux sociaux |
+| `logo-mark.svg` | 5,0 Ko | mot-symbole B2C seul : en-tête (48 px de haut) |
+| `favicon.svg`, `favicon-48.png` | 5,1 Ko, 1,7 Ko | onglet du navigateur (mot-symbole sur plaque blanche) |
+| `apple-touch-icon.png` | 4,9 Ko | écran d'accueil iOS (180 px) |
+| `og-image.png` | 42 Ko | aperçu des liens partagés (1200 × 630), balises `og:image` et `twitter:card` ajoutées au pré-rendu |
+| `apps/api/src/branding/logo-png.ts` | 26 Ko (PNG en base64) | logo des PDF : factures, reçus, manifestes (en haut à droite) |
+
+**Où il apparaît** : en-tête de toutes les pages (publiques, connexion, espace client et du personnel), pied de page (sur une plaque blanche, car le pied de page est bleu foncé), onglet, aperçu des liens partagés, PDF. **Pas** dans les e-mails (texte brut) ni dans les modèles de notification. Les images sont décoratives (`alt` vide) : le nom de la marque reste porté par un texte réservé aux lecteurs d'écran, et des tests le vérifient (pré-rendu, PDF).
+
+**Limites** : le fichier source est une trame vectorisée à partir d'une image : le retracé est fidèle à l'œil mais les bords gardent de légères irrégularités héritées de l'original ; **si l'entreprise possède le fichier vectoriel d'origine (Illustrator, Figma, SVG propre), il vaut mieux l'utiliser**. Le PDF n'a pas été contrôlé à l'œil (vérifié seulement : l'image est présente dans le document, aucun test automatique de mise en page). La **marque écrite** reste « TransitHaïti » (provisoire, `VITE_BRAND_NAME`) alors que le logo dit « B2C » : à harmoniser.
+
 ## Double authentification (phase 9)
 
 - **Connexion** : si le serveur répond `TOTP_REQUIRED`, le formulaire affiche un champ « Code de l'application » (6 chiffres, vérifié côté navigateur avant l'envoi) ; un bouton bascule vers le **code de secours** (`xxxx-xxxx`) ; le mot de passe n'est pas ressaisi.

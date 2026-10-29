@@ -543,6 +543,8 @@ describe('Finance : factures, paiements, caisse, remboursements, export', () => 
       expect(pdf.status).toBe(200);
       expect(pdf.headers['content-type']).toBe('application/pdf');
       expect(Buffer.from(pdf.body).subarray(0, 5).toString()).toBe('%PDF-');
+      // le logo B2C est intégré au document (image PNG)
+      expect(Buffer.from(pdf.body).includes('/Subtype /Image')).toBe(true);
       expect((await api(t).get(`/v1/me/invoices/${invoice.id}/pdf`).set(bearer(w.customer2.token))).status).toBe(404);
     });
 
@@ -568,6 +570,8 @@ describe('Finance : factures, paiements, caisse, remboursements, export', () => 
         r.on('end', () => cb(null, Buffer.concat(chunks)));
       });
       expect(Buffer.from(receipt.body).subarray(0, 5).toString()).toBe('%PDF-');
+      // le logo B2C est intégré au document (image PNG)
+      expect(Buffer.from(receipt.body).includes('/Subtype /Image')).toBe(true);
       expect((await api(t).get(`/v1/me/payments/${paid.id}/receipt.pdf`).set(bearer(w.customer2.token))).status).toBe(404);
       const staffReceipt = await api(t).get(`/v1/admin/payments/${paid.id}/receipt.pdf`).set(bearer(w.token));
       expect(staffReceipt.status).toBe(200);

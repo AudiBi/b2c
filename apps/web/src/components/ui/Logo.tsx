@@ -1,10 +1,20 @@
-/** Marque graphique provisoire (colis stylisé). À remplacer par le logo de l'entreprise. */
-export function LogoMark({ className }: { className?: string }) {
+/**
+ * Logo B2C (fichiers `public/logo-mark.svg` et `public/logo.svg`, vectorisés et allégés à partir du logo fourni).
+ * L'image est décorative : le nom de la marque est porté par le texte voisin (lien d'accueil, pied de page).
+ *  - « mark » : mot-symbole seul, pour l'en-tête ;
+ *  - « full » : avec la ligne « Business to Customer », pour les grands formats.
+ */
+const RATIO = { mark: 1.823, full: 1.629 } as const;
+
+export function Logo({ variant = 'mark', height = 48, className }: { variant?: keyof typeof RATIO; height?: number; className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-      <rect width="64" height="64" rx="14" fill="#0b2545" />
-      <path d="M32 12 14 21v22l18 9 18-9V21z" fill="none" stroke="#f2a541" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M14 21l18 9 18-9M32 30v22" fill="none" stroke="#f2a541" strokeWidth="4" strokeLinejoin="round" />
-    </svg>
+    <img
+      className={className}
+      src={variant === 'mark' ? '/logo-mark.svg' : '/logo.svg'}
+      alt=""
+      width={Math.round(height * RATIO[variant])}
+      height={height}
+      decoding="async"
+    />
   );
 }

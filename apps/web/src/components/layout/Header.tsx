@@ -8,7 +8,7 @@ import { LocLink, LocNavLink } from '../LocLink';
 import { ButtonLink } from '../ui/Button';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
-import { LogoMark } from '../ui/Logo';
+import { Logo } from '../ui/Logo';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function Header() {
@@ -27,8 +27,8 @@ export function Header() {
     <header className="site-header">
       <div className="container header-bar">
         <LocLink page="home" className="brand">
-          <LogoMark />
-          <span>{config.brandName}</span>
+          <Logo />
+          <span className="sr-only">{config.brandName}</span>
         </LocLink>
         <button type="button" className="menu-toggle" aria-expanded={open} aria-controls="site-nav" onClick={() => setOpen((v) => !v)}>
           <Icon name={open ? 'close' : 'menu'} width={22} height={22} />

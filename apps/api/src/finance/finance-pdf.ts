@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit';
+import { drawLogo } from '../branding/pdf-logo';
 
 interface InvoicePdf {
   company: string;
@@ -51,7 +52,8 @@ const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : '—');
 /** Facture imprimable. Montants tels qu'enregistrés (décimal exact) ; aucune mention légale inventée. */
 export function invoicePdf({ company, invoice: inv }: InvoicePdf): Promise<Buffer> {
   return render((doc) => {
-    doc.font('Helvetica-Bold').fontSize(18).text(company);
+    const logo = drawLogo(doc);
+    doc.font('Helvetica-Bold').fontSize(18).text(company, { width: doc.page.width - doc.page.margins.left - doc.page.margins.right - logo - 12 });
     doc.moveDown(0.5).fontSize(14).text(`Facture ${inv.number ?? ''}`);
     doc.font('Helvetica').fontSize(10).fillColor('#444').text(`Statut : ${inv.status}   ·   Émise le : ${day(inv.issuedAt)}   ·   Échéance : ${inv.dueDate ?? '—'}`);
     doc.fillColor('#000').moveDown().text(`Client : ${inv.customer.name} (${inv.customer.customerCode})`);
@@ -84,7 +86,8 @@ export function invoicePdf({ company, invoice: inv }: InvoicePdf): Promise<Buffe
 
 export function receiptPdf(r: ReceiptPdf): Promise<Buffer> {
   return render((doc) => {
-    doc.font('Helvetica-Bold').fontSize(18).text(r.company);
+    const logo = drawLogo(doc);
+    doc.font('Helvetica-Bold').fontSize(18).text(r.company, { width: doc.page.width - doc.page.margins.left - doc.page.margins.right - logo - 12 });
     doc.moveDown(0.5).fontSize(14).text(`Reçu ${r.receiptNumber}`);
     doc.font('Helvetica').fontSize(11).moveDown();
     doc.text(`Date : ${day(r.issuedAt)}`);

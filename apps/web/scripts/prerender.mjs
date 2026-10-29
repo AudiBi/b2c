@@ -33,6 +33,12 @@ function headTags({ lang, path, index, head }) {
       `<meta property="og:description" content="${esc(head.description ?? '')}" />`,
       `<meta property="og:url" content="${esc(urlOf(lang, path))}" />`,
       `<meta property="og:locale" content="${OG_LOCALE[lang]}" />`,
+      `<meta property="og:image" content="${siteUrl}/og-image.png" />`,
+      '<meta property="og:image:width" content="1200" />',
+      '<meta property="og:image:height" content="630" />',
+      '<meta property="og:image:alt" content="B2C — Business to Customer" />',
+      '<meta name="twitter:card" content="summary_large_image" />',
+      `<meta name="twitter:image" content="${siteUrl}/og-image.png" />`,
     );
   }
   return tags.join('\n    ');
@@ -79,6 +85,8 @@ await write(
     ${LANGS.map((l) => `<link rel="alternate" hreflang="${l}" href="${urlOf(l, '')}" />`).join('\n    ')}
     <link rel="alternate" hreflang="x-default" href="${urlOf('fr', '')}" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-48.png" sizes="48x48" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/language.css" />
     <script src="/language.js" defer></script>
   </head>

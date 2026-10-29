@@ -1,7 +1,7 @@
 import { config } from '../../config';
 import { useI18n } from '../../i18n';
 import { LocLink } from '../LocLink';
-import { LogoMark } from '../ui/Logo';
+import { Logo } from '../ui/Logo';
 
 export function Footer() {
   const { m } = useI18n();
@@ -10,9 +10,9 @@ export function Footer() {
       <div className="container">
         <div className="footer-grid">
           <div>
-            <p className="brand" style={{ color: '#fff' }}>
-              <LogoMark />
-              <span>{config.brandName}</span>
+            <p className="brand-plate">
+              <Logo variant="full" height={64} />
+              <span className="sr-only">{config.brandName}</span>
             </p>
             <p>{m.footer.tagline}</p>
           </div>

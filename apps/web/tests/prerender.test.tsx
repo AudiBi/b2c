@@ -18,6 +18,16 @@ describe('rendu serveur de toutes les pages', () => {
     expect(html).toContain(catalogs[target.lang].a11y.skip);
   });
 
+  it.each(['/fr', '/ht/services', '/en/faq'])('%s : le logo B2C est dans l’en-tête et le pied de page, le nom de la marque reste accessible', (url) => {
+    const { html } = render(url);
+    expect(html).toContain('src="/logo-mark.svg"');
+    expect(html).toContain('src="/logo.svg"');
+    // images décoratives (alt vide) : le nom de la marque est porté par un texte réservé aux lecteurs d'écran dans le lien d'accueil
+    expect(html).toMatch(/<a [^>]*class="brand"[^>]*>[\s\S]*?<img [^>]*alt=""[\s\S]*?<span class="sr-only">TransitHaïti<\/span>/);
+    // dimensions déclarées : pas de saut de mise en page au chargement
+    expect(html).toMatch(/<img [^>]*src="\/logo-mark.svg"[^>]*width="\d+"[^>]*height="48"/);
+  });
+
   it('une page inexistante rend la page « introuvable » dans la langue demandée', () => {
     expect(render('/en/nope').html).toContain(catalogs.en.notFound.title);
     expect(render('/zz/nope').html).toContain(catalogs.fr.notFound.title);
