@@ -69,7 +69,9 @@ services:
       API_PORT: "3100"
       API_PUBLIC_URL: https://${PUBLIC_HOST:?définir PUBLIC_HOST}
       WEB_PUBLIC_URL: https://${PUBLIC_HOST}
-      CORS_ORIGINS: https://${PUBLIC_HOST}
+      # Panel d'administration : adresse des liens d'invitation et de réinitialisation du personnel
+      ADMIN_PUBLIC_URL: https://${ADMIN_HOST:?définir ADMIN_HOST}
+      CORS_ORIGINS: https://${PUBLIC_HOST},https://${ADMIN_HOST}
       TRUST_PROXY: "true"
       ENABLE_DOCS: "false"
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -109,12 +111,14 @@ services:
         VITE_COMPANY_SLUG: ${COMPANY_SLUG:?définir COMPANY_SLUG}
         VITE_BRAND_NAME: ${BRAND_NAME:-}
         SITE_URL: https://${PUBLIC_HOST}
+        ADMIN_URL: https://${ADMIN_HOST:?définir ADMIN_HOST}
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
     environment:
       SERVER_NAME: ${PUBLIC_HOST}
+      ADMIN_SERVER_NAME: ${ADMIN_HOST}
       API_UPSTREAM: api:3100
     ports:
       - "${HTTP_PORT:-80}:80"

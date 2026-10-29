@@ -2,6 +2,9 @@ import { randomBytes } from 'node:crypto';
 import { expect, test as base, type APIRequestContext, type Page } from '@playwright/test';
 
 export const MAILPIT = `http://127.0.0.1:${process.env.MAILPIT_UI_PORT ?? 8035}`;
+/** Le panel d'administration est une application séparée, servie sur son propre port. */
+export const ADMIN_URL = `http://localhost:${process.env.E2E_ADMIN_PORT ?? 4174}`;
+export const adminUrl = (path = '') => `${ADMIN_URL}${path}`;
 
 export const uniqueEmail = () => `e2e-${Date.now()}-${randomBytes(3).toString('hex')}@example.test`;
 export const strongPassword = () => `Pw-${randomBytes(9).toString('hex')}`;
@@ -75,6 +78,18 @@ export async function loginThroughUi(
   await page.getByLabel('Mot de passe', { exact: true }).fill(customer.password);
   await page.getByRole('button', { name: 'Se connecter' }).click();
   if (options.expectSuccess !== false) await page.waitForURL(/\/account/);
+}
+
+/** Menu du panel d'administration (barre latérale). */
+export const adminNav = (page: Page) => page.getByRole('navigation', { name: 'Navigation principale' });
+
+/** Connexion du personnel sur le panel d'administration (l'entreprise de recette), par l'interface. */
+export async function adminLogin(page: Page, creds: { email: string; password: string } = { email: process.env.E2E_ADMIN_EMAIL as string, password: process.env.E2E_ADMIN_PASSWORD as string }): Promise<void> {
+  await page.goto(adminUrl('/login'));
+  await page.getByLabel('Adresse e-mail').fill(creds.email);
+  await page.getByLabel('Mot de passe', { exact: true }).fill(creds.password);
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(adminNav(page)).toBeVisible();
 }
 
 /** Navigation latérale de l'espace client (les cartes du tableau de bord portent les mêmes libellés). */

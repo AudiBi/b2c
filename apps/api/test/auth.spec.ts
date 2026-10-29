@@ -368,6 +368,33 @@ describe('Authentification', () => {
       expect(audit).toHaveLength(1);
     });
 
+    it('le panel d’administration (X-Client-App: admin) a ses propres cookies : ceux du site ne servent pas à renouveler sa session, et inversement', async () => {
+      const user = await makeUser(t, { company, roleCode: 'CUSTOMER_INDIVIDUAL' });
+      const res = await api(t)
+        .post('/v1/auth/login')
+        .set('X-Forwarded-For', freshIp())
+        .set('X-Client-App', 'admin')
+        .send({ companySlug: user.slug, email: user.email, password: user.password });
+      expect(res.status).toBe(200);
+      const cookies = ([] as string[]).concat(res.headers['set-cookie']);
+      const refresh = cookies.find((c) => c.startsWith('b2c_admin_refresh='))!;
+      expect(refresh).toContain('HttpOnly');
+      expect(cookies.some((c) => c.startsWith('b2c_admin_session=1'))).toBe(true);
+      // Aucun cookie du site n'est posé
+      expect(cookies.some((c) => c.startsWith('b2c_refresh=') || c.startsWith('b2c_session='))).toBe(false);
+
+      const renew = (cookieName: string, app?: string) => {
+        const request = api(t).post('/v1/auth/refresh').set('X-Forwarded-For', freshIp()).set('X-CSRF-Protection', '1').set('Cookie', `${cookieName}=${cookieValue(refresh)}`);
+        return (app ? request.set('X-Client-App', app) : request).send({});
+      };
+      // Le cookie du panel présenté au site (sans l'en-tête) n'est pas lu
+      expect((await renew('b2c_admin_refresh')).status).toBe(401);
+      // Le cookie « site » présenté au panel n'est pas lu non plus
+      expect((await renew('b2c_refresh', 'admin')).status).toBe(401);
+      // Le bon cookie, avec le bon en-tête : renouvellement accepté
+      expect((await renew('b2c_admin_refresh', 'admin')).status).toBe(200);
+    });
+
     it('deux renouvellements simultanés avec le même jeton : un seul réussit, la famille est révoquée', async () => {
       const user = await makeUser(t, { company, roleCode: 'CUSTOMER_INDIVIDUAL' });
       const first = await login(t, user);
@@ -434,6 +461,19 @@ describe('Authentification', () => {
   });
 
   describe('mot de passe oublié', () => {
+    it('le lien de réinitialisation du personnel mène au panel d’administration, celui d’un client au site', async () => {
+      const staff = await makeUser(t, { company, roleCode: 'RECEPTION_AGENT' });
+      const customer = await makeUser(t, { company, roleCode: 'CUSTOMER_INDIVIDUAL' });
+      for (const user of [staff, customer]) {
+        const asked = await api(t).post('/v1/auth/forgot-password').set('X-Forwarded-For', freshIp()).send({ companySlug: company.slug, email: user.email });
+        expect(asked.status).toBe(202);
+      }
+      expect(lastMailTo(t, staff.email).text).toContain(`${t.env.ADMIN_PUBLIC_URL}/reset-password?token=`);
+      const customerMail = lastMailTo(t, customer.email).text;
+      expect(customerMail).toContain(`${t.env.WEB_PUBLIC_URL}/`);
+      expect(customerMail).not.toContain(t.env.ADMIN_PUBLIC_URL);
+    });
+
     it('réinitialise le mot de passe, révoque les sessions, et le lien ne sert qu\'une fois', async () => {
       const user = await makeUser(t, { company, roleCode: 'CUSTOMER_INDIVIDUAL' });
       const session = await login(t, user);

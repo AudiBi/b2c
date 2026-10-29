@@ -43,11 +43,12 @@ Verdict : **la plateforme n'est pas prête à être ouverte au public en l'état
 | C8 | **Accessibilité et langues** | Contrôle automatique (axe) seulement : aucun test avec lecteur d'écran, aucun audit manuel ; **le créole n'a pas été relu par un locuteur natif** ; Chromium seulement (ni Firefox ni Safari), aucun test sur vrai téléphone ni réseau lent |
 | C9 | **Matériel** | Lecteurs de codes-barres simulés par la saisie, jamais essayés ; impression d'étiquettes non faite |
 | C10 | **Confirmation de pesée furtive** | Le message disparaît presque aussitôt (le panneau se referme) : à corriger |
+| C12 | **Panel d'administration récent** | Écrans de gestion des utilisateurs, des rôles et des entreprises neufs : testés (unitaires, API, recette partielle) mais pas encore éprouvés par des utilisateurs ; création d'entreprise et gestion des rôles absentes de la recette navigateur (couvertes par des tests d'interface et d'API) ; écrans repris des phases 6 à 8 denses ; pas de rôles personnalisés ni de réinitialisation du second facteur par un administrateur ; le certificat TLS doit couvrir **deux** noms de domaine |
 | C11 | **Images volumineuses** | L'image `api` pèse 810 Mo : sans conséquence fonctionnelle, mais allonge les déploiements |
 
 ## D. Ce qui est solide (vérifié par des tests exécutés)
 
-Isolation des entreprises par la base (RLS forcée, 52 tables) ; sessions et verrouillage ; double authentification TOTP ; machine d'états des colis protégée en base ; factures immuables et numérotées sans trou ; remise avec code, solde dû bloquant et dérogation journalisée ; livreur limité à ses tournées ; journal d'audit en ajout seul ; limite de débit exacte ; aucune erreur serveur sous charge ; restauration de sauvegarde et reconstruction après sinistre essayées ; production refusant les réglages dangereux ; 902 tests automatisés (partagé 88, API 523 + 7 ignorés, site 203, navigateur 88).
+Isolation des entreprises par la base (RLS forcée, 52 tables) ; sessions et verrouillage ; double authentification TOTP ; machine d'états des colis protégée en base ; factures immuables et numérotées sans trou ; remise avec code, solde dû bloquant et dérogation journalisée ; livreur limité à ses tournées ; journal d'audit en ajout seul ; limite de débit exacte ; aucune erreur serveur sous charge ; restauration de sauvegarde et reconstruction après sinistre essayées ; production refusant les réglages dangereux ; 943 tests automatisés (partagé 88, API 525 + 7 ignorés, site 157, panel 84, navigateur 89).
 
 ## Ordre conseillé
 

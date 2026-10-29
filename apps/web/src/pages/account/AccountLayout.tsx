@@ -5,6 +5,7 @@ import { localized } from '../../routes';
 import { usePageMeta } from '../../seo';
 import { LocNavLink } from '../../components/LocLink';
 import { useUnreadCount } from '../finance/queries';
+import { StaffNotice } from './StaffNotice';
 
 /** Zone réservée : redirige vers la connexion sans session, puis revient à la page demandée. */
 export function AccountLayout() {
@@ -29,14 +30,11 @@ export function AccountLayout() {
     return <Navigate to={`${localized(lang, 'login')}?next=${next}`} replace />;
   }
 
-  // Double authentification obligatoire et pas encore activée : seule la page Sécurité (où on l'active) reste ouverte
-  if (user?.mfa?.enrollmentRequired && !location.pathname.endsWith('/account/security')) {
-    return <Navigate to={localized(lang, 'accountSecurity')} replace />;
-  }
+
+  // Le personnel et la plateforme travaillent dans le panel d'administration, pas sur le site
+  if (user && user.kind !== 'CUSTOMER') return <StaffNotice />;
 
   const isCustomer = user?.kind === 'CUSTOMER';
-  const can = (permission: string) => !!user?.permissions.includes(permission);
-  const isStaff = user?.kind === 'STAFF';
   return (
     <div className="container">
       <div className="account-layout">
@@ -80,71 +78,6 @@ export function AccountLayout() {
                   <LocNavLink page="accountProfile">{m.account.nav.profile}</LocNavLink>
                 </li>
               </>
-            ) : null}
-            {isStaff && can('package:receive') ? (
-              <li>
-                <LocNavLink page="accountStaffReception">{m.staff.nav.reception}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('package:read') ? (
-              <li>
-                <LocNavLink page="accountStaffPackages">{m.staff.nav.packages}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('warehouse:read') ? (
-              <li>
-                <LocNavLink page="accountStaffWarehouse">{m.staff.nav.warehouse}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('shipment:read') ? (
-              <li>
-                <LocNavLink page="accountStaffShipments">{m.staff.nav.shipments}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('agency:receive') ? (
-              <li>
-                <LocNavLink page="accountStaffAgency">{m.staff.nav.agency}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('report:read') ? (
-              <li>
-                <LocNavLink page="accountStaffDashboard">{m.staff.nav.dashboard}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('delivery:read') ? (
-              <li>
-                <LocNavLink page="accountStaffRoutes">{m.staff.nav.routes}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('delivery:read_assigned') ? (
-              <li>
-                <LocNavLink page="accountStaffMyRoutes">{m.staff.nav.myRoutes}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('claim:read') ? (
-              <li>
-                <LocNavLink page="accountStaffClaims">{m.staff.nav.claims}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('invoice:read') ? (
-              <li>
-                <LocNavLink page="accountStaffBilling">{m.staff.nav.billing}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('payment:read') ? (
-              <li>
-                <LocNavLink page="accountStaffPayments">{m.staff.nav.payments}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('notification:read') ? (
-              <li>
-                <LocNavLink page="accountStaffNotifications">{m.staff.nav.notifications}</LocNavLink>
-              </li>
-            ) : null}
-            {isStaff && can('audit:read') ? (
-              <li>
-                <LocNavLink page="accountStaffAudit">{m.staff.nav.audit}</LocNavLink>
-              </li>
             ) : null}
             <li>
               <LocNavLink page="accountSecurity">{m.account.nav.security}</LocNavLink>

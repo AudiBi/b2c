@@ -17,6 +17,11 @@ function run(command, args, options) {
 run(npm, ['run', 'build'], { cwd: root });
 run(npm, ['run', 'build'], {
   cwd: web,
-  env: { ...process.env, VITE_COMPANY_SLUG: 'e2e', SITE_URL: 'http://localhost:4173' },
+  env: { ...process.env, VITE_COMPANY_SLUG: 'e2e', SITE_URL: 'http://localhost:4173', VITE_ADMIN_URL: 'http://localhost:4174' },
+});
+// Le panel d'administration est une autre application : construit pour la même entreprise de recette
+run(npm, ['run', 'build'], {
+  cwd: resolve(root, 'apps/admin'),
+  env: { ...process.env, VITE_COMPANY_SLUG: 'e2e', VITE_SITE_URL: 'http://localhost:4173' },
 });
 run('npx', ['playwright', 'test', ...process.argv.slice(2)], { cwd: web });

@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import AxeBuilder from '@axe-core/playwright';
 import type { APIRequestContext, Page } from '@playwright/test';
-import { accountNav, adminApi, expect, loginThroughUi, registerAndVerify, test, type NewCustomer } from './helpers';
+import { accountNav, adminApi, adminLogin, adminNav, adminUrl, customerApi, expect, loginThroughUi, registerAndVerify, test, type NewCustomer } from './helpers';
 
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 const ipHeader = () => ({ 'X-Forwarded-For': `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}` });
@@ -22,10 +22,7 @@ async function declarePurchase(request: APIRequestContext, customer: Pick<NewCus
   return { supplier, trackingNumber: body.package.trackingNumber as string, packageId: body.package.id as string, accessToken };
 }
 
-async function staffLogin(page: Page) {
-  await loginThroughUi(page, { email: process.env.E2E_ADMIN_EMAIL as string, password: process.env.E2E_ADMIN_PASSWORD as string });
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-}
+const staffLogin = (page: Page) => adminLogin(page);
 
 test.describe('logistique : du scan en entrepôt au retrait en agence', () => {
   test('réception, pesée, rangement, lot, manifeste, départ, arrivée, réception en agence, retrait', async ({ page, request, browser }) => {
@@ -38,7 +35,7 @@ test.describe('logistique : du scan en entrepôt au retrait en agence', () => {
     // --- 1. Le personnel se connecte : le menu dépend des droits ----------------------------------
     await page.context().clearCookies();
     await staffLogin(page);
-    const nav = accountNav(page);
+    const nav = adminNav(page);
     for (const name of ['Réception', 'Colis', 'Entrepôt', 'Lots', 'Agence']) await expect(nav.getByRole('link', { name, exact: true })).toBeVisible();
 
     // --- 2. Réception par lecture d'un code --------------------------------------------------------
@@ -225,22 +222,27 @@ test.describe('logistique : du scan en entrepôt au retrait en agence', () => {
     await visitor.context().close();
   });
 
-  test('un client n’a aucun accès aux écrans du personnel', async ({ page, request }) => {
+  test('un client n’a aucun accès au panel d’administration', async ({ page, request }) => {
     const customer = await registerAndVerify(page, request);
-    await loginThroughUi(page, customer);
-    const nav = accountNav(page);
-    for (const name of ['Réception', 'Lots', 'Entrepôt', 'Agence']) await expect(nav.getByRole('link', { name, exact: true })).toHaveCount(0);
-    await page.goto('/fr/account/staff/shipments');
-    await expect(page.getByText('Impossible de charger ces informations.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Nouveau lot' })).toHaveCount(0);
-    await page.goto('/fr/account/staff/reception');
-    await expect(page.getByText('Aucun entrepôt dans votre périmètre.').or(page.getByText('Impossible de charger ces informations.'))).toBeVisible();
+    // le panel refuse un compte client : message, aucun menu, session refermée
+    await page.goto(adminUrl('/login'));
+    await page.getByLabel('Adresse e-mail').fill(customer.email);
+    await page.getByLabel('Mot de passe', { exact: true }).fill(customer.password);
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+    await expect(page.getByText('Cet espace est réservé au personnel.')).toBeVisible();
+    await expect(adminNav(page)).toHaveCount(0);
     // l'API refuse aussi, indépendamment de l'interface
-    const forbidden = await page.request.get('/v1/admin/shipments', { headers: { Authorization: `Bearer ${await page.evaluate(async () => {
-      const res = await fetch('/v1/auth/refresh', { method: 'POST', headers: { 'X-CSRF-Protection': '1', 'Content-Type': 'application/json' }, body: '{}', credentials: 'include' });
-      return (await res.json()).accessToken as string;
-    })}` } });
+    const forbidden = await (await customerApi(request, customer)).get('/v1/admin/shipments');
     expect(forbidden.status()).toBe(403);
+  });
+
+  test('un compte du personnel qui se connecte sur le site est dirigé vers le panel', async ({ page }) => {
+    await loginThroughUi(page, { email: process.env.E2E_ADMIN_EMAIL as string, password: process.env.E2E_ADMIN_PASSWORD as string });
+    await expect(page.getByRole('heading', { name: 'Cet espace est réservé aux clients' })).toBeVisible();
+    await expect(accountNav(page)).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Ouvrir le panel d’administration' })).toHaveAttribute('href', adminUrl());
+    const axe = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(axe.violations.map((v) => v.id)).toEqual([]);
   });
 
   test('agences publiques et page « Entrepôts et agences » sur téléphone', async ({ page }) => {
@@ -255,13 +257,16 @@ test.describe('logistique : du scan en entrepôt au retrait en agence', () => {
     expect(axe.violations.map((v) => v.id)).toEqual([]);
   });
 
-  test('réception en créole et en anglais', async ({ page }) => {
+  test('le panel en créole et en anglais', async ({ page }) => {
     await staffLogin(page);
-    await page.goto('/ht/account/staff/reception');
+    await page.goto(adminUrl('/reception'));
+    await page.getByRole('button', { name: 'HT', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Resepsyon nan depo' })).toBeVisible();
-    await expect(page.getByLabel('Kòd kolis la')).toBeFocused();
-    await page.goto('/en/account/staff/shipments');
+    await expect(page.getByLabel('Kòd kolis la')).toBeVisible();
+    await page.getByRole('button', { name: 'EN', exact: true }).click();
+    await page.goto(adminUrl('/shipments'));
     await expect(page.getByRole('heading', { level: 1, name: 'Transport shipments' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'New shipment' })).toBeVisible();
   });
+
 });

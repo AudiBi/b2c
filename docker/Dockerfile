@@ -13,6 +13,7 @@ COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
+COPY apps/admin/package.json apps/admin/
 RUN npm ci
 COPY packages packages
 COPY prisma prisma
@@ -36,6 +37,7 @@ COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
+COPY apps/admin/package.json apps/admin/
 RUN npm ci --omit=dev -w @b2c/api -w @b2c/shared && npm cache clean --force
 # Client Prisma généré à la construction (le CLI Prisma n'est pas dans l'image d'exécution)
 COPY --from=build /app/node_modules/.prisma node_modules/.prisma
@@ -56,12 +58,26 @@ FROM build AS web-build
 ARG VITE_COMPANY_SLUG
 ARG VITE_BRAND_NAME
 ARG SITE_URL
-RUN test -n "$VITE_COMPANY_SLUG" && test -n "$SITE_URL"
-ENV VITE_COMPANY_SLUG=$VITE_COMPANY_SLUG VITE_BRAND_NAME=$VITE_BRAND_NAME SITE_URL=$SITE_URL
+ARG ADMIN_URL
+RUN test -n "$VITE_COMPANY_SLUG" && test -n "$SITE_URL" && test -n "$ADMIN_URL"
+ENV VITE_COMPANY_SLUG=$VITE_COMPANY_SLUG VITE_BRAND_NAME=$VITE_BRAND_NAME SITE_URL=$SITE_URL VITE_ADMIN_URL=$ADMIN_URL
 RUN npm -w @b2c/web run build
 
+# Panel d'administration : application monopage séparée du site (autre adresse, autres cookies, jamais référencée)
+FROM build AS admin-build
+ARG VITE_COMPANY_SLUG
+ARG VITE_BRAND_NAME
+ARG SITE_URL
+RUN test -n "$VITE_COMPANY_SLUG" && test -n "$SITE_URL"
+ENV VITE_COMPANY_SLUG=$VITE_COMPANY_SLUG VITE_BRAND_NAME=$VITE_BRAND_NAME VITE_SITE_URL=$SITE_URL
+RUN npm -w @b2c/admin run build
+
+# Un seul nginx, deux noms de domaine : le site (SERVER_NAME) et le panel (ADMIN_SERVER_NAME)
 FROM nginx:1.27-alpine AS web
 COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/nginx/admin.conf.template /etc/nginx/templates/admin.conf.template
 COPY docker/nginx/security-headers.conf /etc/nginx/security-headers.conf
+COPY docker/nginx/admin-security-headers.conf /etc/nginx/admin-security-headers.conf
 COPY --from=web-build /app/apps/web/dist/client /usr/share/nginx/html
+COPY --from=admin-build /app/apps/admin/dist /usr/share/nginx/admin
 EXPOSE 80 443

@@ -47,9 +47,10 @@ Exécutés le 2026-10-28 (suites automatisées rejouées à la fin de la phase 1
 | API `app.spec.ts` (santé, en-têtes, CORS, erreurs, configuration, **variables vides**) | 15 | ✅ |
 | API `totp.spec.ts` + `two-factor.spec.ts` (vecteurs officiels RFC 6238, fenêtre, rejeu, chiffrement du secret, codes de secours, activation / désactivation, connexion en deux temps, verrouillage, obligation du personnel, base) | 31 | ✅ |
 | API `s3-storage.spec.ts` : configuration (3, toujours exécutés) ; stockage réel (7, **ignorés** sans `npm run test:s3`, voir ci-dessous) | 3 + 7 ignorés | ✅ / ⏭ |
-| Site, unitaires (10 fichiers : + `phase9`) | 203 | ✅ |
+| Site, unitaires (10 fichiers : pages publiques et espace client ; les écrans du personnel sont dans le panel) | 157 | ✅ |
+| **Panel d'administration, unitaires** (5 fichiers : écrans du personnel repris de `phase6` à `phase9` + `admin.test.tsx` : accès, connexion, utilisateurs, rôles, entreprises, textes) | 84 | ✅ |
 | Site, recette navigateur | 88 | ✅ |
-| **Total de la suite standard** | **902** | **902 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
+| **Total de la suite standard** | **943** | **943 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
 
 Stockage S3 contre un **vrai SeaweedFS** (`npm run test:s3`) : **10 tests sur 10 réussis** (3 de configuration + 7 de stockage, dont le parcours API complet), exécutés le 2026-10-28. Ils sont ignorés par `npm test` pour ne pas exiger ce service : la suite l'affiche comme « ignorés », elle ne les compte pas comme vérifiés.
 
@@ -110,6 +111,18 @@ La recette de la phase 8 ajoute le parcours complet **colis arrivé et « prêt 
 3. **Liens des e-mails sans préfixe de langue** (`/verify-email` au lieu de `/fr/verify-email`) : relevé à la relecture avant la recette, verrouillé ensuite par des tests API et E2E.
 4. **Appel de renouvellement de session à chaque visite anonyme** (erreur 401 en console, consommation de la limite de débit) : remplacé par un cookie « indice » lisible.
 5. **Test de purge** de la base de test qui ne couvrait pas les nouvelles tables ; **limite de débit globale** déclenchée par des tests partageant la même IP (corrigé dans le banc de test).
+
+## Panel d'administration séparé
+
+- **Recette navigateur** : second serveur sur le port 4174 (panel construit pour l'entreprise de recette) ; les parcours du personnel (logistique, finance, livraison) s'y déroulent ; deux parcours nouveaux (un client refusé sur le panel et API 403 ; un compte du personnel connecté sur le site dirigé vers le panel) ; le panel en créole et en anglais. **89 scénarios réussis.**
+- **API** : cookies distincts du panel (un cookie du site ne renouvelle pas une session du panel, et inversement), liens de réinitialisation du personnel vers le panel et du client vers le site, lien d'invitation vers le panel.
+- **Contrôle de fumée de production étendu** (`SMOKE_ADMIN_URL`) sur la pile Docker locale : **29 contrôles sur 29 réussis** (panel servi, CSP, cadres interdits, jamais indexé, chemin d'écran résolu, ressources en cache immuable, API joignable, le site ne sert pas le panel, cookies du panel distincts, puis tout le parcours de la plateforme par le panel : second facteur obligatoire, activation, rejeu refusé, création d'une entreprise) ; l'e-mail d'invitation de l'administrateur de l'entreprise pointe bien vers le panel.
+
+### Défauts réels détectés pendant la séparation du panel (corrigés)
+1. **Accessibilité** : le bouton du menu du compte avait un `aria-label` qui ne contenait pas son texte visible (WCAG 2.5.3, règle axe « label-content-name-mismatch ») ; relevé par la recette navigateur, corrigé (le nom vient du texte visible).
+2. **Tests d'interface** : le premier écran chargé à la demande dépassait 1 s sous la charge (les écrans retirés réchauffaient auparavant le chargement) ; délai des recherches asynchrones porté à 5 s.
+3. **Test d'API instable** : le test de signature périmée du webhook de paiement utilisait une marge de 1 s autour de la tolérance de 5 min ; sur une machine lente (836 s pour la suite) une signature « dans le futur » devenait valide pendant la boucle. Marge portée à 5 min. (Défaut du test, pas du produit : la signature est bien refusée.)
+4. **Sélecteur ambigu** : le bouton de langue « EN » correspondait aussi à d'autres libellés (« Louvri meni an ») dans une langue différente ; sélecteur exact.
 
 ## Pile de production (phase 10)
 

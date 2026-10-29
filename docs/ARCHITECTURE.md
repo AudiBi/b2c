@@ -9,6 +9,7 @@ Navigateur / mobile futur
         │ HTTPS
         ▼
   apps/web (React, Vite)  ──────►  apps/api (NestJS)  ──►  PostgreSQL (données, RLS)
+  apps/admin (React, Vite) ──────►  apps/api (mêmes routes ; autre nom de domaine, autres cookies)
   site public + portails           REST /v1 + OpenAPI  ──►  Redis (limites de débit, files BullMQ)
                                           │            ──►  Stockage S3 (SeaweedFS en local, optionnel)
                                           ▼
@@ -24,7 +25,8 @@ Navigateur / mobile futur
 ```
 b2c/
   apps/api/        NestJS : modules métier, Prisma, tests
-  apps/web/        React + TypeScript : site public, portail client, back-office
+  apps/web/        React + TypeScript : site public et portail client
+  apps/admin/      React + TypeScript : panel d'administration (personnel et plateforme), application séparée du site (voir ADMIN.md)
   packages/shared/ types, schémas de validation (zod), énumérations de statuts, permissions
   prisma/          schema.prisma, migrations versionnées, seed.ts (minimal), seed-demo.ts (DEMO)
   docker/          Dockerfiles, compose.dev.yml (postgres, redis, mailpit ; seaweedfs en option)

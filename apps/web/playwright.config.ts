@@ -26,6 +26,7 @@ const channel = process.env.E2E_CHANNEL ?? (bundledChromium ? undefined : 'msedg
 
 export const API_PORT = 3101;
 export const WEB_PORT = 4173;
+export const ADMIN_PORT = 4174;
 export const MAILPIT = `http://127.0.0.1:${process.env.MAILPIT_UI_PORT ?? 8035}`;
 
 const redisBase = process.env.REDIS_URL!.replace(/\/\d+$/, '');
@@ -36,6 +37,7 @@ const apiEnv = {
   REDIS_URL: `${redisBase}/2`,
   API_PORT: String(API_PORT),
   WEB_PUBLIC_URL: `http://localhost:${WEB_PORT}`,
+  ADMIN_PUBLIC_URL: `http://localhost:${ADMIN_PORT}`,
   CORS_ORIGINS: `http://localhost:${WEB_PORT}`,
   MAIL_TRANSPORT: 'smtp',
   SMTP_HOST: '127.0.0.1',
@@ -59,6 +61,8 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: `http://localhost:${WEB_PORT}`,
+    // Interface en français (le panel suit la langue du navigateur au premier accès)
+    locale: 'fr-FR',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -82,6 +86,14 @@ export default defineConfig({
       cwd: import.meta.dirname,
       url: `http://localhost:${WEB_PORT}/fr/`,
       env: { ...process.env, PORT: String(WEB_PORT), API_URL: `http://localhost:${API_PORT}` } as Record<string, string>,
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+    {
+      command: 'node ../admin/scripts/serve-dist.mjs',
+      cwd: import.meta.dirname,
+      url: `http://localhost:${ADMIN_PORT}/login`,
+      env: { ...process.env, PORT: String(ADMIN_PORT), API_URL: `http://localhost:${API_PORT}` } as Record<string, string>,
       reuseExistingServer: false,
       timeout: 60_000,
     },

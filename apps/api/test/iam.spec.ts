@@ -168,7 +168,7 @@ describe('Rôles, permissions et administration des utilisateurs', () => {
 
       const mail = lastMailTo(t, body.email as string);
       expect(mail.subject).toContain('account is ready');
-      expect(mail.text).toContain('/en/accept-invite?token=');
+      expect(mail.text).toContain(`${t.env.ADMIN_PUBLIC_URL}/accept-invite?token=`); // le personnel active son compte sur le panel d'administration
 
       const early = await api(t)
         .post('/v1/auth/login')

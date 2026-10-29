@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { APIRequestContext, Browser, Page } from '@playwright/test';
-import { accountNav, adminApi, customerApi, expect, loginThroughUi, registerAndVerify, strongPassword, test, tokenFromMail, uniqueEmail, type NewCustomer } from './helpers';
+import { accountNav, adminApi, adminLogin, adminNav, adminUrl, customerApi, expect, loginThroughUi, registerAndVerify, strongPassword, test, tokenFromMail, uniqueEmail, type NewCustomer } from './helpers';
 
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 type Admin = Awaited<ReturnType<typeof adminApi>>;
@@ -34,8 +34,7 @@ async function readyAtAgency(request: APIRequestContext, admin: Admin, customer:
 
 async function staffPage(browser: Browser) {
   const page = await (await browser.newContext()).newPage();
-  await loginThroughUi(page, { email: process.env.E2E_ADMIN_EMAIL as string, password: process.env.E2E_ADMIN_PASSWORD as string });
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await adminLogin(page);
   return page;
 }
 
@@ -73,7 +72,7 @@ test.describe('livraison : remise au comptoir, tournée du livreur, réclamation
     await expectNoViolations(page);
 
     const staff = await staffPage(browser);
-    await staff.goto(`/fr/account/staff/packages/${counter.id}`);
+    await staff.goto(adminUrl(`/packages/${counter.id}`));
     const panel = staff.getByRole('region', { name: 'Remise au client' });
     await expect(panel).toBeVisible();
     await panel.getByRole('button', { name: 'Confirmer la remise' }).click();
@@ -102,7 +101,7 @@ test.describe('livraison : remise au comptoir, tournée du livreur, réclamation
     expect(reset.status()).toBe(200);
 
     // --- 3. Le personnel planifie la tournée : 2 colis, départ ------------------------------------------------------
-    await accountNav(staff).getByRole('link', { name: 'Tournées', exact: true }).click();
+    await adminNav(staff).getByRole('link', { name: 'Tournées', exact: true }).click();
     await staff.getByRole('button', { name: 'Nouvelle tournée' }).click();
     await staff.getByLabel('Livreur', { exact: true }).selectOption({ label: `${driverName.firstName} ${driverName.lastName}` });
     await staff.getByLabel('Agence', { exact: true }).selectOption({ label: 'Agence de recette (Delmas)' });
@@ -122,12 +121,12 @@ test.describe('livraison : remise au comptoir, tournée du livreur, réclamation
 
     // --- 4. Le livreur : sa tournée seulement, remise avec le code du client, un échec -----------------------------
     const driverPage = await (await browser.newContext()).newPage();
-    await loginThroughUi(driverPage, driver);
-    const driverNav = accountNav(driverPage);
+    await adminLogin(driverPage, driver);
+    const driverNav = adminNav(driverPage);
     await expect(driverNav.getByRole('link', { name: 'Mes tournées', exact: true })).toBeVisible();
     await expect(driverNav.getByRole('link', { name: 'Tournées', exact: true })).toHaveCount(0);
-    await expect(driverNav.getByRole('link', { name: 'Tableau de bord' }).first()).toBeVisible(); // lien du compte (client), pas celui du personnel
-    expect(await driverNav.locator('a[href="/fr/account/staff/dashboard"]').count()).toBe(0);
+    await expect(driverNav.getByRole('link', { name: 'Accueil' })).toBeVisible();
+    expect(await driverNav.locator('a[href="/dashboard"]').count()).toBe(0);
     await driverNav.getByRole('link', { name: 'Mes tournées', exact: true }).click();
     await expect(driverPage.getByTestId('route-item')).toHaveCount(1);
     await driverPage.getByRole('link', { name: /^Ouvrir : TOU-/ }).click();
@@ -155,7 +154,7 @@ test.describe('livraison : remise au comptoir, tournée du livreur, réclamation
     await expect(page.getByTestId('handover-card')).toBeVisible();
 
     // le livreur n'a pas accès au tableau de bord de l'entreprise
-    await driverPage.goto('/fr/account/staff/dashboard');
+    await driverPage.goto(adminUrl('/dashboard'));
     await expect(driverPage.getByText('Ce tableau de bord concerne toute l’entreprise')).toBeVisible();
 
     // le personnel termine la tournée
@@ -173,7 +172,7 @@ test.describe('livraison : remise au comptoir, tournée du livreur, réclamation
     await expect(page.getByRole('heading', { level: 1 })).toContainText('CLM-');
     await expectNoViolations(page);
 
-    await accountNav(staff).getByRole('link', { name: 'Réclamations', exact: true }).click();
+    await adminNav(staff).getByRole('link', { name: 'Réclamations', exact: true }).click();
     await staff.getByTestId('staff-claim').filter({ hasText: 'Livreur absent' }).getByRole('link', { name: /^Ouvrir/ }).click();
     await staff.getByLabel('Message', { exact: true }).fill('Nous reprogrammons votre livraison.');
     await staff.getByRole('button', { name: 'Envoyer au client' }).click();
@@ -192,13 +191,13 @@ test.describe('livraison : remise au comptoir, tournée du livreur, réclamation
     await expect(page.getByText('Cette réclamation est clôturée.', { exact: false })).toBeVisible();
 
     // --- 6. Tableau de bord et journal d'audit ------------------------------------------------------------------------
-    await staff.goto('/fr/account/staff/dashboard');
+    await staff.goto(adminUrl('/dashboard'));
     await expect(staff.getByTestId('dashboard')).toBeVisible();
     expect(Number(await staff.getByTestId('dash-delivered').innerText())).toBeGreaterThanOrEqual(2);
     expect(Number(await staff.getByTestId('dash-customers').innerText())).toBeGreaterThanOrEqual(1);
     await expectNoViolations(staff);
 
-    await staff.goto('/fr/account/staff/audit');
+    await staff.goto(adminUrl('/audit'));
     await staff.getByLabel(/^Action/).fill('delivery.completed');
     await staff.getByRole('button', { name: 'Filtrer' }).click();
     await expect(staff.getByTestId('audit-item').first()).toContainText('delivery.completed');

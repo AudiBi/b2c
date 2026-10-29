@@ -5,7 +5,10 @@ Ce guide décrit comment installer la plateforme sur **un serveur** avec Docker,
 ## 1. Architecture déployée
 
 ```
-Internet ──443/80──► nginx (conteneur « web », HTTPS, site statique, relais /v1)
+Internet ──443/80──► nginx (conteneur « web » : HTTPS, deux noms de domaine)
+                        ├── exemple.com        → site statique (pages publiques, espace client)
+                        └── admin.exemple.com  → panel d'administration (application monopage)
+                        (les deux relaient /v1 vers l'API)
                         └──► api (NestJS, port 3100, réseau interne)
                                ├──► postgres (17, volume pgdata, réseau interne)
                                ├──► redis (7, mot de passe, volume redisdata, réseau interne)
@@ -16,7 +19,8 @@ migrate : tâche ponctuelle (rôle de migration) exécutée avant chaque démarr
 - Seul **nginx** publie des ports (80 et 443). PostgreSQL, Redis et l'API ne sont joignables que depuis le réseau Docker interne.
 - nginx est le **seul point d'entrée** : il écrase `X-Forwarded-For` par l'adresse réelle du client et l'API ne fait confiance qu'à un seul saut (`TRUST_PROXY=true`). Ne placez **aucun autre mandataire devant nginx** sans revoir ce réglage (voir SECURITY.md) : sinon tous les visiteurs partageraient la même adresse et la limite de débit les frapperait ensemble.
 - L'API tourne en utilisateur sans privilège (`node`), avec uniquement les dépendances de production ; le client Prisma est généré à la construction. L'image de migration contient les outils de développement : elle ne sert qu'à la tâche `migrate` et n'est jamais exposée.
-- Le site est **construit pour une seule entreprise** (`COMPANY_SLUG`) : changer d'entreprise ou de marque demande de reconstruire l'image `web`.
+- Le site et le panel sont **construits pour une seule entreprise** (`COMPANY_SLUG`) : changer d'entreprise ou de marque demande de reconstruire l'image `web`.
+- Le **panel d'administration** (`ADMIN_HOST`, par exemple `admin.exemple.com`) est servi par le **même nginx**, sur son propre nom de domaine, avec ses propres en-têtes (jamais indexé, jamais dans un cadre) et ses propres cookies de session. Voir [ADMIN.md](ADMIN.md).
 
 Fichiers : [docker/Dockerfile](../docker/Dockerfile), [docker/compose.prod.yml](../docker/compose.prod.yml), [docker/nginx/](../docker/nginx/), [.env.production.example](../.env.production.example).
 
@@ -25,8 +29,8 @@ Fichiers : [docker/Dockerfile](../docker/Dockerfile), [docker/compose.prod.yml](
 | Élément | Détail |
 |---|---|
 | Serveur | Linux avec Docker Engine et Docker Compose v2. **Dimensionnement non établi** : les mesures de charge (TEST_PLAN.md) viennent d'un poste de travail, pas d'un serveur. Prévoir de la marge et mesurer |
-| Domaine | Un nom de domaine dont le DNS pointe vers le serveur (`PUBLIC_HOST`) |
-| Certificat TLS | `fullchain.pem` et `privkey.pem` pour ce domaine, dans le dossier `CERTS_DIR` (par défaut `certs/` à la racine du dépôt, **jamais versionné**). Exemple avec Let's Encrypt (certbot, **non essayé ici**) : obtenir le certificat par la méthode « webroot » puis copier ou monter les deux fichiers ; renouveler avant l'expiration et recharger nginx (`docker compose ... exec web nginx -s reload`) |
+| Domaine | **Deux** noms de domaine dont le DNS pointe vers le serveur : le site (`PUBLIC_HOST`) et le panel (`ADMIN_HOST`, par exemple `admin.exemple.com`) |
+| Certificat TLS | `fullchain.pem` et `privkey.pem` **couvrant les deux noms** (deux SAN, ou un certificat générique), dans le dossier `CERTS_DIR` (par défaut `certs/` à la racine du dépôt, **jamais versionné**). Exemple avec Let's Encrypt (certbot, **non essayé ici**) : obtenir le certificat par la méthode « webroot » puis copier ou monter les deux fichiers ; renouveler avant l'expiration et recharger nginx (`docker compose ... exec web nginx -s reload`) |
 | E-mail | Un compte SMTP réel (hôte, port, identifiants, adresse d'expédition). **Obligatoire** : l'API refuse de démarrer sans `SMTP_HOST` et `MAIL_FROM`. Sans e-mail, personne ne peut confirmer son compte, ni réinitialiser son mot de passe |
 | Pare-feu | N'ouvrir que 80 et 443 (et l'accès d'administration SSH, restreint). Ne pas publier les ports de PostgreSQL ou Redis |
 | Git, Node | Facultatifs sur le serveur : tout se construit dans Docker. Node 22 n'est utile que pour lancer les scripts `npm run prod:*` |
@@ -39,7 +43,7 @@ Depuis la racine du dépôt :
 # 1. Génère .env.production avec des secrets aléatoires (n'écrase jamais un fichier existant, n'affiche aucun secret)
 npm run setup:env:prod
 
-# 2. Compléter à la main .env.production : PUBLIC_HOST, COMPANY_SLUG, SMTP_*, MAIL_FROM,
+# 2. Compléter à la main .env.production : PUBLIC_HOST, ADMIN_HOST, COMPANY_SLUG, SMTP_*, MAIL_FROM,
 #    et SEED_SUPERADMIN_EMAIL / SEED_SUPERADMIN_PASSWORD (premier administrateur, mot de passe d'au moins 10 caractères, non courant)
 # 3. Déposer fullchain.pem et privkey.pem dans certs/
 
@@ -48,7 +52,7 @@ npm run prod:up
 
 # 5. Vérifier
 docker compose -f docker/compose.prod.yml --env-file .env.production ps
-SMOKE_URL=https://exemple.com SMOKE_HTTP_URL=http://exemple.com node scripts/prod-smoke.mjs
+SMOKE_URL=https://exemple.com SMOKE_ADMIN_URL=https://admin.exemple.com SMOKE_HTTP_URL=http://exemple.com node scripts/prod-smoke.mjs
 ```
 
 **Sauvegardez tout de suite, hors du serveur, `TOTP_ENCRYPTION_KEY` et `JWT_ACCESS_SECRET`** (coffre de secrets). Perdre `TOTP_ENCRYPTION_KEY` rend illisibles les secrets de double authentification : tous les comptes équipés devraient être réinitialisés à la main en base.
@@ -56,15 +60,15 @@ SMOKE_URL=https://exemple.com SMOKE_HTTP_URL=http://exemple.com node scripts/pro
 ### Premier administrateur et première entreprise
 
 1. Le compte de `SEED_SUPERADMIN_EMAIL` est créé **une seule fois** par la tâche `migrate`. Ensuite, **effacez `SEED_SUPERADMIN_PASSWORD` de `.env.production`** (un compte existant n'est jamais modifié).
-2. En production la double authentification est **obligatoire** : à la première connexion (`/v1/auth/login` sans `companySlug`), l'API répond mais toute route d'administration renvoie `403 TOTP_ENROLLMENT_REQUIRED` tant que le compte n'a pas activé la double authentification (`POST /v1/me/2fa/setup` puis `/enable`, avec une application d'authentification compatible TOTP). Conservez les 10 codes de secours remis.
-3. Créez l'entreprise avec `POST /v1/platform/companies` (`name`, `slug` **identique à `COMPANY_SLUG`**, `trackingPrefix`, `customerCodePrefix`, `adminEmail`, `adminFirstName`, `adminLastName`). L'administrateur de l'entreprise reçoit une invitation par e-mail, doit définir son mot de passe puis activer à son tour la double authentification. Il n'existe pas encore d'écran pour la plateforme : cette étape se fait par l'API (voir [API.md](API.md)).
+2. Ouvrez **`https://admin.exemple.com/login`**, cliquez sur « Accès équipe plateforme » et connectez-vous avec ce compte (**le super administrateur n'a pas d'écran sur le site**). En production la double authentification est **obligatoire** : à la première connexion, l'API répond mais toute route d'administration renvoie `403 TOTP_ENROLLMENT_REQUIRED` tant que le compte n'a pas activé la double authentification (`POST /v1/me/2fa/setup` puis `/enable`, avec une application d'authentification compatible TOTP). Conservez les 10 codes de secours remis.
+3. Créez l'entreprise depuis l'écran **Entreprises** du panel (ou, équivalent, par `POST /v1/platform/companies`) (`name`, `slug` **identique à `COMPANY_SLUG`**, `trackingPrefix`, `customerCodePrefix`, `adminEmail`, `adminFirstName`, `adminLastName`). L'administrateur de l'entreprise reçoit une invitation par e-mail, doit définir son mot de passe puis activer à son tour la double authentification. L'invitation arrive sur le **panel** : l'administrateur y définit son mot de passe, active sa double authentification, puis **invite lui-même son personnel** depuis l'écran Utilisateurs.
 4. Entrepôts, agences, grilles de tarifs, règles de remise : à configurer par l'administrateur de l'entreprise depuis l'espace du personnel. **Aucun tarif par défaut n'existe** : tant qu'aucune grille n'est activée, le calculateur répond « tarif indisponible ».
 
 ### Variables de `.env.production`
 
 | Variable | Rôle |
 |---|---|
-| `PUBLIC_HOST`, `COMPANY_SLUG`, `BRAND_NAME` | Domaine public, entreprise servie, marque affichée (fixées à la **construction** du site) |
+| `PUBLIC_HOST`, `ADMIN_HOST`, `COMPANY_SLUG`, `BRAND_NAME` | Domaine du site, domaine du panel, entreprise servie, marque affichée (fixés à la **construction**) |
 | `HTTP_PORT`, `HTTPS_PORT`, `CERTS_DIR` | Ports publiés (80/443 par défaut) et dossier des certificats |
 | `POSTGRES_MIGRATOR_PASSWORD`, `POSTGRES_APP_PASSWORD`, `REDIS_PASSWORD` | Mots de passe générés ; l'API n'utilise que le rôle `b2c_app` (soumis à la RLS) |
 | `JWT_ACCESS_SECRET`, `TOTP_ENCRYPTION_KEY` | Secrets générés, **distincts** ; la production refuse de démarrer si l'un manque ou s'ils sont égaux |

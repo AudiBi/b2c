@@ -11,22 +11,6 @@ import { PrealertsPage } from './PrealertsPage';
 import { ProfilePage } from './ProfilePage';
 import { ReceivingPage } from './ReceivingPage';
 import { SecurityPage } from './SecurityPage';
-import { StaffAgencyPage } from '../staff/StaffAgencyPage';
-import { StaffAuditPage } from '../staff/StaffAuditPage';
-import { StaffClaimDetailPage, StaffClaimsPage } from '../staff/StaffClaimsPage';
-import { StaffDashboardPage } from '../staff/StaffDashboardPage';
-import { StaffInvoiceDetailPage } from '../staff/StaffInvoiceDetailPage';
-import { StaffInvoicesPage } from '../staff/StaffInvoicesPage';
-import { StaffNotificationsPage } from '../staff/StaffNotificationsPage';
-import { StaffPackageDetailPage } from '../staff/StaffPackageDetailPage';
-import { StaffPackagesPage } from '../staff/StaffPackagesPage';
-import { StaffPaymentsPage } from '../staff/StaffPaymentsPage';
-import { StaffReceptionPage } from '../staff/StaffReceptionPage';
-import { StaffRouteDetailPage } from '../staff/StaffRouteDetailPage';
-import { StaffRoutesPage } from '../staff/StaffRoutesPage';
-import { StaffShipmentDetailPage } from '../staff/StaffShipmentDetailPage';
-import { StaffShipmentsPage } from '../staff/StaffShipmentsPage';
-import { StaffWarehousePage } from '../staff/StaffWarehousePage';
 
 /** Espace client : chargé à la demande (les visiteurs non connectés ne téléchargent pas ce code). */
 export default function AccountArea() {
@@ -46,25 +30,6 @@ export default function AccountArea() {
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="claims" element={<ClaimsPage />} />
         <Route path="claims/:id" element={<ClaimDetailPage />} />
-        <Route path="staff/reception" element={<StaffReceptionPage />} />
-        <Route path="staff/packages" element={<StaffPackagesPage />} />
-        <Route path="staff/packages/:id" element={<StaffPackageDetailPage />} />
-        <Route path="staff/warehouse" element={<StaffWarehousePage />} />
-        <Route path="staff/shipments" element={<StaffShipmentsPage />} />
-        <Route path="staff/shipments/:id" element={<StaffShipmentDetailPage />} />
-        <Route path="staff/agency" element={<StaffAgencyPage />} />
-        <Route path="staff/billing" element={<StaffInvoicesPage />} />
-        <Route path="staff/billing/:id" element={<StaffInvoiceDetailPage />} />
-        <Route path="staff/payments" element={<StaffPaymentsPage />} />
-        <Route path="staff/routes" element={<StaffRoutesPage />} />
-        <Route path="staff/routes/:id" element={<StaffRouteDetailPage />} />
-        <Route path="staff/my-routes" element={<StaffRoutesPage mine />} />
-        <Route path="staff/my-routes/:id" element={<StaffRouteDetailPage mine />} />
-        <Route path="staff/claims" element={<StaffClaimsPage />} />
-        <Route path="staff/claims/:id" element={<StaffClaimDetailPage />} />
-        <Route path="staff/dashboard" element={<StaffDashboardPage />} />
-        <Route path="staff/audit" element={<StaffAuditPage />} />
-        <Route path="staff/notifications" element={<StaffNotificationsPage />} />
         <Route path="security" element={<SecurityPage />} />
       </Route>
     </Routes>

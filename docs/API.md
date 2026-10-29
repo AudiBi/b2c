@@ -38,6 +38,7 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 | `POST /v1/auth/verify-email` | public | Confirme l'e-mail (jeton à usage unique, 24 h) |
 | `POST /v1/auth/resend-verification` | public | Renvoie le lien (3/h/adresse), réponse identique si inconnu |
 | `POST /v1/auth/login` | public, 30/10 min/IP + verrou 5 échecs/15 min/compte | Connexion. Sans `companySlug` : équipe de la plateforme. Si la double authentification est active, le mot de passe seul répond **401 `TOTP_REQUIRED`** ; renvoyer la requête avec `totpCode` (6 chiffres) **ou** `recoveryCode` (`xxxx-xxxx`, jamais les deux). Un code faux, rejoué ou périmé : **401 `INVALID_TOTP`** (compté comme un échec de connexion) |
+| _(en-tête)_ `X-Client-App: admin` | — | Envoyé par le panel d'administration : les cookies de session se nomment alors `b2c_admin_refresh` / `b2c_admin_session` (au lieu de `b2c_refresh` / `b2c_session`). Ne donne aucun droit |
 | `POST /v1/auth/refresh` | public (cookie + `X-CSRF-Protection: 1`, ou corps `refreshToken`) | Rotation des jetons ; réutilisation = révocation de la famille |
 | `POST /v1/auth/logout` | connecté | Déconnexion (`allSessions: true` pour tous les appareils) |
 | `POST /v1/auth/forgot-password` | public | Lien de réinitialisation (1 h), 3/h/adresse, réponse identique |

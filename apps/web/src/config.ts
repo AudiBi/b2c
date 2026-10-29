@@ -4,6 +4,8 @@ export const config = {
   brandName: import.meta.env.VITE_BRAND_NAME ?? 'B2C',
   /** Entreprise servie par ce site (identifiant public). Une construction du site = une entreprise. */
   companySlug: import.meta.env.VITE_COMPANY_SLUG ?? 'demo',
+  /** Adresse du panel d'administration (personnel). Vide : aucun lien proposé. */
+  adminUrl: import.meta.env.VITE_ADMIN_URL ?? '',
   /** Vide = même origine (proxy en développement, reverse proxy en production). */
   apiBase: import.meta.env.VITE_API_URL ?? '',
 } as const;

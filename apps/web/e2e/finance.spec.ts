@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { APIRequestContext, Page } from '@playwright/test';
-import { accountNav, adminApi, expect, loginThroughUi, MAILPIT, registerAndVerify, test, type NewCustomer } from './helpers';
+import { accountNav, adminApi, adminLogin, adminNav, adminUrl, expect, loginThroughUi, MAILPIT, registerAndVerify, test, type NewCustomer } from './helpers';
 
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 const ipHeader = () => ({ 'X-Forwarded-For': `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}` });
@@ -32,10 +32,7 @@ async function weighedPackage(request: APIRequestContext, customer: NewCustomer,
   return { packageId: body.package.id as string, tracking: body.package.trackingNumber as string, customerId: profile.customer.id as string, customerCode: profile.customer.customerCode as string };
 }
 
-async function staffLogin(page: Page) {
-  await loginThroughUi(page, { email: process.env.E2E_ADMIN_EMAIL as string, password: process.env.E2E_ADMIN_PASSWORD as string });
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-}
+const staffLogin = (page: Page) => adminLogin(page);
 
 test.describe('finance : de la facture au paiement validé, avec les messages envoyés', () => {
   test('facture, déclaration de virement, validation, notifications et e-mail ; encaissement en espèces', async ({ page, request, browser }) => {
@@ -48,7 +45,7 @@ test.describe('finance : de la facture au paiement validé, avec les messages en
     // --- 1. Le personnel crée un brouillon à partir des colis pesés du client, puis l'émet -----------
     const staff = await (await browser.newContext()).newPage();
     await staffLogin(staff);
-    await accountNav(staff).getByRole('link', { name: 'Factures', exact: true }).click();
+    await adminNav(staff).getByRole('link', { name: 'Factures', exact: true }).click();
     await expect(staff.getByRole('heading', { level: 1, name: 'Factures' })).toBeVisible();
     await staff.getByRole('button', { name: 'Nouvelle facture' }).click();
     await staff.getByLabel('Client (code, nom ou e-mail)').fill(first.customerCode);
@@ -88,7 +85,7 @@ test.describe('finance : de la facture au paiement validé, avec les messages en
     expect(axeDetail.violations.map((v) => v.id)).toEqual([]);
 
     // --- 3. Le personnel valide le paiement dans la file de rapprochement ----------------------------
-    await accountNav(staff).getByRole('link', { name: 'Paiements', exact: true }).click();
+    await adminNav(staff).getByRole('link', { name: 'Paiements', exact: true }).click();
     await expect(staff.getByRole('heading', { level: 1, name: 'Paiements et caisse' })).toBeVisible();
     const queued = staff.getByTestId('queue-payment').filter({ hasText: invoiceNumber });
     await expect(queued).toBeVisible();
@@ -107,7 +104,7 @@ test.describe('finance : de la facture au paiement validé, avec les messages en
     expect(pkg.status).toBe('READY_TO_SHIP');
 
     // --- 4. Notifications : le personnel lance le traitement, le client les lit ---------------------
-    await accountNav(staff).getByRole('link', { name: 'Notifications', exact: true }).click();
+    await adminNav(staff).getByRole('link', { name: 'Notifications', exact: true }).click();
     await staff.getByRole('button', { name: 'Lancer le traitement maintenant' }).click();
     await expect(staff.getByText(/Traitement terminé/)).toBeVisible();
     await expect(staff.getByTestId('log-item').filter({ hasText: 'Paiement reçu' }).first()).toBeVisible();
@@ -142,14 +139,14 @@ test.describe('finance : de la facture au paiement validé, avec les messages en
     const draftBody = await draft.json();
     expect((await admin.post(`/v1/admin/invoices/${draftBody.id}/issue`)).status()).toBe(200);
 
-    await staff.goto(`/fr/account/staff/billing/${draftBody.id}`);
+    await staff.goto(adminUrl(`/billing/${draftBody.id}`));
     await staff.getByRole('button', { name: 'Encaisser', exact: true }).click();
     await expect(staff.getByText('Ouvrez d’abord une caisse.')).toBeVisible();
-    await accountNav(staff).getByRole('link', { name: 'Paiements', exact: true }).click();
+    await adminNav(staff).getByRole('link', { name: 'Paiements', exact: true }).click();
     const open = staff.getByRole('form', { name: 'Ouvrir une caisse' });
     await open.getByRole('button', { name: 'Ouvrir une caisse' }).click();
     await expect(staff.getByText('Caisse ouverte.')).toBeVisible();
-    await staff.goto(`/fr/account/staff/billing/${draftBody.id}`);
+    await staff.goto(adminUrl(`/billing/${draftBody.id}`));
     await staff.getByRole('button', { name: 'Encaisser', exact: true }).click();
     await expect(staff.getByText(/Paiement enregistré, reçu RCT-/)).toBeVisible();
     await expect(staff.getByText('Payée').first()).toBeVisible();

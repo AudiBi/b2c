@@ -2,6 +2,7 @@
 //   SMOKE_URL=https://exemple.com node scripts/prod-smoke.mjs
 // Variables facultatives :
 //   SMOKE_HTTP_URL        adresse HTTP du même serveur (vérifie la redirection vers HTTPS)
+//   SMOKE_ADMIN_URL       adresse HTTPS du panel d'administration : contrôles du panel ; la connexion de la plateforme passe alors par lui
 //   SMOKE_INSECURE=true   accepte un certificat auto-signé (essai local UNIQUEMENT)
 //   SMOKE_ADMIN_EMAIL / SMOKE_ADMIN_PASSWORD   compte de la plateforme (jamais journalisé) : vérifie l'obligation de la
 //                         double authentification puis son activation. ATTENTION : active la double authentification de ce compte.
@@ -18,8 +19,10 @@ const check = (name, ok, detail = '') => {
   if (!ok) failures += 1;
   console.log(`${ok ? '✔' : '✘'} ${name}${detail ? ` — ${detail}` : ''}`);
 };
+const adminBase = (process.env.SMOKE_ADMIN_URL ?? '').replace(/\/$/, '');
 const call = async (path, init = {}) => {
-  const res = await fetch(base + path, { redirect: 'manual', ...init });
+  const { base: target = base, ...options } = init;
+  const res = await fetch(target + path, { redirect: 'manual', ...options });
   const text = await res.text();
   let json;
   try { json = JSON.parse(text); } catch { /* pas du JSON */ }
@@ -72,6 +75,25 @@ if (process.env.SMOKE_HTTP_URL) {
   check('HTTP redirigé vers HTTPS (301)', http.status === 301 && (http.headers.get('location') ?? '').startsWith('https://'), http.headers.get('location') ?? '');
 }
 
+// --- 1 bis. Panel d'administration : application séparée, adresse séparée -----------------------------------------------
+if (adminBase) {
+  const login = await call('/login', { base: adminBase });
+  check('panel : écran de connexion servi (200, HTML)', login.status === 200 && (login.header('content-type') ?? '').includes('text/html'));
+  check(
+    'panel : CSP stricte, cadres interdits, jamais indexé, aucun Referer sortant, HSTS',
+    (login.header('content-security-policy') ?? '').includes("frame-ancestors 'none'") &&
+      login.header('x-frame-options') === 'DENY' &&
+      /noindex/.test(login.header('x-robots-tag') ?? '') &&
+      login.header('referrer-policy') === 'no-referrer' &&
+      !!login.header('strict-transport-security'),
+  );
+  check("panel : un chemin d'écran (/users) est résolu par l'application (200)", (await call('/users', { base: adminBase })).status === 200);
+  const adminAsset = /\/assets\/[^"']+\.js/.exec(login.text)?.[0];
+  if (adminAsset) check('panel : ressources en cache longue durée immuable', ((await call(adminAsset, { base: adminBase })).header('cache-control') ?? '').includes('immutable'), adminAsset);
+  check('panel : API joignable par son adresse (/health/ready)', (await call('/health/ready', { base: adminBase })).status === 200);
+  check('le site ne sert pas le panel (/users inconnu : vrai 404)', (await call('/users')).status === 404);
+}
+
 // --- 2. Limite de débit par IP derrière nginx : un client ne peut pas la contourner en falsifiant X-Forwarded-For ------
 const codes = [];
 for (let i = 0; i < 34; i += 1) {
@@ -84,12 +106,16 @@ check('falsifier X-Forwarded-For ne contourne pas la limite (429 observé, nginx
 const email = process.env.SMOKE_ADMIN_EMAIL;
 const password = process.env.SMOKE_ADMIN_PASSWORD;
 if (email && password) {
-  const login = (extra = {}) => call('/v1/auth/login', jsonInit({ email, password, ...extra }, undefined, { 'X-Forwarded-For': ip() }));
+  // Si le panel est fourni, la connexion passe par lui (avec son en-tête d'identité) : c'est le vrai chemin du personnel
+  const via = adminBase ? { base: adminBase } : {};
+  const appHeader = adminBase ? { 'X-Client-App': 'admin' } : {};
+  const login = (extra = {}) => call('/v1/auth/login', { ...jsonInit({ email, password, ...extra }, undefined, { 'X-Forwarded-For': ip(), ...appHeader }), ...via });
   const first = await login();
   if (first.status === 200) {
     const token = first.json.accessToken;
     const cookie = first.res.headers.get('set-cookie') ?? '';
     check('cookie de renouvellement : HttpOnly, Secure, SameSite=Lax, chemin /v1/auth', /HttpOnly/i.test(cookie) && /Secure/i.test(cookie) && /SameSite=Lax/i.test(cookie) && /Path=\/v1\/auth/i.test(cookie));
+    if (adminBase) check('cookies du panel distincts de ceux du site (b2c_admin_refresh, jamais b2c_refresh)', /b2c_admin_refresh=/.test(cookie) && !/(^|, )b2c_refresh=/.test(cookie), cookie.split(';')[0].split('=')[0]);
     const blocked = await call('/v1/admin/users', { headers: { Authorization: `Bearer ${token}` } });
     check('sans second facteur, le compte est enfermé (403 TOTP_ENROLLMENT_REQUIRED)', blocked.status === 403 && blocked.json?.error?.code === 'TOTP_ENROLLMENT_REQUIRED', `${blocked.status} ${blocked.json?.error?.code ?? ''}`);
     const setup = await call('/v1/me/2fa/setup', jsonInit({ password }, token));

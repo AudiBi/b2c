@@ -215,6 +215,20 @@ Revue de sécurité (OWASP ASVS niveau 2 comme guide), tests de charge du suivi 
 - Le créole des nouveaux écrans (double authentification) n'a pas été relu par un locuteur natif.
 - **Confirmation de pesée furtive** (relevée par la recette navigateur) : le message « Pesée enregistrée. » disparaît presque aussitôt, car le panneau de pesée se ferme au rechargement de la fiche du colis ; le test vérifie désormais le résultat, mais l'agent ne voit presque pas la confirmation. À améliorer (message au niveau de la page).
 
+### Hors plan initial : panel d'administration séparé du site
+Demande de l'utilisateur : « détacher le panel admin du site, le faire séparément et très professionnel ». Détail : [ADMIN.md](ADMIN.md).
+
+**Réalisé** :
+- **Application `apps/admin`** (React 19, Vite, même package partagé que le site) : coque professionnelle (barre latérale groupée selon les droits, barre du haut avec langue et menu du compte, adaptée au téléphone), écran de connexion dédié (personnel / équipe plateforme, second facteur), système de design propre (`admin.css`).
+- **Écrans du personnel déplacés** du site vers le panel (réception, colis, entrepôt, lots, agence, tournées, réclamations, factures, paiements, notifications, tableau de bord, audit, sécurité) ; adresses sans préfixe de langue ; langue au choix de l'utilisateur.
+- **Nouveaux écrans** : **Utilisateurs** (liste filtrée, invitation avec rôle et portée, fiche, ajout et retrait de rôle, désactivation), **Rôles et droits** (catalogue en lecture seule), **Entreprises** (création, suspension, réactivation, pour l'équipe plateforme).
+- **Site allégé** : plus aucun écran du personnel ; un compte du personnel qui s'y connecte est dirigé vers le panel.
+- **API** : cookies de session **distincts** pour le panel (`X-Client-App: admin` → `b2c_admin_refresh`/`b2c_admin_session`) ; liens d'invitation et de réinitialisation du **personnel** vers le panel (`ADMIN_PUBLIC_URL`).
+- **Production** : même nginx, second nom de domaine (`ADMIN_HOST`), en-têtes dédiés ; contrôle de fumée étendu (`SMOKE_ADMIN_URL`).
+- **Défauts trouvés** : nom accessible du menu du compte sans son texte visible (WCAG 2.5.3, relevé par axe) ; durée d'attente trop courte du premier écran chargé à la demande dans les tests d'interface ; test de signature de webhook sensible à la lenteur de la machine (marge élargie).
+
+**Réserves** : voir « Limites connues » de [ADMIN.md](ADMIN.md) — pas de rôles personnalisés, pas de réinitialisation du second facteur par un administrateur, une entreprise par construction, écrans repris tels quels des phases 6 à 8 (contenu inchangé, habillage nouveau), créole des nouveaux textes à relire, panel essayé sur la pile de production **locale** seulement.
+
 ### Phase 10 : production
 Docker de production, procédures de déploiement et de sauvegarde, `docs/DEPLOYMENT.md`, `docs/SECURITY.md`, `docs/TEST_PLAN.md`, `docs/INTEGRATIONS.md`, `docs/API.md`, liste finale des risques bloquants.
 

@@ -41,7 +41,7 @@ export async function createApp(env: Env): Promise<NestExpressApplication> {
     origin: env.CORS_ORIGINS,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-Type', 'X-CSRF-Protection', 'X-Request-Id', 'Idempotency-Key'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-Type', 'X-Client-App', 'X-CSRF-Protection', 'X-Request-Id', 'Idempotency-Key'],
     exposedHeaders: ['X-Request-Id', 'Retry-After'],
   });
 

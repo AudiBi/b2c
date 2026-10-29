@@ -1,0 +1,59 @@
+# Panel d'administration : application monopage servie sur son propre nom de domaine (ADMIN_SERVER_NAME).
+# Même règle que le site : nginx est le SEUL point d'entrée et écrase X-Forwarded-For par l'adresse réelle du client.
+# Pour réserver le panel à certaines adresses, décommenter les lignes « allow » / « deny » du bloc 443 (non essayé ici).
+
+server {
+    listen 80;
+    server_name ${ADMIN_SERVER_NAME};
+    location /.well-known/acme-challenge/ {
+        root /var/www/acme;
+    }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${ADMIN_SERVER_NAME};
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    root /usr/share/nginx/admin;
+    server_tokens off;
+    client_max_body_size 10m;
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml text/plain;
+
+    # allow 203.0.113.0/24;
+    # deny all;
+
+    include /etc/nginx/admin-security-headers.conf;
+
+    location /v1/ {
+        proxy_pass http://${API_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+        include /etc/nginx/admin-security-headers.conf;
+    }
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        include /etc/nginx/admin-security-headers.conf;
+        try_files $uri =404;
+    }
+    # Application monopage : tout chemin qui n'est pas un fichier est résolu par le routeur du navigateur
+    location / {
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/admin-security-headers.conf;
+        try_files $uri /index.html;
+    }
+}

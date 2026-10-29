@@ -46,7 +46,7 @@ afterEach(() => {
   document.cookie = 'b2c_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
 });
 
-const me = (mfa: { enabled: boolean; required: boolean; enrollmentRequired: boolean }, kind: 'STAFF' | 'CUSTOMER' = 'STAFF') => ({
+const me = (mfa: { enabled: boolean; required: boolean; enrollmentRequired: boolean }, kind: 'STAFF' | 'CUSTOMER' = 'CUSTOMER') => ({
   id: 'u1', companyId: 'c1', kind, email: 'admin@example.test', firstName: 'Admin', lastName: 'Test', locale: 'fr', emailVerified: true, roles: [], permissions: ['audit:read'], mfa,
 });
 function signedIn(user: object, extra: Record<string, Handler>) {
@@ -197,13 +197,6 @@ describe('page Sécurité : double authentification', () => {
     expect(box.getByRole('button', { name: fr.account.security.twoFactor.regenerate })).toBeInTheDocument();
   });
 
-  it('activation exigée : tout l’espace renvoie vers la page Sécurité avec l’explication', async () => {
-    signedIn(me({ enabled: false, required: true, enrollmentRequired: true }), { 'GET /v1/me/2fa': { enabled: false, pending: false, required: true, recoveryCodesLeft: 0 } });
-    renderAt('/fr/account/staff/audit');
-    expect(await screen.findByText(fr.account.security.twoFactor.enrollmentRequired, undefined, { timeout: 5000 })).toBeInTheDocument();
-    expect(screen.queryByTestId('audit-item')).not.toBeInTheDocument();
-    expect(calls('GET /v1/audit')).toHaveLength(0);
-  });
 });
 
 describe('textes', () => {

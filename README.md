@@ -14,6 +14,7 @@ Plateforme multi-entreprises de gestion de colis, d'expéditions aériennes et m
 | **7** | **Factures (numérotation sans trou, avoirs, PDF), paiements (espèces avec caisse, virement / mobile déclaré puis validé, confirmation signée si un prestataire est configuré), remboursements, export comptable, notifications (portail + e-mail avec nouvelles tentatives, modèles FR/HT/EN)** | **☑ implémentée et testée (772 tests au total)** |
 | **8** | **Tournées et livreurs, remise avec code, pièce d'identité et photo, solde dû bloquant, échecs de livraison, réclamations, tableau de bord réel, journal d'audit** | **☑ implémentée et testée (856 tests au total)** |
 | **9** | **Double authentification (TOTP), revue de sécurité (ASVS niveau 2 comme guide), tests de charge, test de restauration de sauvegarde, stockage S3 (SeaweedFS)** | **☑ implémentée et testée (voir docs/TEST_PLAN.md)** |
+| **+** | **Panel d'administration séparé du site** (`apps/admin`) : écrans du personnel, **utilisateurs et rôles**, **entreprises** (plateforme), design dédié, cookies distincts | **☑ implémenté et testé (943 tests au total ; voir docs/ADMIN.md)** |
 | **10** | **Images Docker de production, pile de production, sauvegarde et restauration, guide de déploiement, liste des risques** | **☑ réalisée ; la plateforme n'est PAS prête pour le public : voir docs/RISKS.md** |
 
 Ce qui existe :
@@ -46,6 +47,14 @@ npm run db:seed          # synchronise permissions et rôles ; crée le super ad
 npm start                # API sur http://localhost:3100  (documentation interactive : /docs)
 ```
 
+### Lancer le panel d'administration
+
+```bash
+npm run dev:admin        # http://localhost:5174 (l'API doit tourner ; le panel la joint par le proxy /v1)
+```
+
+Le **personnel** (administrateur de l'entreprise, réception, caisse, livreur…) et l'**équipe plateforme** travaillent dans ce panel, pas sur le site. Détails, écrans et droits : [docs/ADMIN.md](docs/ADMIN.md).
+
 ### Lancer le site
 
 ```bash
@@ -72,8 +81,8 @@ Crée l'entreprise `demo` (nom préfixé « DEMO », préfixe de code client `DM
 ## Tests
 
 ```bash
-npm test          # package partagé (88) + API (523, plus 7 de stockage S3 ignorés) + site (203)
-npm run test:e2e  # recette navigateur : construit l'API et le site, puis Playwright (88 scénarios)
+npm test          # package partagé (88) + API (525, plus 7 de stockage S3 ignorés) + site (157) + panel (84)
+npm run test:e2e  # recette navigateur : construit l'API et le site, puis Playwright (89 scénarios)
 npm run loadtest  # tests de charge (suivi, calculateur, limite de débit) : sème des colis dans la base de TEST
 npm run backup:check # sauvegarde la base de test, la restaure dans une copie et compare (RLS, audit, droits)
 npm run test:s3   # adaptateur S3 contre SeaweedFS (profil Docker « storage », voir docs/INTEGRATIONS.md)

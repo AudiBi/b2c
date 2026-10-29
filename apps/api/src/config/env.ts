@@ -22,6 +22,8 @@ export const envSchema = z
     API_PORT: z.coerce.number().int().min(1).max(65535).default(3100),
     API_PUBLIC_URL: z.url().default('http://localhost:3100'),
     WEB_PUBLIC_URL: z.url().default('http://localhost:5173'),
+    /** Panel d'administration (personnel et plateforme) : adresse des liens d'invitation et de réinitialisation de leurs comptes. */
+    ADMIN_PUBLIC_URL: z.url().default('http://localhost:5174'),
     CORS_ORIGINS: csv,
     TRUST_PROXY: bool,
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),

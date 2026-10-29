@@ -23,8 +23,8 @@
     "build": "npm run build:shared && npm run prisma:generate && npm -w @b2c/api run build",
     "start": "node --env-file=.env apps/api/dist/main.js",
     "docs:openapi": "npm -w @b2c/api run docs:openapi",
-    "typecheck": "npm run build:shared && npm run prisma:generate && npm -w @b2c/api run typecheck && npm -w @b2c/web run typecheck",
-    "test": "npm run build:shared && npm run prisma:generate && npm -w @b2c/shared test && npm -w @b2c/api test && npm -w @b2c/web test",
+    "typecheck": "npm run build:shared && npm run prisma:generate && npm -w @b2c/api run typecheck && npm -w @b2c/web run typecheck && npm -w @b2c/admin run typecheck",
+    "test": "npm run build:shared && npm run prisma:generate && npm -w @b2c/shared test && npm -w @b2c/api test && npm -w @b2c/web test && npm -w @b2c/admin test",
     "build:web": "npm -w @b2c/web run build",
     "dev:api": "npm run build && node --env-file=.env apps/api/dist/main.js",
     "dev:web": "npm -w @b2c/web run dev",
@@ -38,7 +38,10 @@
     "prod:up": "docker compose -f docker/compose.prod.yml --env-file .env.production up -d --build",
     "prod:backup": "node scripts/prod-backup.mjs backup",
     "prod:drill": "node scripts/prod-backup.mjs drill",
-    "prod:smoke": "node scripts/prod-smoke.mjs"
+    "prod:smoke": "node scripts/prod-smoke.mjs",
+    "build:admin": "npm -w @b2c/admin run build",
+    "dev:admin": "npm -w @b2c/admin run dev",
+    "preview:admin": "npm -w @b2c/admin run preview"
   },
   "devDependencies": {
     "autocannon": "^8.0.0",

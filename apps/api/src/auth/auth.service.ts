@@ -354,7 +354,11 @@ export class AuthService {
     if (prepared) {
       await this.mail.sendAuthMail('reset-password', prepared.user.email, prepared.user.locale as Locale, {
         firstName: prepared.user.firstName,
-        url: this.link('reset-password', prepared.rawToken, prepared.user.locale as Locale),
+        // Le personnel et la plateforme réinitialisent leur mot de passe sur le panel d'administration, les clients sur le site
+        url:
+          prepared.user.kind === 'CUSTOMER'
+            ? this.link('reset-password', prepared.rawToken, prepared.user.locale as Locale)
+            : `${this.config.env.ADMIN_PUBLIC_URL}/reset-password?token=${encodeURIComponent(prepared.rawToken)}`,
       });
     }
   }

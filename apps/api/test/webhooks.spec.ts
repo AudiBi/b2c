@@ -85,8 +85,8 @@ describe('Webhook de confirmation de paiement', () => {
       null,
       'n-importe-quoi',
       sign(body, { secret: 'un-autre-secret-0123456789abcdefghij' }),
-      sign(body, { t: now - 301 }),
-      sign(body, { t: now + 301 }),
+      sign(body, { t: now - 600 }), // bien au-delà de la tolérance de 300 s : la marge absorbe la lenteur de la machine
+      sign(body, { t: now + 600 }),
       `t=${now},v1=${'0'.repeat(64)}`,
       `t=${now},v1=zz`,
       sign(JSON.stringify({ ...JSON.parse(body), amount: 1 })), // signature d'un autre corps

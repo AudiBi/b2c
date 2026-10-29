@@ -61,6 +61,8 @@ Derrière ce proxy, l'API doit avoir `TRUST_PROXY=true` (voir SECURITY.md). Le s
 1. Modifier `src/i18n/fr.ts`. 2. `npm run typecheck` signale les clés à ajouter dans `en.ts` et `ht.ts`. 3. Les tests `tests/i18n.test.ts` contrôlent : mêmes clés et mêmes variables `{…}` partout, aucune valeur vide, longueurs des balises `<title>`/description, absence de prix ou de numéro de téléphone inventés.
 **Le créole a été rédigé sans relecture par un locuteur natif : à faire relire avant publication.** Les pages légales sont des **projets à valider par un juriste** (bandeau visible sur la page).
 
+> **Mise à jour : le personnel n'est plus sur le site.** Les écrans du personnel (phases 6 à 9 : réception, colis, lots, agence, finance, livraison, réclamations, tableau de bord, audit, double authentification du personnel) ont été **déplacés dans le panel d'administration** (`apps/admin`, voir [ADMIN.md](ADMIN.md)). Les descriptions de ces écrans plus bas restent valables pour leur contenu, mais leurs adresses sont celles du panel (`/packages`, `/billing`…, sans préfixe de langue). Le site ne contient plus que les pages publiques et l'espace client ; un compte du personnel qui s'y connecte voit « Cet espace est réservé aux clients » avec un lien vers le panel (`VITE_ADMIN_URL`).
+
 ## Calculateur, suivi et colis (phase 5)
 
 - **Calculateur** (`/calculator`) : lit `GET /rates` (trajets, services facultatifs, catégories) puis `POST /quote`. Sans grille publiée, la page l'explique et n'affiche **aucun formulaire ni prix**. Un client connecté enregistre ses estimations. Les deux poids (réel, volumétrique) et le poids facturable sont montrés ; le résultat est marqué « estimation indicative ».

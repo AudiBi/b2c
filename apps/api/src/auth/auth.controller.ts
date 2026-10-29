@@ -20,10 +20,12 @@ import { AllowWithoutMfa, AnyAuthenticated, CurrentAuth, Public, RateLimit } fro
 import type { AuthContext } from '../security/auth.types';
 import { AuthService, type SessionTokens } from './auth.service';
 
-const REFRESH_COOKIE = 'b2c_refresh';
+/**
+ * Le panel d'administration annonce son identité par l'en-tête X-Client-App: admin : ses cookies portent d'autres noms, de sorte que
+ * la session du personnel et celle d'un client dans le même navigateur (même domaine, ports différents en développement) ne se mélangent jamais.
+ */
+const cookieNames = (req: Request) => (req.headers['x-client-app'] === 'admin' ? { refresh: 'b2c_admin_refresh', hint: 'b2c_admin_session' } : { refresh: 'b2c_refresh', hint: 'b2c_session' });
 const COOKIE_PATH = '/v1/auth';
-/** Indice lisible par le site (sans aucun secret) : « une session peut être restaurée ». Évite un appel de renouvellement inutile à chaque visite anonyme. */
-const HINT_COOKIE = 'b2c_session';
 
 type Body<T extends z.ZodType> = z.infer<T>;
 
@@ -106,7 +108,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const fromCookie = req.cookies?.[REFRESH_COOKIE] as string | undefined;
+    const fromCookie = req.cookies?.[cookieNames(req).refresh] as string | undefined;
     const raw = body.refreshToken ?? fromCookie;
     if (!raw) throw AppException.unauthorized('INVALID_REFRESH_TOKEN', 'Jeton de renouvellement manquant');
     if (!body.refreshToken && req.headers['x-csrf-protection'] !== '1') {
@@ -115,7 +117,7 @@ export class AuthController {
 
     const outcome = await this.auth.refresh(raw, { ip: req.ip, userAgent: req.headers['user-agent']?.slice(0, 300) });
     if (outcome.kind !== 'ok') {
-      this.clearCookie(res);
+      this.clearCookie(req, res);
       throw outcome.kind === 'reuse'
         ? AppException.unauthorized('REFRESH_TOKEN_REUSED', 'Session révoquée par sécurité, reconnectez-vous')
         : AppException.unauthorized('INVALID_REFRESH_TOKEN', 'Jeton de renouvellement invalide');
@@ -133,10 +135,11 @@ export class AuthController {
   async logout(
     @CurrentAuth() auth: AuthContext,
     @VBody() body: Body<typeof logoutSchema>,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.auth.logout(auth, body.allSessions);
-    this.clearCookie(res);
+    this.clearCookie(req, res);
   }
 
   @Post('forgot-password')
@@ -202,14 +205,16 @@ export class AuthController {
   private respondWithTokens(req: Request, res: Response, tokens: SessionTokens) {
     const { refreshToken, ...rest } = tokens;
     if (req.headers['x-client-type'] === 'mobile') return { ...rest, refreshToken };
-    res.cookie(REFRESH_COOKIE, refreshToken, {
+    const names = cookieNames(req);
+    // Le cookie « indice » est lisible par l'interface (sans aucun secret) : « une session peut être restaurée »
+    res.cookie(names.refresh, refreshToken, {
       httpOnly: true,
       secure: this.config.env.COOKIE_SECURE,
       sameSite: 'lax',
       path: COOKIE_PATH,
       maxAge: this.config.env.REFRESH_TOKEN_TTL_DAYS * 24 * 3600_000,
     });
-    res.cookie(HINT_COOKIE, '1', {
+    res.cookie(names.hint, '1', {
       httpOnly: false,
       secure: this.config.env.COOKIE_SECURE,
       sameSite: 'lax',
@@ -219,8 +224,9 @@ export class AuthController {
     return rest;
   }
 
-  private clearCookie(res: Response): void {
-    res.clearCookie(REFRESH_COOKIE, { path: COOKIE_PATH, httpOnly: true, sameSite: 'lax', secure: this.config.env.COOKIE_SECURE });
-    res.clearCookie(HINT_COOKIE, { path: '/', httpOnly: false, sameSite: 'lax', secure: this.config.env.COOKIE_SECURE });
+  private clearCookie(req: Request, res: Response): void {
+    const names = cookieNames(req);
+    res.clearCookie(names.refresh, { path: COOKIE_PATH, httpOnly: true, sameSite: 'lax', secure: this.config.env.COOKIE_SECURE });
+    res.clearCookie(names.hint, { path: '/', httpOnly: false, sameSite: 'lax', secure: this.config.env.COOKIE_SECURE });
   }
 }
