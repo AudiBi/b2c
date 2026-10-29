@@ -44,13 +44,14 @@ Exécutés le 2026-10-28 (suites automatisées rejouées à la fin de la phase 1
 | API `reports.spec.ts` (tableau de bord vide, chiffres réels, revenus et impayés par devise, incidents, période, droits, livreurs) | 7 | ✅ |
 | API `rate-limit.spec.ts` | 7 | ✅ |
 | API `infra.spec.ts` (compteurs, idempotence) | 9 | ✅ |
+| API `mail.spec.ts` (gabarit HTML : logo, titre, bouton, lien de secours, trois langues, échappement de toute valeur saisie, pièce jointe du logo en SMTP) | 5 | ✅ |
 | API `app.spec.ts` (santé, en-têtes, CORS, erreurs, configuration, **variables vides**) | 15 | ✅ |
 | API `totp.spec.ts` + `two-factor.spec.ts` (vecteurs officiels RFC 6238, fenêtre, rejeu, chiffrement du secret, codes de secours, activation / désactivation, connexion en deux temps, verrouillage, obligation du personnel, base) | 31 | ✅ |
 | API `s3-storage.spec.ts` : configuration (3, toujours exécutés) ; stockage réel (7, **ignorés** sans `npm run test:s3`, voir ci-dessous) | 3 + 7 ignorés | ✅ / ⏭ |
 | Site, unitaires (10 fichiers : pages publiques et espace client ; les écrans du personnel sont dans le panel) | 157 | ✅ |
 | **Panel d'administration, unitaires** (5 fichiers : écrans du personnel repris de `phase6` à `phase9` + `admin.test.tsx` : accès, connexion, utilisateurs, rôles, entreprises, textes) | 84 | ✅ |
 | Site, recette navigateur | 88 | ✅ |
-| **Total de la suite standard** | **943** | **943 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
+| **Total de la suite standard** | **948** | **948 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
 
 Stockage S3 contre un **vrai SeaweedFS** (`npm run test:s3`) : **10 tests sur 10 réussis** (3 de configuration + 7 de stockage, dont le parcours API complet), exécutés le 2026-10-28. Ils sont ignorés par `npm test` pour ne pas exiger ce service : la suite l'affiche comme « ignorés », elle ne les compte pas comme vérifiés.
 
@@ -196,6 +197,7 @@ Essai du 2026-10-28 sur Docker Desktop (Windows 11, conteneurs Linux), domaine `
 - `seed-demo` exécuté sur la base de test et refusé en production.
 
 ## Limites des tests actuels
+- **E-mails HTML** : rendu vérifié dans Mailpit (Chromium) et par des tests de contenu ; **jamais essayé dans Gmail, Outlook, Apple Mail ni sur téléphone**, ni en mode sombre des messageries ; la mise en page est en tableaux et styles en ligne (pratique courante) sans garantie de rendu identique partout ; certaines messageries peuvent proposer le logo intégré comme pièce jointe.
 - **Phase 10** : voir « Pile de production » ci-dessus et DEPLOYMENT.md § 9 : aucun essai sur serveur public, aucune recette navigateur ni charge sur la pile de production.
 - **Phase 9** : la double authentification n'est testée qu'avec des codes calculés par les tests (RFC 6238), jamais avec une application d'authentification réelle, et n'est pas dans la recette navigateur ; le stockage S3 n'est testé que contre SeaweedFS en local ; **aucune intégration de paiement, SMS, WhatsApp, transporteur ni e-mail de production** n'a été testée (aucun compte de test) ; les mesures de charge viennent d'une seule machine ; aucun test d'intrusion, d'analyse automatique du code ni d'endurance.
 - **Phase 8** : le code de remise est lu à l'écran du client (aucun SMS) ; la photo de preuve est simulée par une pièce jointe insérée en base (le chemin de dépôt de fichier est testé par la phase 5) ; les tournées ne sont testées que sur de petits volumes (2 à 3 arrêts) ; aucune mesure de performance des requêtes du tableau de bord sur un grand volume de données ; pas de test sur un téléphone réel pour l'écran du livreur.

@@ -229,6 +229,9 @@ Demande de l'utilisateur : « détacher le panel admin du site, le faire sépar�
 
 **Réserves** : voir « Limites connues » de [ADMIN.md](ADMIN.md) — pas de rôles personnalisés, pas de réinitialisation du second facteur par un administrateur, une entreprise par construction, écrans repris tels quels des phases 6 à 8 (contenu inchangé, habillage nouveau), créole des nouveaux textes à relire, panel essayé sur la pile de production **locale** seulement.
 
+### Hors plan initial : e-mails HTML professionnels avec logo
+Tous les e-mails (confirmation d'adresse, réinitialisation, invitation, « déjà inscrit », et **toutes les notifications** : colis, factures, paiements, tournées, réclamations) partent maintenant en **HTML mis en forme** avec le **logo B2C** en tête, un titre, un bouton d'action (avec lien de secours en clair), une consigne de sécurité en encadré et un pied de page ; la version **texte brut** reste jointe. Gabarit : `apps/api/src/mail/mail.layout.ts`. Le logo est joint comme image intégrée (`cid:`). Toute valeur dynamique est échappée. **Réserves** : pas essayé dans de vraies messageries (Gmail, Outlook…) ; les modèles de notification personnalisés d'une entreprise restent du texte (mis en page automatiquement) ; pas de pied de page légal (adresse postale, désinscription) : à définir avec l'entreprise.
+
 ### Phase 10 : production
 Docker de production, procédures de déploiement et de sauvegarde, `docs/DEPLOYMENT.md`, `docs/SECURITY.md`, `docs/TEST_PLAN.md`, `docs/INTEGRATIONS.md`, `docs/API.md`, liste finale des risques bloquants.
 

@@ -48,7 +48,7 @@ Verdict : **la plateforme n'est pas prête à être ouverte au public en l'état
 
 ## D. Ce qui est solide (vérifié par des tests exécutés)
 
-Isolation des entreprises par la base (RLS forcée, 52 tables) ; sessions et verrouillage ; double authentification TOTP ; machine d'états des colis protégée en base ; factures immuables et numérotées sans trou ; remise avec code, solde dû bloquant et dérogation journalisée ; livreur limité à ses tournées ; journal d'audit en ajout seul ; limite de débit exacte ; aucune erreur serveur sous charge ; restauration de sauvegarde et reconstruction après sinistre essayées ; production refusant les réglages dangereux ; 943 tests automatisés (partagé 88, API 525 + 7 ignorés, site 157, panel 84, navigateur 89).
+Isolation des entreprises par la base (RLS forcée, 52 tables) ; sessions et verrouillage ; double authentification TOTP ; machine d'états des colis protégée en base ; factures immuables et numérotées sans trou ; remise avec code, solde dû bloquant et dérogation journalisée ; livreur limité à ses tournées ; journal d'audit en ajout seul ; limite de débit exacte ; aucune erreur serveur sous charge ; restauration de sauvegarde et reconstruction après sinistre essayées ; production refusant les réglages dangereux ; 948 tests automatisés (partagé 88, API 530 + 7 ignorés, site 157, panel 84, navigateur 89).
 
 ## Ordre conseillé
 

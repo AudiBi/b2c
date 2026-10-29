@@ -252,7 +252,8 @@ export class NotificationsService {
     const user = await tx.user.findUnique({ where: { id: n.userId } });
     try {
       if (!user) throw new Error('DESTINATAIRE_INTROUVABLE');
-      await this.mail.send({ to: user.email, subject: n.subject ?? '', text: n.body });
+      const locale = (['fr', 'ht', 'en'].includes(user.locale) ? user.locale : 'fr') as 'fr' | 'ht' | 'en';
+      await this.mail.send(this.mail.notification(user.email, n.subject ?? '', n.body, locale));
       await tx.notification.update({ where: { id }, data: { status: 'SENT', sentAt: now, attempts: n.attempts + 1, lastError: null, nextAttemptAt: null } });
       return 'sent';
     } catch (error) {
