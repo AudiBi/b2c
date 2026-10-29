@@ -225,6 +225,23 @@ describe('utilisateurs', () => {
     expect(await within(dialog).findByText('Invitation envoyée à paul@example.test.')).toBeInTheDocument();
   });
 
+  it('invitation : les rôles du personnel sont proposés même si le serveur n’en renvoie aucun (catalogue partagé)', async () => {
+    signedIn(me('STAFF', ADMIN), { ...listHandlers(), 'GET /v1/admin/roles': [] });
+    renderAt('/users');
+    await userEvent.click(await screen.findByRole('button', { name: new RegExp(fr.admin.users.invite) }));
+    const dialog = await screen.findByRole('dialog');
+    const options = within(within(dialog).getByLabelText(fr.admin.users.role)).getAllByRole('option').map((o) => o.textContent);
+    expect(options).toEqual(expect.arrayContaining(["Administrateur de l'entreprise", 'Agent de réception', 'Livreur', "Responsable d'entrepôt"]));
+    // jamais les rôles des clients ni de la plateforme
+    expect(options.join('|')).not.toMatch(/Client|Super administrateur/);
+  });
+
+  it('rôles et droits : catalogue partagé affiché quand le serveur n’a aucune ligne de rôle', async () => {
+    signedIn(me('STAFF', ADMIN), { 'GET /v1/admin/roles': [] });
+    renderAt('/roles');
+    expect(await screen.findByRole('heading', { name: 'Livreur' })).toBeInTheDocument();
+  });
+
   it('invitation : une adresse déjà utilisée est expliquée', async () => {
     signedIn(me('STAFF', ADMIN), { ...listHandlers(), 'POST /v1/admin/users': () => json(409, { error: { code: 'EMAIL_ALREADY_USED', message: 'x' } }) });
     renderAt('/users');

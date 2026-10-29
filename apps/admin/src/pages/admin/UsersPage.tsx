@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { createStaffSchema, LOCALES, ROLE_DEFINITIONS, type ScopeType } from '@b2c/shared';
 import { api } from '../../api/client';
+import { useAuth } from '../../auth/AuthProvider';
 import { apiErrorMessage } from '../../forms/validation';
 import { useZodForm } from '../../forms/useZodForm';
 import { format, useI18n } from '../../i18n';
@@ -14,7 +15,7 @@ import { FormMessage, SelectField, TextField } from '../../components/ui/Fields'
 import { Icon } from '../../components/ui/Icon';
 import { PageHead } from '../../components/ui/PageHead';
 import { useAgencies, useCan, useWarehouses } from '../staff/queries';
-import { adminKeys, useRoleNames, useRoles, useUsers, type UserItem } from './queries';
+import { adminKeys, useRoleNames, useUsers, type UserItem } from './queries';
 
 export const statusTone = (status: UserItem['status']) => (status === 'ACTIVE' ? ' badge-success' : status === 'PENDING' ? ' badge-warning' : ' badge-danger');
 
@@ -30,13 +31,16 @@ export function RoleScopePicker({
 }) {
   const { m } = useI18n();
   const u = m.admin.users;
-  const roles = useRoles();
+  const { user } = useAuth();
+  const roleName = useRoleNames();
   const warehouses = useWarehouses();
   const agencies = useAgencies();
-  // Seuls les rôles du personnel s'invitent ; l'API renvoie déjà ceux qui conviennent à l'entreprise
-  const definitions = new Map(ROLE_DEFINITIONS.map((r) => [r.code, r]));
-  const options = (roles.data ?? []).filter((r) => definitions.get(r.code as never)?.audience === 'STAFF');
-  const allowed = (definitions.get(roleCode as never)?.allowedScopes ?? ['COMPANY']) as readonly ScopeType[];
+  // Les rôles proposés viennent du catalogue partagé (ils ne dépendent donc pas des lignes de la base) : le personnel d'une entreprise
+  // reçoit des rôles « personnel », l'équipe plateforme des rôles « plateforme ». Le serveur reste l'autorité (anti-escalade, portée).
+  const definitions = new Map(ROLE_DEFINITIONS.map((r) => [r.code as string, r]));
+  const audience = user?.kind === 'PLATFORM' ? 'PLATFORM' : 'STAFF';
+  const options = ROLE_DEFINITIONS.filter((r) => r.audience === audience).map((r) => ({ code: r.code as string, name: roleName.get(r.code) ?? r.name }));
+  const allowed = (definitions.get(roleCode)?.allowedScopes ?? ['COMPANY']) as readonly ScopeType[];
   const targets = scopeType === 'WAREHOUSE' ? (warehouses.data?.items ?? []).map((w) => ({ value: w.id, label: `${w.name} (${w.reference})` })) : scopeType === 'AGENCY' ? (agencies.data?.items ?? []).map((a) => ({ value: a.id, label: a.name })) : [];
 
   return (
@@ -47,7 +51,7 @@ export function RoleScopePicker({
         value={roleCode}
         error={errors?.roleCode}
         onChange={(value) => {
-          const next = (definitions.get(value as never)?.allowedScopes ?? ['COMPANY']) as readonly ScopeType[];
+          const next = (definitions.get(value)?.allowedScopes ?? ['COMPANY']) as readonly ScopeType[];
           onChange({ roleCode: value, scopeType: next[0], scopeId: '' });
         }}
         options={[{ value: '', label: u.selectTarget }, ...options.map((r) => ({ value: r.code, label: r.name }))]}

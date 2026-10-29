@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ROLE_DEFINITIONS } from '@b2c/shared';
+import { useAuth } from '../../auth/AuthProvider';
 import { format, useI18n } from '../../i18n';
 import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
@@ -12,11 +13,15 @@ import { useRoles } from './queries';
 export function RolesPage() {
   const { m } = useI18n();
   const r = m.admin.roles;
+  const { user } = useAuth();
   const roles = useRoles();
   const [open, setOpen] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
   const scopes = new Map(ROLE_DEFINITIONS.map((d) => [d.code as string, d.allowedScopes]));
-  const items = roles.data ?? [];
+  // Les rôles sont définis dans le code : si le serveur n'en renvoie aucun (entreprise sans lignes de rôles), on affiche le catalogue partagé
+  const audience = user?.kind === 'PLATFORM' ? 'PLATFORM' : 'STAFF';
+  const fallback = ROLE_DEFINITIONS.filter((d) => d.audience === audience).map((d) => ({ code: d.code as string, name: d.name, description: d.description, isSystem: true, permissions: [...d.permissions].sort() }));
+  const items = roles.data && roles.data.length > 0 ? roles.data : roles.isLoading || roles.isError ? [] : fallback;
 
   return (
     <>

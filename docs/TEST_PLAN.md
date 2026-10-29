@@ -49,9 +49,9 @@ Exécutés le 2026-10-28 (suites automatisées rejouées à la fin de la phase 1
 | API `totp.spec.ts` + `two-factor.spec.ts` (vecteurs officiels RFC 6238, fenêtre, rejeu, chiffrement du secret, codes de secours, activation / désactivation, connexion en deux temps, verrouillage, obligation du personnel, base) | 31 | ✅ |
 | API `s3-storage.spec.ts` : configuration (3, toujours exécutés) ; stockage réel (7, **ignorés** sans `npm run test:s3`, voir ci-dessous) | 3 + 7 ignorés | ✅ / ⏭ |
 | Site, unitaires (10 fichiers : pages publiques et espace client ; les écrans du personnel sont dans le panel) | 157 | ✅ |
-| **Panel d'administration, unitaires** (5 fichiers : écrans du personnel repris de `phase6` à `phase9` + `admin.test.tsx` : accès, connexion, utilisateurs, rôles, entreprises, textes) | 84 | ✅ |
+| **Panel d'administration, unitaires** (5 fichiers : écrans du personnel repris de `phase6` à `phase9` + `admin.test.tsx` : accès, connexion, utilisateurs, rôles, entreprises, textes) | 86 | ✅ |
 | Site, recette navigateur | 88 | ✅ |
-| **Total de la suite standard** | **948** | **948 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
+| **Total de la suite standard** | **950** | **950 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
 
 Stockage S3 contre un **vrai SeaweedFS** (`npm run test:s3`) : **10 tests sur 10 réussis** (3 de configuration + 7 de stockage, dont le parcours API complet), exécutés le 2026-10-28. Ils sont ignorés par `npm test` pour ne pas exiger ce service : la suite l'affiche comme « ignorés », elle ne les compte pas comme vérifiés.
 
