@@ -1,4 +1,4 @@
-# Plateforme de logistique et d'expédition (nom provisoire : TransitHaïti)
+# Plateforme de logistique et d'expédition (marque : B2C — Business to Customer)
 
 Plateforme multi-entreprises de gestion de colis, d'expéditions aériennes et maritimes, d'entrepôts, d'agences, de facturation et de livraison, pour le marché haïtien.
 

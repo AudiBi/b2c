@@ -18,7 +18,7 @@ const csv = z
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    APP_NAME: z.string().default('TransitHaïti'),
+    APP_NAME: z.string().default('B2C'),
     API_PORT: z.coerce.number().int().min(1).max(65535).default(3100),
     API_PUBLIC_URL: z.url().default('http://localhost:3100'),
     WEB_PUBLIC_URL: z.url().default('http://localhost:5173'),
@@ -36,7 +36,7 @@ export const envSchema = z
     SMTP_SECURE: bool,
     SMTP_USER: z.string().default(''),
     SMTP_PASSWORD: z.string().default(''),
-    MAIL_FROM: z.string().default('TransitHaïti <no-reply@example.invalid>'),
+    MAIL_FROM: z.string().default('B2C <no-reply@example.invalid>'),
 
     JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET : au moins 32 caractères'),
     /** Clé de chiffrement des secrets de double authentification (32 caractères au moins). Absente : dérivée de JWT_ACCESS_SECRET (déconseillé en production). */

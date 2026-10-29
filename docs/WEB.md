@@ -34,7 +34,7 @@ Variables lues **à la construction** (fichier `.env` de la racine ; seules cell
 | Variable | Rôle |
 |---|---|
 | `VITE_COMPANY_SLUG` | Entreprise servie par ce site. **Une construction = une entreprise** |
-| `VITE_BRAND_NAME` | Nom de marque affiché (provisoire : « TransitHaïti ») |
+| `VITE_BRAND_NAME` | Nom de marque affiché (« B2C » par défaut) |
 | `VITE_API_URL` | Vide par défaut (même origine). À renseigner seulement si l'API est sur un autre domaine (alors configurer CORS et revoir le cookie de session) |
 | `SITE_URL` | URL publique, utilisée au pré-rendu pour `canonical`, `hreflang`, `sitemap.xml`, `robots.txt`. **À définir pour toute mise en ligne** |
 
@@ -120,7 +120,7 @@ Le logo fourni (`IMG-20260326-WA0026.svg`, 294 Ko : une trame vectorisée automa
 
 **Où il apparaît** : en-tête de toutes les pages (publiques, connexion, espace client et du personnel), pied de page (sur une plaque blanche, car le pied de page est bleu foncé), onglet, aperçu des liens partagés, PDF. **Pas** dans les e-mails (texte brut) ni dans les modèles de notification. Les images sont décoratives (`alt` vide) : le nom de la marque reste porté par un texte réservé aux lecteurs d'écran, et des tests le vérifient (pré-rendu, PDF).
 
-**Limites** : le fichier source est une trame vectorisée à partir d'une image : le retracé est fidèle à l'œil mais les bords gardent de légères irrégularités héritées de l'original ; **si l'entreprise possède le fichier vectoriel d'origine (Illustrator, Figma, SVG propre), il vaut mieux l'utiliser**. Le PDF n'a pas été contrôlé à l'œil (vérifié seulement : l'image est présente dans le document, aucun test automatique de mise en page). La **marque écrite** reste « TransitHaïti » (provisoire, `VITE_BRAND_NAME`) alors que le logo dit « B2C » : à harmoniser.
+**Limites** : le fichier source est une trame vectorisée à partir d'une image : le retracé est fidèle à l'œil mais les bords gardent de légères irrégularités héritées de l'original ; **si l'entreprise possède le fichier vectoriel d'origine (Illustrator, Figma, SVG propre), il vaut mieux l'utiliser**. Le PDF n'a pas été contrôlé à l'œil (vérifié seulement : l'image est présente dans le document, aucun test automatique de mise en page). Le **nom de marque** affiché est désormais « B2C » (valeur par défaut de `VITE_BRAND_NAME` et `APP_NAME`), comme le logo ; il reste modifiable par configuration.
 
 ## Double authentification (phase 9)
 

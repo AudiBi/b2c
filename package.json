@@ -2,7 +2,7 @@
   "name": "b2c",
   "private": true,
   "version": "0.1.0",
-  "description": "Plateforme de logistique et d'expédition (nom provisoire : TransitHaïti)",
+  "description": "Plateforme de logistique et d'expédition (marque : B2C — Business to Customer)",
   "engines": {
     "node": ">=22.12.0"
   },

@@ -13,7 +13,7 @@ import type { Env } from './config/env';
 
 export function buildOpenApi(app: NestExpressApplication): OpenAPIObject {
   const config = new DocumentBuilder()
-    .setTitle('API logistique (nom provisoire : TransitHaïti)')
+    .setTitle('API B2C (Business to Customer)')
     .setDescription(
       "Toutes les routes sont sous /v1. Erreurs : { error: { code, message, details?, requestId } }. " +
         "Chaque route protégée indique ses permissions dans l'extension x-permissions.",

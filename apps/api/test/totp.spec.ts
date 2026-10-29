@@ -56,8 +56,8 @@ describe('TOTP : primitives', () => {
     expect(a).toMatch(/^[A-Z2-7]{32}$/);
     expect(base32Decode(a)).toHaveLength(20);
     expect(generateSecret()).not.toBe(a);
-    const uri = otpauthUri(a, 'marie@example.test', 'TransitHaïti');
-    expect(uri.startsWith('otpauth://totp/Transit')).toBe(true);
+    const uri = otpauthUri(a, 'marie@example.test', 'B2C');
+    expect(uri.startsWith('otpauth://totp/B2C')).toBe(true);
     expect(uri).toContain(`secret=${a}`);
     expect(uri).toContain('digits=6');
     expect(uri).toContain('period=30');

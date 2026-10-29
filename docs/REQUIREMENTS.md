@@ -1,7 +1,7 @@
 # Spécifications fonctionnelles et non fonctionnelles
 
 Phase 2. Source : cahier des charges de l'utilisateur (sections 3 à 19) et [PROJECT_AUDIT.md](PROJECT_AUDIT.md).
-Nom de marque : **provisoire** (« TransitHaïti », à remplacer ; il est une variable de configuration, jamais en dur dans le code).
+Nom de marque : **B2C** (« Business to Customer », nom du logo fourni) ; il reste une variable de configuration (`VITE_BRAND_NAME`, `APP_NAME`), jamais en dur dans le code. « TransitHaïti » était le nom provisoire des phases 1 à 10.
 
 ## 1. Hypothèses retenues (validées par l'utilisateur le 2026-10-24)
 

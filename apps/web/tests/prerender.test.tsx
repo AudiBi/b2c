@@ -11,7 +11,7 @@ describe('rendu serveur de toutes les pages', () => {
   it.each(prerenderTargets.map((t) => [`/${t.lang}${t.path}`, t] as const))('%s : un seul h1, un titre, aucune valeur « undefined »', (url, target) => {
     const { html, head } = render(url);
     expect((html.match(/<h1[ >]/g) ?? []).length).toBe(1);
-    expect(head.title).toMatch(/TransitHaïti/);
+    expect(head.title).toMatch(/B2C/);
     expect(head.description?.length).toBeGreaterThan(20);
     expect(html).not.toMatch(/undefined|\[object Object\]|NaN/);
     expect(html).toContain('<main');
@@ -23,7 +23,7 @@ describe('rendu serveur de toutes les pages', () => {
     expect(html).toContain('src="/logo-mark.svg"');
     expect(html).toContain('src="/logo.svg"');
     // images décoratives (alt vide) : le nom de la marque est porté par un texte réservé aux lecteurs d'écran dans le lien d'accueil
-    expect(html).toMatch(/<a [^>]*class="brand"[^>]*>[\s\S]*?<img [^>]*alt=""[\s\S]*?<span class="sr-only">TransitHaïti<\/span>/);
+    expect(html).toMatch(/<a [^>]*class="brand"[^>]*>[\s\S]*?<img [^>]*alt=""[\s\S]*?<span class="sr-only">B2C<\/span>/);
     // dimensions déclarées : pas de saut de mise en page au chargement
     expect(html).toMatch(/<img [^>]*src="\/logo-mark.svg"[^>]*width="\d+"[^>]*height="48"/);
   });
