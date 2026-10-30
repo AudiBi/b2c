@@ -293,7 +293,7 @@ describe('notifications (personnel)', () => {
 
   it('journal : un envoi en échec peut être relancé ; le traitement manuel affiche son bilan', async () => {
     signedIn('STAFF', perms, {
-      'GET /v1/admin/notifications': { items: [logItem(), logItem({ id: 'n2', status: 'SKIPPED', channel: 'SMS', skipReason: 'CHANNEL_NOT_CONFIGURED', attempts: 0, lastError: null })], nextCursor: null },
+      'GET /v1/admin/notifications': { items: [logItem(), logItem({ id: 'n2', status: 'SKIPPED', channel: 'WHATSAPP', skipReason: 'CHANNEL_NOT_CONFIGURED', attempts: 0, lastError: null })], nextCursor: null },
       'GET /v1/admin/notification-templates': templates,
       [`POST /v1/admin/notifications/${NOT}/retry`]: () => json(200, {}),
       'POST /v1/admin/notifications/process': () => json(200, { fannedOut: 1, sent: 2, failed: 0, retried: 1, skipped: 0 }),

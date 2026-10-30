@@ -20,7 +20,7 @@ export const EVENT_CODES = [
 ] as const;
 export type EventCode = (typeof EVENT_CODES)[number];
 
-export const NOTIFICATION_CHANNELS = ['IN_APP', 'EMAIL', 'SMS', 'WHATSAPP'] as const;
+export const NOTIFICATION_CHANNELS = ['IN_APP', 'EMAIL', 'WHATSAPP'] as const;
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 export const NOTIFICATION_STATUSES = ['QUEUED', 'SENT', 'FAILED', 'SKIPPED'] as const;
 export type NotificationStatus = (typeof NOTIFICATION_STATUSES)[number];

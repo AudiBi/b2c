@@ -90,6 +90,7 @@ export function TeamPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const list = useQuery({ queryKey: teamKey, queryFn: () => api<{ limit: number; items: TeamMember[] }>('/v1/me/team'), enabled: !!user?.permissions.includes('team:manage_own') });
+  const history = useQuery({ queryKey: [...teamKey, 'activity'], queryFn: () => api<{ items: { id: string; action: string; at: string; email: string | null; role: TeamRole | null }[] }>('/v1/me/team/activity'), enabled: !!user?.permissions.includes('team:manage_own') });
   const [adding, setAdding] = useState(false);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -195,6 +196,18 @@ export function TeamPage() {
             </li>
           );
         })}
+      </ul>
+      <h2 style={{ fontSize: '1.3rem' }}>{t.historyTitle}</h2>
+      {history.data && history.data.items.length === 0 ? <p className="muted">{t.historyEmpty}</p> : null}
+      <ul className="list-plain">
+        {history.data?.items.map((item) => (
+          <li key={item.id} className="card">
+            <strong>{t.actions[item.action.replace('.', '_') as keyof typeof t.actions] ?? item.action}</strong>
+            {item.email ? ` — ${item.email}` : ''}
+            {item.role ? ` (${t.roles[item.role]})` : ''}
+            <span className="muted"> · {new Date(item.at).toLocaleString()}</span>
+          </li>
+        ))}
       </ul>
     </>
   );

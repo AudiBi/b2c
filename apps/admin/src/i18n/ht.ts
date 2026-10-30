@@ -431,8 +431,8 @@ export const ht: Messages = {
       phoneNotVerified: 'Nimewo pa verifye',
       notificationsTitle: 'Notifikasyon',
       notificationsText: 'Chwazi kanal yo itilize pou enfòme w sou pwogrè pakè ou yo. Mesaj sekirite yo (konfimasyon, modpas) toujou ale pa imèl.',
-      channels: { email: 'Imèl', sms: 'SMS', whatsapp: 'WhatsApp', inApp: 'Nan espas mwen' },
-      channelsNote: 'Yo itilize SMS ak WhatsApp sèlman lè antrepriz la aktive yo.',
+      channels: { email: 'Imèl', whatsapp: 'WhatsApp', inApp: 'Nan espas mwen' },
+      channelsNote: 'Yo itilize WhatsApp sèlman lè antrepriz la aktive li.',
     },
     addresses: {
       title: 'Adrès mwen yo',
@@ -778,7 +778,7 @@ export const ht: Messages = {
       'delivery.failed': 'Livrezon pa reyisi',
       'claim.updated': 'Reklamasyon mete ajou',
     },
-    channels: { IN_APP: 'Pòtay', EMAIL: 'Imèl', SMS: 'SMS', WHATSAPP: 'WhatsApp' },
+    channels: { IN_APP: 'Pòtay', EMAIL: 'Imèl', WHATSAPP: 'WhatsApp' },
     totals: { subtotal: 'Sou-total', discount: 'Rabè', tax: 'Taks', total: 'Total', credited: 'Nòt kredi', paid: 'Peye', pending: 'Ap tann validasyon', balance: 'Rès pou peye' },
     common: { loadMore: 'Wè plis', open: 'Louvri', back: 'Retounen', packages: 'Kolis nan fakti a', payments: 'Peman', credits: 'Nòt kredi', lines: 'Detay', issuedOn: 'Emèt le', dueOn: 'Dat limit', noPayments: 'Pa gen peman.', downloadPdf: 'Fakti (PDF)', receipt: 'Resi (PDF)', amount: 'Montan', reference: 'Referans', reason: 'Rezon', all: 'Tout', draftNumber: 'Bouyon', downloadFailed: 'Telechajman an echwe.' },
     customer: {
@@ -944,7 +944,7 @@ export const ht: Messages = {
         process: 'Lanse tretman an kounye a',
         processed: 'Tretman fini : {sent} voye, {retried} pou eseye ankò, {failed} echwe.',
         templates: 'Modèl mesaj',
-        templatesLead: 'Tèks senp. Se sèlman varyab evènman chwazi a ki pèmèt. SMS ak WhatsApp : pa gen okenn founisè ki konfigire.',
+        templatesLead: 'Tèks senp. Se sèlman varyab evènman chwazi a ki pèmèt. WhatsApp : pa gen okenn founisè ki konfigire.',
         event: 'Evènman',
         locale: 'Lang',
         subject: 'Objè',

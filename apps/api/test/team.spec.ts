@@ -208,6 +208,19 @@ describe('Équipe d’un compte professionnel (moindre privilège)', () => {
     }
   });
 
+  it('historique : invitation, changement de rôle et retrait, du plus récent au plus ancien ; refusé à un membre', async () => {
+    const w = await setup();
+    const m = await addMember(w, 'READER');
+    await api(t).patch(`/v1/me/team/${m.userId}`).set(bearer(w.owner.token)).send({ role: 'OPERATOR' });
+    await api(t).delete(`/v1/me/team/${m.userId}`).set(bearer(w.owner.token));
+    const res = await api(t).get('/v1/me/team/activity').set(bearer(w.owner.token));
+    expect(res.status).toBe(200);
+    expect(res.body.items.map((i: any) => i.action)).toEqual(['team.member_removed', 'team.member_role_changed', 'team.member_invited']);
+    expect(res.body.items[2]).toMatchObject({ email: m.email, role: 'READER' });
+    const other = await addMember(w, 'READER');
+    expect((await api(t).get('/v1/me/team/activity').set(bearer(other.token))).status).toBe(403);
+  });
+
   it('double authentification : exigée du propriétaire pour inviter un membre', async () => {
     const tenant = await makeTenant(strict);
     const owner = await makeUser(strict, { company: tenant.company, roleCode: 'CUSTOMER_BUSINESS' });

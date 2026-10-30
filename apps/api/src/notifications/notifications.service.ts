@@ -21,7 +21,7 @@ import { DEFAULT_TEMPLATES } from './default-templates';
 type Locale = 'fr' | 'ht' | 'en';
 const TEMPLATE_CHANNELS: NotificationChannel[] = ['IN_APP', 'EMAIL'];
 const LOCALES: Locale[] = ['fr', 'ht', 'en'];
-const FANOUT_ORDER: NotificationChannel[] = ['IN_APP', 'EMAIL', 'SMS', 'WHATSAPP'];
+const FANOUT_ORDER: ('IN_APP' | 'EMAIL' | 'WHATSAPP')[] = ['IN_APP', 'EMAIL', 'WHATSAPP'];
 const MAX_ROUNDS = 20;
 
 export interface ProcessResult {
@@ -51,7 +51,7 @@ export const notificationDto = (n: Notification) => ({
 
 /**
  * Notifications : transforme les événements de l'outbox en messages (portail, e-mail), les envoie avec nouvelles
- * tentatives espacées, et tient un journal lisible. Aucun canal n'est simulé : SMS et WhatsApp, faute de prestataire,
+ * tentatives espacées, et tient un journal lisible. Aucun canal n'est simulé : WhatsApp, faute de prestataire,
  * produisent un statut « ignoré » visible (CHANNEL_NOT_CONFIGURED) et rien d'autre.
  */
 @Injectable()
@@ -102,7 +102,7 @@ export class NotificationsService {
   }
 
   async upsertTemplate(auth: AuthContext, input: TemplateInput) {
-    if (input.channel === 'SMS' || input.channel === 'WHATSAPP') {
+    if (input.channel === 'WHATSAPP') {
       throw AppException.unprocessable('CHANNEL_NOT_CONFIGURED', "Ce canal n'est pas configuré : aucun prestataire n'est actif");
     }
     return this.db.run({ companyId: auth.companyId }, async (tx) => {
@@ -205,8 +205,8 @@ export class NotificationsService {
       return { skipped: 0 };
     }
     const locale = (['fr', 'ht', 'en'].includes(customer.user.locale) ? customer.user.locale : 'fr') as Locale;
-    const prefs = (customer.notificationPrefs ?? {}) as { email?: boolean; sms?: boolean; whatsapp?: boolean; inApp?: boolean };
-    const enabled: Record<NotificationChannel, boolean> = { IN_APP: prefs.inApp !== false, EMAIL: prefs.email !== false, SMS: prefs.sms === true, WHATSAPP: prefs.whatsapp === true };
+    const prefs = (customer.notificationPrefs ?? {}) as { email?: boolean; whatsapp?: boolean; inApp?: boolean };
+    const enabled: Record<(typeof FANOUT_ORDER)[number], boolean> = { IN_APP: prefs.inApp !== false, EMAIL: prefs.email !== false, WHATSAPP: prefs.whatsapp === true };
     const mandatory = MANDATORY_EVENTS.includes(code);
     const values = event.payload as Record<string, string>;
     let skipped = 0;
@@ -222,7 +222,7 @@ export class NotificationsService {
         continue;
       }
       const { custom, fallback } = await this.resolve(tx, companyId, code, channel === 'IN_APP' || channel === 'EMAIL' ? channel : 'IN_APP', locale);
-      if (channel === 'SMS' || channel === 'WHATSAPP') {
+      if (channel === 'WHATSAPP') {
         rows.push({ ...base, body: renderTemplate(fallback.body, values), status: 'SKIPPED', skipReason: 'CHANNEL_NOT_CONFIGURED' });
         skipped += 1;
         continue;

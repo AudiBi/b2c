@@ -431,8 +431,8 @@ export const fr = {
       phoneNotVerified: 'Numéro non vérifié',
       notificationsTitle: 'Notifications',
       notificationsText: 'Choisissez les canaux utilisés pour vous informer de l’avancement de vos colis. Les messages de sécurité (confirmation, mot de passe) sont toujours envoyés par e-mail.',
-      channels: { email: 'E-mail', sms: 'SMS', whatsapp: 'WhatsApp', inApp: 'Dans mon espace' },
-      channelsNote: 'Les canaux SMS et WhatsApp ne sont utilisés que lorsque l’entreprise les a activés.',
+      channels: { email: 'E-mail', whatsapp: 'WhatsApp', inApp: 'Dans mon espace' },
+      channelsNote: 'Le canal WhatsApp n’est utilisé que lorsque l’entreprise l’a activé.',
     },
     addresses: {
       title: 'Mes adresses',
@@ -778,7 +778,7 @@ export const fr = {
       'delivery.failed': 'Livraison non aboutie',
       'claim.updated': 'Réclamation mise à jour',
     },
-    channels: { IN_APP: 'Portail', EMAIL: 'E-mail', SMS: 'SMS', WHATSAPP: 'WhatsApp' },
+    channels: { IN_APP: 'Portail', EMAIL: 'E-mail', WHATSAPP: 'WhatsApp' },
     totals: { subtotal: 'Sous-total', discount: 'Remise', tax: 'Taxes', total: 'Total', credited: 'Avoirs', paid: 'Payé', pending: 'En attente de validation', balance: 'Reste à payer' },
     common: { loadMore: 'Voir plus', open: 'Ouvrir', back: 'Retour', packages: 'Colis facturés', payments: 'Paiements', credits: 'Avoirs', lines: 'Détail', issuedOn: 'Émise le', dueOn: 'Échéance', noPayments: 'Aucun paiement.', downloadPdf: 'Facture (PDF)', receipt: 'Reçu (PDF)', amount: 'Montant', reference: 'Référence', reason: 'Motif', all: 'Tous', draftNumber: 'Brouillon', downloadFailed: 'Le téléchargement a échoué.' },
     customer: {
@@ -944,7 +944,7 @@ export const fr = {
         process: 'Lancer le traitement maintenant',
         processed: 'Traitement terminé : {sent} envoyée(s), {retried} à réessayer, {failed} en échec.',
         templates: 'Modèles de messages',
-        templatesLead: 'Texte brut. Variables autorisées pour l’événement choisi uniquement. SMS et WhatsApp : aucun prestataire n’est configuré.',
+        templatesLead: 'Texte brut. Variables autorisées pour l’événement choisi uniquement. WhatsApp : aucun prestataire n’est configuré.',
         event: 'Événement',
         locale: 'Langue',
         subject: 'Objet',

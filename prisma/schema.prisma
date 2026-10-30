@@ -401,8 +401,8 @@ model Customer {
   userId            String       @unique @map("user_id") @db.Uuid
   customerType      CustomerType @map("customer_type")
   customerCode      String       @map("customer_code")
-  // Canaux de notification souhaités : { email, sms, whatsapp, inApp }
-  notificationPrefs Json         @default("{\"email\": true, \"sms\": false, \"whatsapp\": false, \"inApp\": true}") @map("notification_prefs")
+  // Canaux de notification souhaités : { email, whatsapp, inApp }
+  notificationPrefs Json         @default("{\"email\": true, \"whatsapp\": false, \"inApp\": true}") @map("notification_prefs")
   createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 

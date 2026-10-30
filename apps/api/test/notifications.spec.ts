@@ -68,20 +68,20 @@ describe('Notifications : outbox, envoi, tentatives, modèles, portail', () => {
       expect(mail[0].text).toContain('Boutique Test');
     });
 
-    it('SMS et WhatsApp activés par le client mais sans prestataire : « ignoré » visible, rien d’envoyé', async () => {
+    it('WhatsApp activé par le client mais sans prestataire : « ignoré » visible, rien d’envoyé', async () => {
       const w = await setup();
-      await setPrefs(w, { email: true, sms: true, whatsapp: true, inApp: true });
+      await setPrefs(w, { email: true, whatsapp: true, inApp: true });
       await makePrealert(t, w.customer, w.warehouse.id);
       const result = await processNotifications(t, w.company.id);
-      expect(result.skipped).toBe(2);
-      const skipped = await notifications(w, { channel: { in: ['SMS', 'WHATSAPP'] } });
-      expect(skipped.map((n) => [n.channel, n.status, n.skipReason])).toEqual([['SMS', 'SKIPPED', 'CHANNEL_NOT_CONFIGURED'], ['WHATSAPP', 'SKIPPED', 'CHANNEL_NOT_CONFIGURED']]);
+      expect(result.skipped).toBe(1);
+      const skipped = await notifications(w, { channel: 'WHATSAPP' });
+      expect(skipped.map((n) => [n.channel, n.status, n.skipReason])).toEqual([['WHATSAPP', 'SKIPPED', 'CHANNEL_NOT_CONFIGURED']]);
       expect(mailsTo(t, w.customer.user.email)).toHaveLength(1); // le seul envoi réel est l'e-mail
     });
 
     it('préférences : canal coupé → PREFERENCE_OFF ; un événement obligatoire (paiement confirmé) passe quand même', async () => {
       const w = await setup();
-      await setPrefs(w, { email: false, sms: false, whatsapp: false, inApp: false });
+      await setPrefs(w, { email: false, whatsapp: false, inApp: false });
       await makePrealert(t, w.customer, w.warehouse.id);
       await emitDirect(w, 'payment.confirmed', { customerName: 'Client', invoiceNumber: 'INV-1', receiptNumber: 'RCT-1', amount: '9.50', currency: 'USD' });
       await processNotifications(t, w.company.id);
@@ -240,7 +240,7 @@ describe('Notifications : outbox, envoi, tentatives, modèles, portail', () => {
       expect((await reset('eventCode=nope&channel=EMAIL&locale=fr')).status).toBe(400);
     });
 
-    it('variables inconnues, sujet manquant, canal SMS/WhatsApp, corps vide ou démesuré : refusés', async () => {
+    it('variables inconnues, sujet manquant, canal SMS (retiré), canal WhatsApp, corps vide ou démesuré : refusés', async () => {
       const w = await setup();
       const base = { eventCode: 'package.received', channel: 'EMAIL', locale: 'fr', subject: 'Sujet', body: 'Corps {trackingNumber}' };
       expect((await putTemplate(w, { ...base, body: 'Bonjour {password}' })).status).toBe(400);
@@ -249,7 +249,8 @@ describe('Notifications : outbox, envoi, tentatives, modèles, portail', () => {
       expect((await putTemplate(w, { ...base, body: '' })).status).toBe(400);
       expect((await putTemplate(w, { ...base, body: 'x'.repeat(2001) })).status).toBe(400);
       expect((await putTemplate(w, { ...base, extra: 1 })).status).toBe(400);
-      expect(errorCode(await putTemplate(w, { ...base, channel: 'SMS' }))).toBe('CHANNEL_NOT_CONFIGURED');
+      expect((await putTemplate(w, { ...base, channel: 'SMS' })).status).toBe(400); // le canal SMS n'existe plus
+      expect(errorCode(await putTemplate(w, { ...base, channel: 'WHATSAPP' }))).toBe('CHANNEL_NOT_CONFIGURED');
       expect((await putTemplate(w, base)).status).toBe(200);
     });
 

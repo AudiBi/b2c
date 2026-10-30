@@ -106,7 +106,7 @@ export function ProfilePage() {
           <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
             <legend>{p.notificationsTitle}</legend>
             <p className="hint">{p.notificationsText}</p>
-            {(['email', 'sms', 'whatsapp', 'inApp'] as const).map((channel) => (
+            {(['email', 'whatsapp', 'inApp'] as const).map((channel) => (
               <CheckField key={channel} name={`pref-${channel}`} checked={prefs[channel]} onChange={(checked) => form.set('notificationPrefs', { ...prefs, [channel]: checked })}>
                 {p.channels[channel]}
               </CheckField>

@@ -5,7 +5,6 @@ import type { TimelineEvent } from '../../components/PackageParts';
 
 export interface NotificationPrefs {
   email: boolean;
-  sms: boolean;
   whatsapp: boolean;
   inApp: boolean;
 }
@@ -72,7 +71,7 @@ export const keys = {
 export const useProfile = (enabled = true) => useQuery({ queryKey: keys.profile, queryFn: () => api<Profile>('/v1/me/profile'), enabled });
 export const useAddresses = () => useQuery({ queryKey: keys.addresses, queryFn: () => api<{ items: Address[] }>('/v1/me/addresses') });
 export const useBeneficiaries = () => useQuery({ queryKey: keys.beneficiaries, queryFn: () => api<{ items: Beneficiary[] }>('/v1/me/beneficiaries') });
-export const useReceiving = () => useQuery({ queryKey: keys.receiving, queryFn: () => api<ReceivingResult>('/v1/me/receiving-addresses') });
+export const useReceiving = (enabled = true) => useQuery({ queryKey: keys.receiving, queryFn: () => api<ReceivingResult>('/v1/me/receiving-addresses'), enabled });
 
 // ---------------------------------------------------------------------------------------------
 // Préalertes, colis et pièces jointes (phase 5)
@@ -134,8 +133,9 @@ export const accountKeys = {
 
 export const usePrealerts = () => useQuery({ queryKey: accountKeys.prealerts, queryFn: () => api<{ items: Prealert[] }>('/v1/me/prealerts') });
 
-export const usePackages = (filter: { status: string; q: string }) =>
+export const usePackages = (filter: { status: string; q: string }, enabled = true) =>
   useInfiniteQuery({
+    enabled,
     queryKey: [...accountKeys.packages, filter] as const,
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) => {

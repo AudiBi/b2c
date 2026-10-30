@@ -21,6 +21,13 @@ export class TeamController {
     return this.team.list(auth);
   }
 
+  @Get('activity')
+  @RequirePermission('team:manage_own')
+  @ApiOperation({ summary: "Historique des actions sur mon équipe (invitations, rôles, retraits)" })
+  activity(@CurrentAuth() auth: AuthContext) {
+    return this.team.activity(auth);
+  }
+
   @Post()
   @RequirePermission('team:manage_own')
   @RateLimit({ name: 'team-invite', limit: 20, windowSeconds: 3600 })

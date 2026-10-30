@@ -307,3 +307,56 @@
 .timeline li::before { content: ''; position: absolute; left: -29px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid var(--border-strong); }
 .timeline li[aria-current='step']::before { border-color: var(--navy-900); background: var(--navy-900); }
 .files-panel { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+/* ---------- Tableau de bord client ---------- */
+.dash-hero { display: grid; gap: 20px; padding: 28px; border-radius: 20px; color: #fff; background: radial-gradient(120% 140% at 100% 0%, #0a7aa3 0%, #03526f 45%, #0b2545 100%); box-shadow: 0 10px 30px rgb(3 82 111 / 0.25); }
+.dash-hero h1 { color: #fff; font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 6px; }
+.dash-hero p { margin: 0; color: rgb(255 255 255 / 0.86); max-width: 46ch; }
+.dash-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.dash-hero .btn-outline { color: #fff; border-color: rgb(255 255 255 / 0.6); background: transparent; }
+.dash-hero .btn-outline:hover { background: rgb(255 255 255 / 0.12); }
+.dash-code { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; background: rgb(255 255 255 / 0.12); border: 1px solid rgb(255 255 255 / 0.25); border-radius: 16px; padding: 14px 18px; backdrop-filter: blur(6px); align-self: start; }
+.dash-code-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: rgb(255 255 255 / 0.8); }
+.dash-code-value { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.6rem; font-weight: 800; letter-spacing: 0.04em; }
+.dash-code .btn-ghost { color: #fff; padding-inline: 0; text-decoration: underline; }
+@media (min-width: 760px) { .dash-hero { grid-template-columns: 1fr auto; align-items: center; } }
+
+.stat-grid { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 900px) { .stat-grid { grid-template-columns: repeat(4, 1fr); } }
+.stat { display: flex; flex-direction: column; gap: 2px; padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); border-left: 5px solid var(--stat, var(--blue-600)); text-decoration: none; color: var(--text); box-shadow: var(--shadow); transition: transform 0.15s, box-shadow 0.15s; }
+.stat:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgb(16 24 40 / 0.12); }
+.stat-value { font-size: 2rem; font-weight: 800; line-height: 1.1; color: var(--navy-900); }
+.stat-label { color: var(--muted); font-size: 0.92rem; }
+.stat-blue { --stat: #1d6fb8; }
+.stat-green { --stat: #0e8a5f; }
+.stat-amber { --stat: #d98a1f; }
+.stat-violet { --stat: #6d4fc2; }
+
+.dash-cols { display: grid; gap: 16px; }
+@media (min-width: 960px) { .dash-cols { grid-template-columns: 3fr 2fr; align-items: start; } }
+.pkg-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; }
+.pkg-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 6px; border-top: 1px solid var(--border); text-decoration: none; color: inherit; border-radius: 8px; }
+.pkg-list li:first-child .pkg-row { border-top: 0; }
+.pkg-row:hover { background: var(--surface-alt); }
+.mini-address { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.shortcut-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.shortcut { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); text-decoration: none; color: var(--text); transition: border-color 0.15s, transform 0.15s; }
+.shortcut:hover { border-color: #03526f; transform: translateY(-2px); }
+.shortcut strong { color: var(--navy-900); }
+.shortcut span { color: var(--muted); font-size: 0.9rem; }
+
+/* Menu de l'espace client plus net : carte latérale sur ordinateur, pastilles défilantes sur téléphone */
+.account-nav a { border: 1px solid transparent; background: transparent; padding: 10px 14px; }
+.account-nav a:hover { background: var(--surface-alt); }
+.account-nav a[aria-current='page'] { background: #03526f; color: #fff; border-color: #03526f; }
+@media (max-width: 899px) {
+  .account-nav ul { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; }
+  .account-nav a { white-space: nowrap; border-color: var(--border); background: #fff; }
+}
+@media (min-width: 900px) {
+  .account-nav { position: sticky; top: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 10px; box-shadow: var(--shadow); }
+}
+.account-layout > * { min-width: 0; }
+.dash-hero > * { min-width: 0; }
+.dash-cols .row-card { align-items: baseline; flex-wrap: nowrap; }
+.dash-cols .row-card a { white-space: nowrap; }

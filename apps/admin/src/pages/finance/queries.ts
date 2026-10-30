@@ -91,7 +91,7 @@ export interface AppNotification {
 export interface NotificationLogItem {
   id: string;
   eventCode: string;
-  channel: 'IN_APP' | 'EMAIL' | 'SMS' | 'WHATSAPP';
+  channel: 'IN_APP' | 'EMAIL' | 'WHATSAPP';
   locale: string;
   subject: string | null;
   body: string;

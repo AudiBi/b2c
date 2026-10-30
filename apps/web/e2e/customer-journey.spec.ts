@@ -100,14 +100,14 @@ test.describe('parcours client', () => {
     await accountNav(page).getByRole('link', { name: 'Mon profil' }).click();
     await page.getByLabel('Prénom').fill('Marie-Claire');
     await page.getByLabel('Téléphone').fill('+50937000000');
-    await page.getByLabel('SMS').check();
+    await page.getByLabel('WhatsApp').check();
     await page.getByRole('button', { name: 'Enregistrer' }).click();
     await expect(page.getByText('Modifications enregistrées.')).toBeVisible();
 
     await page.reload();
     await expect(page.getByLabel('Prénom')).toHaveValue('Marie-Claire');
     await expect(page.getByLabel('Téléphone')).toHaveValue('+50937000000');
-    await expect(page.getByLabel('SMS')).toBeChecked();
+    await expect(page.getByLabel('WhatsApp')).toBeChecked();
 
     await accountNav(page).getByRole('link', { name: 'Adresses de réception' }).click();
     await expect(page.getByTestId('receiving-AIR')).toContainText('Marie-Claire Jean');

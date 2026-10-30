@@ -28,7 +28,6 @@ export type TransportModeCode = (typeof TRANSPORT_MODES)[number];
 
 export const notificationPrefsSchema = z.strictObject({
   email: z.boolean(),
-  sms: z.boolean(),
   whatsapp: z.boolean(),
   inApp: z.boolean(),
 });

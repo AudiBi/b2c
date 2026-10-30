@@ -51,7 +51,7 @@ export class AdminNotificationsController {
   @Put('notification-templates')
   @RequirePermission('notification:template_manage')
   @Validate({ body: templateSchema })
-  @ApiOperation({ summary: 'Crée ou remplace un modèle personnalisé', description: 'Variables limitées à celles de l’événement ; texte brut ; SMS et WhatsApp refusés (aucun prestataire).' })
+  @ApiOperation({ summary: 'Crée ou remplace un modèle personnalisé', description: 'Variables limitées à celles de l’événement ; texte brut ; WhatsApp refusé (aucun prestataire).' })
   saveTemplate(@CurrentAuth() auth: AuthContext, @VBody() body: z.infer<typeof templateSchema>) {
     return this.notifications.upsertTemplate(auth, body);
   }

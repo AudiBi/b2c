@@ -78,6 +78,24 @@ export class TeamService {
     });
   }
 
+  /** Historique des actions sur l'équipe (invitations, changements de rôle, retraits), les plus récentes d'abord. */
+  async activity(auth: AuthContext) {
+    return this.db.run({ companyId: auth.companyId }, async (tx) => {
+      const owner = await this.owner(tx, auth);
+      const rows = await tx.auditLog.findMany({
+        where: { companyId: auth.companyId, entityType: 'customer', entityId: owner.id, action: { startsWith: 'team.' } },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
+      return {
+        items: rows.map((row) => {
+          const data = ((row.after ?? row.before) ?? {}) as { email?: string; role?: string; roles?: string[] };
+          return { id: row.id, action: row.action, at: row.createdAt, email: data.email ?? null, role: data.role ?? null };
+        }),
+      };
+    });
+  }
+
   async invite(auth: AuthContext, input: TeamInviteInput) {
     this.requireOwnerMfa(auth);
     const created = await this.db.run({ companyId: auth.companyId }, async (tx) => {

@@ -21,11 +21,11 @@ Ne **jamais** lancer deux de ces commandes en même temps : elles partagent la b
 
 ## Derniers résultats
 
-Exécutés le 2026-10-28 (suites automatisées rejouées à la fin de la phase 10), Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chromium de Playwright.
+Exécutés le 2026-10-30 (suites automatisées rejouées après l'équipe et le tableau de bord), Windows 11, Node 22.21.1, PostgreSQL 17, Redis 7, Chromium de Playwright.
 
 | Suite | Tests | Résultat |
 |---|---|---|
-| `packages/shared` (catalogue, `PermissionSet`, schémas, machine d'états des colis, des lots, numéro de suivi, finance et notifications, **remise, tournées, réclamations, période du tableau de bord**) | 88 | ✅ |
+| `packages/shared` (catalogue, `PermissionSet`, schémas, machine d'états des colis, des lots, numéro de suivi, finance et notifications, **remise, tournées, réclamations, période du tableau de bord**) | 91 | ✅ |
 | API `rls.spec.ts` (isolation au niveau de la base) | 18 | ✅ |
 | API `auth.spec.ts` | 40 | ✅ |
 | API `iam.spec.ts` (politique des routes, matrice des rôles, invitations, plateforme) | 47 | ✅ |
@@ -38,22 +38,22 @@ Exécutés le 2026-10-28 (suites automatisées rejouées à la fin de la phase 1
 | API `shipments.spec.ts` (création, droits, chargement, départ/arrivée/douane/clôture/annulation, agence, manifestes CSV/PDF, base) | 33 | ✅ |
 | API `finance.spec.ts` (brouillon, remise, émission et numérotation simultanées, avoirs, immuabilité en base, caisse, espèces, idempotence, concurrence, déclaration / validation / refus, remboursements, PDF, export CSV, synthèse, isolation) | 38 | ✅ |
 | API `webhooks.spec.ts` (signature, horodatage, altération, rejeu simultané, montant ou devise différents, référence inconnue, échec du prestataire, isolation, ajout seul) | 11 | ✅ |
-| API `notifications.spec.ts` (événements, langue, préférences, SMS ignoré, déduplication, nouvelles tentatives, échec définitif et relance, modèles, injection d'en-têtes, file vidée en un traitement, émetteurs, portail, isolation, base) | 25 | ✅ |
+| API `notifications.spec.ts` (événements, langue, préférences, WhatsApp ignoré, canal SMS refusé, déduplication, nouvelles tentatives, échec définitif et relance, modèles, injection d'en-têtes, file vidée en un traitement, émetteurs, portail, isolation, base) | 25 | ✅ |
 | API `delivery.spec.ts` (tournées, droits, arrêts, départ « tout ou rien », livreur limité à ses tournées, code de remise et verrouillage, preuves, bénéficiaires, photo, solde dû et dérogation, remise au comptoir, échecs, base, isolation) | 28 | ✅ |
 | API `claims.spec.ts` (ouverture, isolation, notes internes, affectation, responsables affectables, clôture et réouverture, notifications, base) | 10 | ✅ |
 | API `reports.spec.ts` (tableau de bord vide, chiffres réels, revenus et impayés par devise, incidents, période, droits, livreurs) | 7 | ✅ |
 | API `rate-limit.spec.ts` | 7 | ✅ |
 | API `infra.spec.ts` (compteurs, idempotence) | 9 | ✅ |
-| API `team.spec.ts` (équipe d'un compte professionnel : invitation et activation, lecteur / opérateur, accès refusés au profil, aux adresses et à l'équipe, isolement entre comptes, changement de rôle et retrait immédiats avec audit, réinvitation, limite de 10 en rafale, validation, double authentification du propriétaire) | 13 | ✅ |
+| API `team.spec.ts` (équipe d'un compte professionnel : invitation et activation, lecteur / opérateur, accès refusés au profil, aux adresses et à l'équipe, isolement entre comptes, changement de rôle et retrait immédiats avec audit, réinvitation, limite de 10 en rafale, validation, double authentification du propriétaire) | 14 | ✅ |
 | API `custom-roles.spec.ts` (rôles personnalisés : création et liste, validation, noms uniques, droit `role:manage`, anti-escalade à la création / modification / suppression / attribution, effet immédiat sur les droits, portée entrepôt, invitation, suppression refusée tant qu'attribué, isolation entre entreprises, rôles système intouchables, garde-fous en base) | 15 | ✅ |
 | API `mail.spec.ts` (gabarit HTML : logo, titre, bouton, lien de secours, trois langues, échappement de toute valeur saisie, pièce jointe du logo en SMTP) | 5 | ✅ |
 | API `app.spec.ts` (santé, en-têtes, CORS, erreurs, configuration, **variables vides**) | 15 | ✅ |
 | API `totp.spec.ts` + `two-factor.spec.ts` (vecteurs officiels RFC 6238, fenêtre, rejeu, chiffrement du secret, codes de secours, activation / désactivation, connexion en deux temps, verrouillage, obligation du personnel, base) | 31 | ✅ |
 | API `s3-storage.spec.ts` : configuration (3, toujours exécutés) ; stockage réel (7, **ignorés** sans `npm run test:s3`, voir ci-dessous) | 3 + 7 ignorés | ✅ / ⏭ |
-| Site, unitaires (10 fichiers : pages publiques et espace client ; les écrans du personnel sont dans le panel) | 157 | ✅ |
-| **Panel d'administration, unitaires** (5 fichiers : écrans du personnel repris de `phase6` à `phase9` + `admin.test.tsx` : accès, connexion, utilisateurs, rôles, entreprises, textes) | 86 | ✅ |
-| Site, recette navigateur | 88 | ✅ |
-| **Total de la suite standard** | **972** | **972 réussis, 0 échec** (7 tests de stockage S3 ignorés, exécutés à part) |
+| Site, unitaires (10 fichiers : pages publiques et espace client ; les écrans du personnel sont dans le panel) | 163 | ✅ |
+| **Panel d'administration, unitaires** (5 fichiers : écrans du personnel repris de `phase6` à `phase9` + `admin.test.tsx` : accès, connexion, utilisateurs, rôles, entreprises, textes) | 92 | ✅ |
+| Site, recette navigateur | 91 | ✅ |
+| **Total de la suite standard** | **996** | **996 réussis** (7 tests de stockage S3 ignorés, exécutés à part). Un test de notifications (`tick`) a échoué **une fois** dans une série complète et réussi à chaque rejeu isolé (2 fois) : intermittence non élucidée |
 
 Stockage S3 contre un **vrai SeaweedFS** (`npm run test:s3`) : **10 tests sur 10 réussis** (3 de configuration + 7 de stockage, dont le parcours API complet), exécutés le 2026-10-28. Ils sont ignorés par `npm test` pour ne pas exiger ce service : la suite l'affiche comme « ignorés », elle ne les compte pas comme vérifiés.
 

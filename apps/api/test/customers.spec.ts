@@ -141,16 +141,16 @@ describe('Espace client, entrepôts et adresses de réception', () => {
       const me = await signup();
       const before = await api(t).get('/v1/me/profile').set(bearer(me.token));
       expect(before.body).toMatchObject({ firstName: 'Marie', kind: 'CUSTOMER', emailVerified: true, phone: null });
-      expect(before.body.customer.notificationPrefs).toEqual({ email: true, sms: false, whatsapp: false, inApp: true });
+      expect(before.body.customer.notificationPrefs).toEqual({ email: true, whatsapp: false, inApp: true });
       expect(JSON.stringify(before.body)).not.toMatch(/password|hash/i);
 
       const updated = await api(t)
         .patch('/v1/me/profile')
         .set(bearer(me.token))
-        .send({ firstName: 'Marie-Claire', phone: '+50937000000', locale: 'ht', notificationPrefs: { email: true, sms: true, whatsapp: false, inApp: true } });
+        .send({ firstName: 'Marie-Claire', phone: '+50937000000', locale: 'ht', notificationPrefs: { email: true, whatsapp: true, inApp: true } });
       expect(updated.status).toBe(200);
       expect(updated.body).toMatchObject({ firstName: 'Marie-Claire', phone: '+50937000000', phoneVerified: false, locale: 'ht' });
-      expect(updated.body.customer.notificationPrefs.sms).toBe(true);
+      expect(updated.body.customer.notificationPrefs.whatsapp).toBe(true);
     });
 
     it('refuse les modifications invalides ou interdites', async () => {

@@ -428,8 +428,8 @@ export const en: Messages = {
       phoneNotVerified: 'Number not verified',
       notificationsTitle: 'Notifications',
       notificationsText: 'Choose the channels used to inform you about your packages’ progress. Security messages (confirmation, password) are always sent by email.',
-      channels: { email: 'Email', sms: 'SMS', whatsapp: 'WhatsApp', inApp: 'In my account' },
-      channelsNote: 'SMS and WhatsApp are used only when the company has enabled them.',
+      channels: { email: 'Email', whatsapp: 'WhatsApp', inApp: 'In my account' },
+      channelsNote: 'WhatsApp is used only when the company has enabled it.',
     },
     addresses: {
       title: 'My addresses',
@@ -775,7 +775,7 @@ export const en: Messages = {
       'delivery.failed': 'Delivery not completed',
       'claim.updated': 'Claim updated',
     },
-    channels: { IN_APP: 'Portal', EMAIL: 'Email', SMS: 'SMS', WHATSAPP: 'WhatsApp' },
+    channels: { IN_APP: 'Portal', EMAIL: 'Email', WHATSAPP: 'WhatsApp' },
     totals: { subtotal: 'Subtotal', discount: 'Discount', tax: 'Taxes', total: 'Total', credited: 'Credit notes', paid: 'Paid', pending: 'Awaiting validation', balance: 'Balance due' },
     common: { loadMore: 'Show more', open: 'Open', back: 'Back', packages: 'Invoiced packages', payments: 'Payments', credits: 'Credit notes', lines: 'Details', issuedOn: 'Issued on', dueOn: 'Due date', noPayments: 'No payments.', downloadPdf: 'Invoice (PDF)', receipt: 'Receipt (PDF)', amount: 'Amount', reference: 'Reference', reason: 'Reason', all: 'All', draftNumber: 'Draft', downloadFailed: 'The download failed.' },
     customer: {
@@ -941,7 +941,7 @@ export const en: Messages = {
         process: 'Run processing now',
         processed: 'Processing done: {sent} sent, {retried} to retry, {failed} failed.',
         templates: 'Message templates',
-        templatesLead: 'Plain text. Only the variables of the chosen event are allowed. SMS and WhatsApp: no provider is configured.',
+        templatesLead: 'Plain text. Only the variables of the chosen event are allowed. WhatsApp: no provider is configured.',
         event: 'Event',
         locale: 'Language',
         subject: 'Subject',

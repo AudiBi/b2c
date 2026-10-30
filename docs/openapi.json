@@ -854,21 +854,7 @@
                       "type": "object",
                       "properties": {
                         "roleCode": {
-                          "type": "string",
-                          "enum": [
-                            "SUPER_ADMIN",
-                            "COMPANY_ADMIN",
-                            "LOGISTICS_MANAGER",
-                            "WAREHOUSE_MANAGER",
-                            "RECEPTION_AGENT",
-                            "BILLING_AGENT",
-                            "AGENCY_MANAGER",
-                            "CUSTOMER_SERVICE",
-                            "DRIVER",
-                            "CUSTOMER_INDIVIDUAL",
-                            "CUSTOMER_BUSINESS",
-                            "AUDITOR"
-                          ]
+                          "type": "string"
                         },
                         "scopeType": {
                           "default": "COMPANY",
@@ -958,21 +944,7 @@
                 "type": "object",
                 "properties": {
                   "roleCode": {
-                    "type": "string",
-                    "enum": [
-                      "SUPER_ADMIN",
-                      "COMPANY_ADMIN",
-                      "LOGISTICS_MANAGER",
-                      "WAREHOUSE_MANAGER",
-                      "RECEPTION_AGENT",
-                      "BILLING_AGENT",
-                      "AGENCY_MANAGER",
-                      "CUSTOMER_SERVICE",
-                      "DRIVER",
-                      "CUSTOMER_INDIVIDUAL",
-                      "CUSTOMER_BUSINESS",
-                      "AUDITOR"
-                    ]
+                    "type": "string"
                   },
                   "scopeType": {
                     "default": "COMPANY",
@@ -1100,12 +1072,152 @@
             "bearer": []
           }
         ],
-        "summary": "Rôles disponibles et leurs permissions",
+        "summary": "Rôles disponibles (système et personnalisés) et leurs permissions",
         "tags": [
           "Administration : rôles"
         ],
         "x-permissions": [
           "role:read"
+        ]
+      },
+      "post": {
+        "description": "Un nom, des permissions du personnel et une portée (entreprise, entrepôt ou agence). Anti-escalade : on ne peut donner que des droits qu'on détient soi-même.",
+        "operationId": "RolesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 60
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 300
+                  },
+                  "scopeType": {
+                    "default": "COMPANY",
+                    "type": "string",
+                    "enum": [
+                      "COMPANY",
+                      "WAREHOUSE",
+                      "AGENCY"
+                    ]
+                  },
+                  "permissions": {
+                    "minItems": 1,
+                    "maxItems": 58,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "permissions"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crée un rôle personnalisé",
+        "tags": [
+          "Administration : rôles"
+        ],
+        "x-permissions": [
+          "role:manage"
+        ]
+      }
+    },
+    "/v1/admin/roles/{code}": {
+      "patch": {
+        "operationId": "RolesController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 60
+                  },
+                  "description": {
+                    "nullable": true,
+                    "type": "string",
+                    "maxLength": 300
+                  },
+                  "permissions": {
+                    "minItems": 1,
+                    "maxItems": 58,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifie le nom, la description ou les permissions d'un rôle personnalisé (effet immédiat pour ses titulaires)",
+        "tags": [
+          "Administration : rôles"
+        ],
+        "x-permissions": [
+          "role:manage"
+        ]
+      },
+      "delete": {
+        "operationId": "RolesController_remove",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Supprime un rôle personnalisé qui n'est attribué à personne",
+        "tags": [
+          "Administration : rôles"
+        ],
+        "x-permissions": [
+          "role:manage"
         ]
       }
     },
@@ -1175,9 +1287,6 @@
                       "email": {
                         "type": "boolean"
                       },
-                      "sms": {
-                        "type": "boolean"
-                      },
                       "whatsapp": {
                         "type": "boolean"
                       },
@@ -1187,7 +1296,6 @@
                     },
                     "required": [
                       "email",
-                      "sms",
                       "whatsapp",
                       "inApp"
                     ],
@@ -1648,6 +1756,189 @@
         ],
         "x-permissions": [
           "profile:read_own"
+        ]
+      }
+    },
+    "/v1/me/team": {
+      "get": {
+        "operationId": "TeamController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Membres de mon équipe (lecteurs et opérateurs) et limite",
+        "tags": [
+          "Espace client : équipe"
+        ],
+        "x-permissions": [
+          "team:manage_own"
+        ]
+      },
+      "post": {
+        "operationId": "TeamController_invite",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "locale": {
+                    "default": "fr",
+                    "type": "string",
+                    "enum": [
+                      "fr",
+                      "ht",
+                      "en"
+                    ]
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "READER",
+                      "OPERATOR"
+                    ]
+                  }
+                },
+                "required": [
+                  "email",
+                  "firstName",
+                  "lastName",
+                  "role"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Invite un membre (lecteur ou opérateur) : un lien d'activation de 72 h lui est envoyé",
+        "tags": [
+          "Espace client : équipe"
+        ],
+        "x-permissions": [
+          "team:manage_own"
+        ]
+      }
+    },
+    "/v1/me/team/activity": {
+      "get": {
+        "operationId": "TeamController_activity",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Historique des actions sur mon équipe (invitations, rôles, retraits)",
+        "tags": [
+          "Espace client : équipe"
+        ],
+        "x-permissions": [
+          "team:manage_own"
+        ]
+      }
+    },
+    "/v1/me/team/{userId}": {
+      "patch": {
+        "operationId": "TeamController_changeRole",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "READER",
+                      "OPERATOR"
+                    ]
+                  }
+                },
+                "required": [
+                  "role"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change le rôle d'un membre (effet immédiat)",
+        "tags": [
+          "Espace client : équipe"
+        ],
+        "x-permissions": [
+          "team:manage_own"
+        ]
+      },
+      "delete": {
+        "operationId": "TeamController_remove",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retire un membre : sessions fermées, compte désactivé",
+        "tags": [
+          "Espace client : équipe"
+        ],
+        "x-permissions": [
+          "team:manage_own"
         ]
       }
     },
@@ -5729,7 +6020,6 @@
               "enum": [
                 "IN_APP",
                 "EMAIL",
-                "SMS",
                 "WHATSAPP"
               ]
             }
@@ -5848,7 +6138,7 @@
         ]
       },
       "put": {
-        "description": "Variables limitées à celles de l’événement ; texte brut ; SMS et WhatsApp refusés (aucun prestataire).",
+        "description": "Variables limitées à celles de l’événement ; texte brut ; WhatsApp refusé (aucun prestataire).",
         "operationId": "AdminNotificationsController_saveTemplate",
         "parameters": [],
         "requestBody": {
@@ -5882,7 +6172,6 @@
                     "enum": [
                       "IN_APP",
                       "EMAIL",
-                      "SMS",
                       "WHATSAPP"
                     ]
                   },
@@ -5973,7 +6262,6 @@
               "enum": [
                 "IN_APP",
                 "EMAIL",
-                "SMS",
                 "WHATSAPP"
               ]
             }
@@ -8849,7 +9137,7 @@
     }
   },
   "info": {
-    "title": "API logistique (nom provisoire : TransitHaïti)",
+    "title": "API B2C (Business to Customer)",
     "description": "Toutes les routes sont sous /v1. Erreurs : { error: { code, message, details?, requestId } }. Chaque route protégée indique ses permissions dans l'extension x-permissions.",
     "version": "0.1.0",
     "contact": {}

@@ -19,7 +19,7 @@ import { DbService, type Tx } from '../database/db.service';
 import { CounterService } from '../infra/counter.service';
 import type { AuthContext } from '../security/auth.types';
 
-const DEFAULT_PREFS: NotificationPrefs = { email: true, sms: false, whatsapp: false, inApp: true };
+const DEFAULT_PREFS: NotificationPrefs = { email: true, whatsapp: false, inApp: true };
 
 const formatCode = (prefix: string, sequence: number) => `${prefix}-${String(sequence).padStart(6, '0')}`;
 
