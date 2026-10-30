@@ -33,7 +33,7 @@ describe('Webhook de confirmation de paiement', () => {
     const pkg = await weighedPackage(t, tenant, customer, warehouse.id);
     const draft = await api(t).post('/v1/admin/invoices').set(bearer(tenant.token)).send({ customerId, packageIds: [pkg.packageId] });
     const issued = await api(t).post(`/v1/admin/invoices/${draft.body.id}/issue`).set(bearer(tenant.token));
-    const declared = await api(t).post(`/v1/me/invoices/${issued.body.id}/payments`).set(bearer(customer.token)).send({ method: 'MOBILE_MONEY', amount, reference });
+    const declared = await api(t).post(`/v1/me/invoices/${issued.body.id}/payments`).set(bearer(customer.token)).send({ method: 'ZELLE', amount, reference });
     expect(declared.status).toBe(201);
     return { tenant, customer, pkg, invoice: issued.body, payment: declared.body };
   }

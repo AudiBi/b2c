@@ -83,7 +83,7 @@ const invoice = (overrides: Record<string, unknown> = {}) => ({
   credits: [], payments: [], packages: [{ id: PKG, trackingNumber: 'EEABCDE12345X', trackingNumberDisplay: 'EE-ABCDE-12345-X' }],
   ...overrides,
 });
-const options = { cash: true, declare: ['BANK_TRANSFER', 'MOBILE_MONEY'], online: false, instructions: 'Virement : compte 123' };
+const options = { cash: true, declare: ['BANK_TRANSFER', 'ZELLE'], online: false, instructions: 'Virement : compte 123' };
 
 describe('facturation du personnel : navigation', () => {
   it('chaque entrée dépend d’un droit précis', async () => {
@@ -251,7 +251,7 @@ describe('paiements et caisse (personnel)', () => {
       'GET /v1/admin/agencies': { items: [] },
       'GET /v1/admin/settings/finance': { maxDiscountPercent: 10, paymentInstructions: null },
       'PUT /v1/admin/settings/finance': () => json(200, {}),
-      'GET /v1/admin/finance/summary': { from: '2026-03-01', to: '2026-03-31', confirmed: [{ method: 'CASH', currency: 'USD', count: 2, collected: '15.00', refunded: '2.00', net: '13.00' }], pending: [{ method: 'MOBILE_MONEY', currency: 'USD', count: 1, amount: '2.00' }] },
+      'GET /v1/admin/finance/summary': { from: '2026-03-01', to: '2026-03-31', confirmed: [{ method: 'CASH', currency: 'USD', count: 2, collected: '15.00', refunded: '2.00', net: '13.00' }], pending: [{ method: 'ZELLE', currency: 'USD', count: 1, amount: '2.00' }] },
     });
     const u = userEvent.setup();
     renderAt('/payments');

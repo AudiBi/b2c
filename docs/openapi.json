@@ -6901,7 +6901,7 @@
                     "type": "string",
                     "enum": [
                       "BANK_TRANSFER",
-                      "MOBILE_MONEY"
+                      "ZELLE"
                     ]
                   },
                   "amount": {
@@ -7089,8 +7089,7 @@
               "enum": [
                 "CASH",
                 "BANK_TRANSFER",
-                "MOBILE_MONEY",
-                "CARD_ONLINE"
+                "ZELLE"
               ]
             }
           },

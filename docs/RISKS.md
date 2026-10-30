@@ -21,7 +21,7 @@ Verdict : **la plateforme n'est pas prête à être ouverte au public en l'état
 
 | # | Sujet | État |
 |---|---|---|
-| B1 | **Paiement en ligne** (cartes, mobile money) | Non fait : aucun prestataire choisi. Le client paie en espèces au personnel ou déclare un virement / paiement mobile validé à la main par un agent. Le point d'entrée de confirmation signée existe mais n'a été exercé qu'avec un émetteur simulé |
+| B1 | **Paiement en ligne** (cartes) | Non fait : aucun prestataire choisi. **Modes du premier lancement : espèces, virement bancaire, Zelle** : le client paie en espèces au personnel ou déclare un virement / un paiement Zelle, validé à la main par un agent (aucun moyen de vérifier automatiquement ; les coordonnées bancaires et Zelle de l'entreprise sont saisies dans les consignes de paiement). Le point d'entrée de confirmation signée existe mais n'a été exercé qu'avec un émetteur simulé |
 | B2 | **WhatsApp** (le SMS est retiré du produit) | Non fait : aucun fournisseur. Les notifications WhatsApp sont « ignorées — canal non configuré » ; le code de remise n'est lisible que dans l'espace du client (un client sans accès ne peut pas remettre de code) |
 | B3 | **Transporteurs aériens et maritimes, cartes et itinéraires** | Non intégrés : départs et arrivées de lots saisis à la main, pas de position ni de date prévue |
 | B4 | **Stockage des pièces jointes** | Disque local par défaut (volume à sauvegarder). Le stockage S3 n'est testé que contre SeaweedFS ; pas d'AWS S3 ni d'autre fournisseur, pas de chiffrement des objets, pas d'antivirus |

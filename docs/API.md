@@ -115,7 +115,7 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 | `POST /v1/admin/invoices/{id}/void` · `POST …/credit-notes` | `invoice:void` | Annule une facture sans paiement (motif) · émet un avoir (`CN-AAAA-NNNNNN`) limité à ce qui n'est ni payé ni en attente |
 | `GET /v1/admin/invoices/{id}/pdf` | `invoice:read` | Facture en PDF (pas de PDF pour un brouillon) |
 | `GET /v1/me/invoices` · `GET …/{id}` · `GET …/{id}/pdf` | `invoice:read_own` | Mes factures **émises** (jamais les brouillons) |
-| `POST /v1/me/invoices/{id}/payments` | `payment:declare_own` | Déclare un virement ou paiement mobile (référence obligatoire) : le paiement reste `PENDING` |
+| `POST /v1/me/invoices/{id}/payments` | `payment:declare_own` | Déclare un virement bancaire ou un paiement Zelle (`method` `BANK_TRANSFER` ou `ZELLE`, référence obligatoire) : le paiement reste `PENDING` |
 | `GET /v1/me/payments` · `DELETE /v1/me/payments/{id}` · `GET …/{id}/receipt.pdf` · `GET /v1/me/payment-options` | `payment:read_own` · `payment:declare_own` | Mes paiements ; retire une déclaration en attente ; reçu PDF ; moyens réellement disponibles (`online: false` tant qu'aucun prestataire n'est configuré) |
 | `GET /v1/admin/payments` | `payment:read` | Paiements (statut, mode, facture) |
 | `POST /v1/admin/payments/cash` | `payment:record_cash` | Encaissement en espèces ; **caisse ouverte exigée** ; en-tête `Idempotency-Key` ; reçu `RCT-AAAA-NNNNNN` immédiat |

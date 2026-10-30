@@ -20,7 +20,7 @@ export type InvoiceLineKind = (typeof INVOICE_LINE_KINDS)[number];
 /** Lignes que le personnel peut ajouter à la main (le fret calculé et la remise ont leurs propres chemins). */
 export const MANUAL_LINE_KINDS = ['FREIGHT', 'STORAGE', 'HANDLING', 'INSURANCE', 'CUSTOMS', 'OTHER'] as const;
 
-export const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'MOBILE_MONEY', 'CARD_ONLINE'] as const;
+export const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'ZELLE'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const PAYMENT_STATUSES = ['PENDING', 'CONFIRMED', 'FAILED', 'CANCELLED', 'REFUNDED_PARTIAL', 'REFUNDED'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
@@ -93,7 +93,7 @@ export const recordCashPaymentSchema = z.strictObject({
 });
 
 export const declarePaymentSchema = z.strictObject({
-  method: z.enum(['BANK_TRANSFER', 'MOBILE_MONEY']),
+  method: z.enum(['BANK_TRANSFER', 'ZELLE']),
   amount: moneySchema,
   reference: paymentReference,
 });

@@ -2,7 +2,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 
 export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'VOID' | 'CREDITED';
-export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'MOBILE_MONEY' | 'CARD_ONLINE';
+export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'ZELLE';
 export type PaymentStatus = 'PENDING' | 'CONFIRMED' | 'FAILED' | 'CANCELLED' | 'REFUNDED_PARTIAL' | 'REFUNDED';
 export type LineKind = 'FREIGHT' | 'STORAGE' | 'HANDLING' | 'INSURANCE' | 'TAX' | 'CUSTOMS' | 'DISCOUNT' | 'OTHER';
 
@@ -56,7 +56,7 @@ export interface InvoiceDetail extends InvoiceSummary {
 
 export interface PaymentOptions {
   cash: boolean;
-  declare: ('BANK_TRANSFER' | 'MOBILE_MONEY')[];
+  declare: ('BANK_TRANSFER' | 'ZELLE')[];
   online: boolean;
   instructions: string | null;
 }

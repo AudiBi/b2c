@@ -48,7 +48,8 @@ describe('finance : schémas et numéros', () => {
     expect(recordCashPaymentSchema.safeParse({ invoiceId: uuid, amount: 20 }).success).toBe(true);
     expect(recordCashPaymentSchema.safeParse({ invoiceId: uuid, amount: 0 }).success).toBe(false);
     expect(declarePaymentSchema.safeParse({ method: 'BANK_TRANSFER', amount: 20, reference: 'VIR-2026-0042' }).success).toBe(true);
-    for (const bad of [{ method: 'CASH' }, { method: 'CARD_ONLINE' }, { reference: 'x' }, { reference: '<script>' }]) {
+    expect(declarePaymentSchema.safeParse({ method: 'ZELLE', amount: 20, reference: 'ZL-2026-0042' }).success).toBe(true);
+    for (const bad of [{ method: 'CASH' }, { method: 'CARD_ONLINE' }, { method: 'MOBILE_MONEY' }, { reference: 'x' }, { reference: '<script>' }]) {
       expect(declarePaymentSchema.safeParse({ method: 'BANK_TRANSFER', amount: 20, reference: 'VIR-0042', ...bad }).success).toBe(false);
     }
     expect(closeCashSessionSchema.safeParse({ countedAmount: 0 }).success).toBe(true);

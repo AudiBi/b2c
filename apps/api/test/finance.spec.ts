@@ -414,13 +414,13 @@ describe('Finance : factures, paiements, caisse, remboursements, export', () => 
     it('le montant réservé compte : on ne peut pas déclarer plus que ce qui reste ; une référence ne se déclare qu’une fois', async () => {
       const w = await setup();
       const { invoice } = await issuedInvoice(w);
-      expect((await declare(w.customer1.token, invoice.id, { method: 'MOBILE_MONEY', amount: 6, reference: 'MM-0001' })).status).toBe(201);
-      const over = await declare(w.customer1.token, invoice.id, { method: 'MOBILE_MONEY', amount: 3.51, reference: 'MM-0002' });
+      expect((await declare(w.customer1.token, invoice.id, { method: 'ZELLE', amount: 6, reference: 'MM-0001' })).status).toBe(201);
+      const over = await declare(w.customer1.token, invoice.id, { method: 'ZELLE', amount: 3.51, reference: 'MM-0002' });
       expect(over.status).toBe(422);
       expect(over.body.error.details.available).toBe('3.50');
-      const dup = await declare(w.customer1.token, invoice.id, { method: 'MOBILE_MONEY', amount: 1, reference: 'mm-0001' }); // casse différente : autre chaîne
+      const dup = await declare(w.customer1.token, invoice.id, { method: 'ZELLE', amount: 1, reference: 'mm-0001' }); // casse différente : autre chaîne
       expect([201, 409]).toContain(dup.status);
-      const same = await declare(w.customer1.token, invoice.id, { method: 'MOBILE_MONEY', amount: 1, reference: 'MM-0001' });
+      const same = await declare(w.customer1.token, invoice.id, { method: 'ZELLE', amount: 1, reference: 'MM-0001' });
       expect(same.status).toBe(409);
       expect(errorCode(same)).toBe('DUPLICATE_REFERENCE');
       for (const bad of [{ method: 'CASH' }, { method: 'CARD_ONLINE' }, { reference: '<x>' }, { amount: 0 }]) {
@@ -552,7 +552,7 @@ describe('Finance : factures, paiements, caisse, remboursements, export', () => 
       const w = await setup();
       await api(t).put('/v1/admin/settings/finance').set(bearer(w.token)).send({ paymentInstructions: 'Virement : compte 123' });
       const res = await api(t).get('/v1/me/payment-options').set(bearer(w.customer1.token));
-      expect(res.body).toEqual({ cash: true, declare: ['BANK_TRANSFER', 'MOBILE_MONEY'], online: false, instructions: 'Virement : compte 123' });
+      expect(res.body).toEqual({ cash: true, declare: ['BANK_TRANSFER', 'ZELLE'], online: false, instructions: 'Virement : compte 123' });
     });
 
     it('mes paiements et mon reçu en PDF ; le reçu d’un autre est introuvable', async () => {
@@ -609,15 +609,15 @@ describe('Finance : factures, paiements, caisse, remboursements, export', () => 
       const { invoice } = await issuedInvoice(w);
       await openCash(w.token);
       await cash(w.token, { invoiceId: invoice.id, amount: 5 });
-      await api(t).post(`/v1/me/invoices/${invoice.id}/payments`).set(bearer(w.customer1.token)).send({ method: 'MOBILE_MONEY', amount: 2, reference: 'MM-SYNTH-1' });
+      await api(t).post(`/v1/me/invoices/${invoice.id}/payments`).set(bearer(w.customer1.token)).send({ method: 'ZELLE', amount: 2, reference: 'MM-SYNTH-1' });
       const day = new Date().toISOString().slice(0, 10);
       const billing = await w.staff('BILLING_AGENT');
       const summary = await api(t).get(`/v1/admin/finance/summary?from=${day}&to=${day}`).set(bearer(billing));
       expect(summary.body.confirmed).toEqual([{ method: 'CASH', currency: 'USD', count: 1, collected: '5.00', refunded: '0.00', net: '5.00' }]);
-      expect(summary.body.pending).toEqual([{ method: 'MOBILE_MONEY', currency: 'USD', count: 1, amount: '2.00' }]);
+      expect(summary.body.pending).toEqual([{ method: 'ZELLE', currency: 'USD', count: 1, amount: '2.00' }]);
       const pending = await api(t).get('/v1/admin/payments?status=PENDING').set(bearer(w.token));
       expect(pending.body.items).toHaveLength(1);
-      expect(pending.body.items[0]).toMatchObject({ method: 'MOBILE_MONEY', invoiceNumber: invoice.number, customerCode: w.customer1.customerCode });
+      expect(pending.body.items[0]).toMatchObject({ method: 'ZELLE', invoiceNumber: invoice.number, customerCode: w.customer1.customerCode });
       expect((await api(t).get('/v1/admin/payments?status=NOPE').set(bearer(w.token))).status).toBe(400);
     });
 

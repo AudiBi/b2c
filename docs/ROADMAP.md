@@ -141,8 +141,8 @@ Critère de sortie : tests verts exécutés, migration appliquée à une base vi
 - Un paiement règle **une** facture (pas de `payment_allocations`).
 
 **Réserves de la phase 7 (reportées)** :
-- **Aucun paiement en ligne** (carte, mobile money) : la confirmation signée n'a été exercée qu'avec un émetteur simulé par les tests ; le format des événements d'un vrai prestataire, son secret et ses adresses d'émission restent à valider. Les remboursements sont **enregistrés** ici, l'argent est rendu hors plateforme.
-- **La validation d'un virement ou d'un paiement mobile est humaine** : l'outil ne peut pas le vérifier. Pas de double validation pour les gros montants.
+- **Aucun paiement en ligne** (carte) ; **modes du premier lancement : espèces, virement bancaire, Zelle** (migration `0013_payment_zelle`, mobile money retiré) : la confirmation signée n'a été exercée qu'avec un émetteur simulé par les tests ; le format des événements d'un vrai prestataire, son secret et ses adresses d'émission restent à valider. Les remboursements sont **enregistrés** ici, l'argent est rendu hors plateforme.
+- **La validation d'un virement ou d'un paiement Zelle est humaine** : l'outil ne peut pas le vérifier. Pas de double validation pour les gros montants.
 - **Caisse mono-devise** : le montant attendu à la clôture additionne les encaissements de toutes devises ; la caisse n'enregistre pas de devise.
 - **Documents non validés par un comptable ou un juriste** : pas de mentions légales (numéro fiscal, taxe), pas de logo ; PDF sobre. Aucun moteur de taxes : une ligne de taxe ne vient que de la grille, la douane est saisie à la main. Export **CSV seulement** (aucune interface avec un logiciel comptable).
 - **Pas de relance d'échéance** : la date d'échéance est indicative. Les événements `delivery.scheduled` et `package.delivered` n'ont pas d'émetteur (phase 8).

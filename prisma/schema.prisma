@@ -1119,6 +1119,7 @@ enum InvoiceLineKind {
 enum PaymentMethod {
   CASH
   BANK_TRANSFER
+  ZELLE
   MOBILE_MONEY
   CARD_ONLINE
 }

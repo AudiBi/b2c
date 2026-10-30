@@ -81,7 +81,7 @@ const invoice = (overrides: Record<string, unknown> = {}) => ({
   credits: [], payments: [], packages: [{ id: PKG, trackingNumber: 'EEABCDE12345X', trackingNumberDisplay: 'EE-ABCDE-12345-X' }],
   ...overrides,
 });
-const options = { cash: true, declare: ['BANK_TRANSFER', 'MOBILE_MONEY'], online: false, instructions: 'Virement : compte 123' };
+const options = { cash: true, declare: ['BANK_TRANSFER', 'ZELLE'], online: false, instructions: 'Virement : compte 123' };
 
 describe('espace client : navigation', () => {
   it('« Mes factures » et « Notifications » avec le nombre de non lues', async () => {

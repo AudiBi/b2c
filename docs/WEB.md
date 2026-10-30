@@ -85,7 +85,7 @@ Les textes sont dans les trois langues (créole à relire). Pas d'impression d'�
 
 **Espace client** (`/<langue>/account/…`) :
 - **Mes factures** (`invoices`) : liste des factures émises (jamais les brouillons) avec statut et reste à payer ; détail avec lignes, totaux, colis, avoirs, paiements, **facture en PDF** et **reçu en PDF**.
-- **Payer** : les consignes de paiement de l'entreprise, puis la **déclaration** d'un virement ou d'un paiement mobile (montant et référence contrôlés avec le schéma partagé). Le paiement reste « en attente de validation » : la facture n'est pas « payée » avant la validation d'un agent. Le client peut retirer sa déclaration tant qu'elle est en attente. Le texte précise honnêtement que le paiement par carte en ligne n'est **pas** disponible.
+- **Payer** : les consignes de paiement de l'entreprise, puis la **déclaration** d'un virement bancaire ou d'un paiement Zelle (montant et référence contrôlés avec le schéma partagé). Le paiement reste « en attente de validation » : la facture n'est pas « payée » avant la validation d'un agent. Le client peut retirer sa déclaration tant qu'elle est en attente. Le texte précise honnêtement que le paiement par carte en ligne n'est **pas** disponible.
 - **Notifications** (`notifications`) : boîte de réception du portail, pastille du nombre de non lues dans le menu, « marquer comme lu » (une ou toutes).
 
 **Espace du personnel** (menu selon les droits) :
