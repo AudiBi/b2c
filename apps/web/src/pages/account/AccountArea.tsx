@@ -11,6 +11,7 @@ import { PrealertsPage } from './PrealertsPage';
 import { ProfilePage } from './ProfilePage';
 import { ReceivingPage } from './ReceivingPage';
 import { SecurityPage } from './SecurityPage';
+import { TeamPage } from './TeamPage';
 
 /** Espace client : chargé à la demande (les visiteurs non connectés ne téléchargent pas ce code). */
 export default function AccountArea() {
@@ -30,6 +31,7 @@ export default function AccountArea() {
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="claims" element={<ClaimsPage />} />
         <Route path="claims/:id" element={<ClaimDetailPage />} />
+        <Route path="team" element={<TeamPage />} />
         <Route path="security" element={<SecurityPage />} />
       </Route>
     </Routes>

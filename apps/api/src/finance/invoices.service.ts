@@ -1,3 +1,4 @@
+import { memberAccount } from '../customers/account';
 import { Injectable } from '@nestjs/common';
 import { Prisma, type Invoice, type InvoiceLine, type CreditNote, type Payment } from '@prisma/client';
 import { formatTrackingNumber, invoiceNumber, creditNoteNumber, type CreateInvoiceInput, type InvoiceLineKind, type InvoiceStatus } from '@b2c/shared';
@@ -308,7 +309,8 @@ export class InvoicesService {
 
   private async customerOf(tx: Tx, auth: AuthContext) {
     if (auth.kind !== 'CUSTOMER') throw AppException.forbidden('CUSTOMER_ONLY', 'Réservé aux comptes clients');
-    return tx.customer.findUnique({ where: { userId: auth.userId } });
+    // Un membre « lecteur » voit les factures du compte de son propriétaire
+    return (await memberAccount(tx, auth.userId)) ?? tx.customer.findUnique({ where: { userId: auth.userId } });
   }
 
   /** Factures du client connecté : jamais les brouillons ; la facture d'un autre est indistinguable d'une facture inexistante. */

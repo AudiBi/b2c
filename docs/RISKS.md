@@ -44,6 +44,7 @@ Verdict : **la plateforme n'est pas prête à être ouverte au public en l'état
 | C9 | **Matériel** | Lecteurs de codes-barres simulés par la saisie, jamais essayés ; impression d'étiquettes non faite |
 | C10 | **Confirmation de pesée furtive** | Le message disparaît presque aussitôt (le panneau se referme) : à corriger |
 | C12 | **Panel d'administration récent** | Écrans de gestion des utilisateurs, des rôles et des entreprises neufs : testés (unitaires, API, recette partielle) mais pas encore éprouvés par des utilisateurs ; création d'entreprise et gestion des rôles absentes de la recette navigateur (couvertes par des tests d'interface et d'API) ; écrans repris des phases 6 à 8 denses ; pas de rôles personnalisés ni de réinitialisation du second facteur par un administrateur ; le certificat TLS doit couvrir **deux** noms de domaine |
+| C13 | **Équipe d'un compte professionnel récente** | Testée (API, interface) mais pas éprouvée par des clients : **pas de transfert de propriété** (si le propriétaire part, l'accès se règle par l'entreprise), **une seule équipe par personne**, deux rôles fixes seulement (pas de droits à la carte), pas d'écran d'historique des actions de l'équipe côté client (l'audit existe en base et dans le panel), lien d'activation envoyé par e-mail (la délivrabilité reste le point A2) |
 | C11 | **Images volumineuses** | L'image `api` pèse 810 Mo : sans conséquence fonctionnelle, mais allonge les déploiements |
 
 ## D. Ce qui est solide (vérifié par des tests exécutés)

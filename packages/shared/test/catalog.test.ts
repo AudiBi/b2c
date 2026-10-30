@@ -12,9 +12,9 @@ import {
 } from '../src';
 
 describe('catalogue des rôles et permissions', () => {
-  it('définit exactement les 12 rôles du cahier des charges', () => {
-    expect(ROLE_DEFINITIONS).toHaveLength(12);
-    expect(new Set(ROLE_DEFINITIONS.map((r) => r.code)).size).toBe(12);
+  it('définit les 12 rôles du cahier des charges et les 2 rôles de l’équipe d’un compte professionnel', () => {
+    expect(ROLE_DEFINITIONS).toHaveLength(14);
+    expect(new Set(ROLE_DEFINITIONS.map((r) => r.code)).size).toBe(14);
     expect(ROLE_DEFINITIONS.map((r) => r.code).sort()).toEqual([...ROLE_CODES].sort());
   });
 
@@ -161,5 +161,26 @@ describe('schémas de validation', () => {
     expect(
       roleAssignmentSchema.safeParse({ roleCode: 'AUDITOR', scopeType: 'COMPANY', scopeId: '00000000-0000-7000-8000-00000000000a' }).success,
     ).toBe(false);
+  });
+});
+
+// Moindre privilège pour l'équipe d'un compte professionnel : jamais d'argent, de code de remise, d'adresse, de profil ni d'équipe
+describe("rôles de l'équipe d'un compte professionnel", () => {
+  const forbidden = ['payment:read_own', 'payment:declare_own', 'team:manage_own', 'profile:read_own', 'profile:update_own', 'notification:read_own'];
+  it.each(['TEAM_READER', 'TEAM_OPERATOR'])('%s : droits « _own » limités, aucun droit sensible', (code) => {
+    const role = ROLE_DEFINITIONS.find((r) => r.code === code)!;
+    expect(role.audience).toBe('CUSTOMER');
+    expect(role.allowedScopes).toEqual(['COMPANY']);
+    for (const p of role.permissions) expect(p.endsWith('_own')).toBe(true);
+    for (const p of forbidden) expect(role.permissions).not.toContain(p);
+  });
+  it("le lecteur voit les factures, pas l'opérateur ; l'opérateur déclare des achats, pas le lecteur ; seul le client professionnel gère l'équipe", () => {
+    const perms = (code: string) => ROLE_DEFINITIONS.find((r) => r.code === code)!.permissions;
+    expect(perms('TEAM_READER')).toContain('invoice:read_own');
+    expect(perms('TEAM_OPERATOR')).not.toContain('invoice:read_own');
+    expect(perms('TEAM_OPERATOR')).toContain('prealert:create_own');
+    expect(perms('TEAM_READER')).not.toContain('prealert:create_own');
+    expect(perms('CUSTOMER_BUSINESS')).toContain('team:manage_own');
+    expect(perms('CUSTOMER_INDIVIDUAL')).not.toContain('team:manage_own');
   });
 });

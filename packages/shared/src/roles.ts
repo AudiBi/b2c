@@ -15,6 +15,8 @@ export const ROLE_CODES = [
   'DRIVER',
   'CUSTOMER_INDIVIDUAL',
   'CUSTOMER_BUSINESS',
+  'TEAM_READER',
+  'TEAM_OPERATOR',
   'AUDITOR',
 ] as const;
 export type RoleCode = (typeof ROLE_CODES)[number];
@@ -50,6 +52,9 @@ const STAFF_ALL = TENANT_PERMISSIONS.filter((code) => (!code.endsWith('_own') &&
  */
 export const CUSTOM_ROLE_PERMISSIONS: readonly PermissionCode[] = STAFF_ALL;
 export const CUSTOM_ROLE_SCOPES = ['COMPANY', 'WAREHOUSE', 'AGENCY'] as const;
+/** Rôles que le propriétaire d'un compte professionnel peut donner à son équipe (et le rôle système correspondant). */
+export const TEAM_ROLES = { READER: 'TEAM_READER', OPERATOR: 'TEAM_OPERATOR' } as const;
+export const TEAM_MAX_MEMBERS = 10;
 export const CUSTOM_ROLE_CODE_PATTERN = /^custom-[a-z0-9]+(-[a-z0-9]+)*$/;
 export const isCustomRoleCode = (code: string): boolean => CUSTOM_ROLE_CODE_PATTERN.test(code) && code.length <= 64;
 
@@ -181,6 +186,24 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
       'invoice:read_own', 'payment:read_own', 'payment:declare_own', 'notification:read_own',
       'claim:create_own', 'claim:read_own', 'quote:create',
     ],
+  },
+  // Membres de l'équipe d'un client professionnel : moindre privilège. Aucun accès à l'argent (paiements), au code de remise,
+  // aux adresses, aux bénéficiaires, au profil ni à l'équipe : tout cela reste au propriétaire du compte.
+  {
+    code: 'TEAM_READER',
+    name: 'Équipe : lecteur',
+    description: "Membre de l'équipe d'un compte professionnel : consulte les colis, les factures et les réclamations du compte. Ne paie rien et ne modifie rien.",
+    audience: 'CUSTOMER',
+    allowedScopes: ['COMPANY'],
+    permissions: ['package:read_own', 'invoice:read_own', 'claim:read_own'],
+  },
+  {
+    code: 'TEAM_OPERATOR',
+    name: 'Équipe : opérateur',
+    description: "Membre de l'équipe d'un compte professionnel : consulte les colis, déclare les achats et ouvre des réclamations. Ne voit ni les factures ni les paiements.",
+    audience: 'CUSTOMER',
+    allowedScopes: ['COMPANY'],
+    permissions: ['package:read_own', 'prealert:create_own', 'prealert:read_own', 'claim:create_own', 'claim:read_own'],
   },
   {
     code: 'AUDITOR',

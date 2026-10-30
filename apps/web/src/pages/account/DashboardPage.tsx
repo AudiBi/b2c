@@ -11,7 +11,19 @@ const cardPages: Record<string, PageKey> = {
   receiving: 'accountReceiving',
   addresses: 'accountAddresses',
   beneficiaries: 'accountBeneficiaries',
+  team: 'accountTeam',
   profile: 'accountProfile',
+};
+
+/** Droit nécessaire pour voir chaque carte : un membre d'équipe n'en voit qu'une partie. */
+const cardPermission: Record<string, string> = {
+  prealerts: 'prealert:read_own',
+  packages: 'package:read_own',
+  receiving: 'profile:read_own',
+  addresses: 'profile:read_own',
+  beneficiaries: 'profile:read_own',
+  team: 'team:manage_own',
+  profile: 'profile:read_own',
 };
 
 export function DashboardPage() {
@@ -19,7 +31,8 @@ export function DashboardPage() {
   const d = m.account.dashboard;
   const { user } = useAuth();
   const isCustomer = user?.kind === 'CUSTOMER';
-  const profile = useProfile();
+  const canProfile = !!user?.permissions.includes('profile:read_own');
+  const profile = useProfile(isCustomer && canProfile);
   const name = user ? user.firstName : '';
 
   return (
@@ -29,6 +42,7 @@ export function DashboardPage() {
 
       {isCustomer ? (
         <>
+          {canProfile ? (
           <div className="card">
             <h2 style={{ fontSize: '1.1rem' }}>{d.customerCode}</h2>
             {profile.isPending ? <p role="status">{m.common.loading}</p> : null}
@@ -44,8 +58,9 @@ export function DashboardPage() {
               </>
             ) : null}
           </div>
+          ) : null}
           <div className="grid grid-2">
-            {d.cards.map((card) => (
+            {d.cards.filter((card) => user?.permissions.includes(cardPermission[card.key])).map((card) => (
               <LocLink key={card.key} page={cardPages[card.key]} className="card card-link">
                 <h2 style={{ fontSize: '1.15rem' }}>{card.title}</h2>
                 <p>{card.text}</p>

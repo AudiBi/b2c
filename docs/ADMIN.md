@@ -33,7 +33,7 @@ Le menu n'affiche que ce que les droits permettent, mais **c'est le serveur qui 
 - **Invitation** (`user:create`) : prénom, nom, e-mail, téléphone, langue, **un rôle et sa portée** (toute l'entreprise, un entrepôt ou une agence selon le rôle). Un e-mail d'activation (72 h) part vers le **panel**.
 - **Fiche** : compte, rôles attribués avec leur portée nommée, **ajout et retrait de rôle** (`role:assign`, retrait en deux temps), **désactivation / réactivation** (`user:disable`, en deux temps ; impossible sur son propre compte). Un compte client est en consultation seule.
 - **Règles appliquées par le serveur** (le panel les explique) : on ne peut attribuer que des droits qu'on possède, le dernier administrateur ne peut être ni retiré ni désactivé, un rôle ne s'attribue qu'avec une portée autorisée.
-- **Rôles et droits** : les **12 rôles système** (définis dans le code, en lecture seule) et les **rôles personnalisés** de l'entreprise.
+- **Rôles et droits** : les **14 rôles système** (dont les 2 rôles d'équipe des clients professionnels) (définis dans le code, en lecture seule) et les **rôles personnalisés** de l'entreprise.
   - **Rôle personnalisé** : un nom, une description, une **portée unique** (toute l'entreprise, un entrepôt ou une agence ; non modifiable ensuite) et des **droits** cochés parmi ceux du personnel (72 droits au catalogue), groupés par domaine. Réservé au droit `role:manage` (administrateur de l'entreprise).
   - **Anti-escalade** : on ne peut donner, modifier ou supprimer que des droits qu'on **détient soi-même** (les autres sont grisés dans l'éditeur ; le serveur le refuse de toute façon).
   - **Effet immédiat** : modifier les droits d'un rôle agit à la requête suivante de ses titulaires ; un rôle **encore attribué ne se supprime pas** ; au plus 30 rôles personnalisés par entreprise ; noms uniques (aussi face aux rôles système).
@@ -69,7 +69,7 @@ Production : voir [DEPLOYMENT.md](DEPLOYMENT.md) (un seul conteneur nginx, deux 
 - **Contrôle de fumée de production** (`SMOKE_ADMIN_URL`) : voir DEPLOYMENT.md.
 
 ## Limites connues
-- **Les 12 rôles système ne se modifient pas** (seuls les rôles personnalisés sont éditables) ; pas de rôle réservé à la plateforme personnalisable ; les libellés des droits dans l'éditeur sont en français (leur domaine est traduit) ; pas d'écran pour réinitialiser le second facteur d'un utilisateur ; pas d'invitation de client (ils s'inscrivent seuls) ; pas de changement d'adresse e-mail d'un utilisateur.
+- **Les 14 rôles système ne se modifient pas** (seuls les rôles personnalisés sont éditables) ; pas de rôle réservé à la plateforme personnalisable ; les libellés des droits dans l'éditeur sont en français (leur domaine est traduit) ; pas d'écran pour réinitialiser le second facteur d'un utilisateur ; pas d'invitation de client (ils s'inscrivent seuls) ; pas de changement d'adresse e-mail d'un utilisateur.
 - **Une entreprise par construction du panel** (comme le site). L'équipe plateforme se connecte à l'adresse du panel d'**une** entreprise : il n'y a pas de panel plateforme à part, ni de sélecteur d'entreprise.
 - **Poids** : ~250 Ko compressés pour le premier chargement (les trois langues sont embarquées) ; les écrans métier sont chargés à la demande. Les textes du panel contiennent encore des sections héritées du site (espace client) non utilisées.
 - **Créole** : les nouveaux textes (utilisateurs, rôles, entreprises, connexion) n'ont pas été relus par un locuteur natif.

@@ -69,7 +69,7 @@ export const keys = {
   receiving: ['me', 'receiving'] as const,
 };
 
-export const useProfile = () => useQuery({ queryKey: keys.profile, queryFn: () => api<Profile>('/v1/me/profile') });
+export const useProfile = (enabled = true) => useQuery({ queryKey: keys.profile, queryFn: () => api<Profile>('/v1/me/profile'), enabled });
 export const useAddresses = () => useQuery({ queryKey: keys.addresses, queryFn: () => api<{ items: Address[] }>('/v1/me/addresses') });
 export const useBeneficiaries = () => useQuery({ queryKey: keys.beneficiaries, queryFn: () => api<{ items: Beneficiary[] }>('/v1/me/beneficiaries') });
 export const useReceiving = () => useQuery({ queryKey: keys.receiving, queryFn: () => api<ReceivingResult>('/v1/me/receiving-addresses') });

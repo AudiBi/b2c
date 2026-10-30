@@ -131,6 +131,9 @@ Le logo fourni (`IMG-20260326-WA0026.svg`, 294 Ko : une trame vectorisée automa
 - **Compte du personnel quand la double authentification est obligatoire** : tant qu'elle n'est pas active, tout l'espace redirige vers la page Sécurité (bandeau explicatif) ; la désactivation y est masquée.
 - Textes en trois langues (créole à relire). Testé par `tests/phase9.test.tsx` (8 tests d'interface) ; **non couvert par la recette navigateur** (pas de générateur de code TOTP dans le banc e2e) et jamais essayé avec une vraie application d'authentification ni sur téléphone. Pas de code QR : l'activation sur le téléphone même exige de recopier la clé.
 
+## Équipe d'un compte professionnel
+Page **Mon équipe** (`/account/team`, propriétaire d'un compte professionnel seulement) : invitation (prénom, nom, e-mail, rôle lecteur ou opérateur), changement de rôle immédiat, retrait en deux temps, avertissement si la double authentification n'est pas activée. Le menu et le tableau de bord de l'espace client ne montrent que ce que les **droits** de la personne permettent (un membre ne voit ni profil, ni adresses, ni bénéficiaires, ni équipe) ; la page équipe ouverte par un membre n'appelle aucun service. Textes en français, créole et anglais (créole non relu par un locuteur natif).
+
 ## Limites connues
 
 - **Poids du JavaScript** : environ 277 Ko compressés pour le fichier principal (les écrans connectés, dont 51 Ko compressés, sont chargés à la demande) (React, React Router, zod, TanStack Query, les trois catalogues de textes). Le contenu s'affiche avant (pré-rendu) mais l'interactivité attend ce fichier. Pistes : charger seulement la langue courante, remplacer TanStack Query par un petit utilitaire, alléger zod côté navigateur.

@@ -44,6 +44,7 @@ Exécutés le 2026-10-28 (suites automatisées rejouées à la fin de la phase 1
 | API `reports.spec.ts` (tableau de bord vide, chiffres réels, revenus et impayés par devise, incidents, période, droits, livreurs) | 7 | ✅ |
 | API `rate-limit.spec.ts` | 7 | ✅ |
 | API `infra.spec.ts` (compteurs, idempotence) | 9 | ✅ |
+| API `team.spec.ts` (équipe d'un compte professionnel : invitation et activation, lecteur / opérateur, accès refusés au profil, aux adresses et à l'équipe, isolement entre comptes, changement de rôle et retrait immédiats avec audit, réinvitation, limite de 10 en rafale, validation, double authentification du propriétaire) | 13 | ✅ |
 | API `custom-roles.spec.ts` (rôles personnalisés : création et liste, validation, noms uniques, droit `role:manage`, anti-escalade à la création / modification / suppression / attribution, effet immédiat sur les droits, portée entrepôt, invitation, suppression refusée tant qu'attribué, isolation entre entreprises, rôles système intouchables, garde-fous en base) | 15 | ✅ |
 | API `mail.spec.ts` (gabarit HTML : logo, titre, bouton, lien de secours, trois langues, échappement de toute valeur saisie, pièce jointe du logo en SMTP) | 5 | ✅ |
 | API `app.spec.ts` (santé, en-têtes, CORS, erreurs, configuration, **variables vides**) | 15 | ✅ |

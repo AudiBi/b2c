@@ -33,6 +33,7 @@ export const paths = {
   accountInvoices: '/account/invoices',
   accountNotifications: '/account/notifications',
   accountClaims: '/account/claims',
+  accountTeam: '/account/team',
   accountSecurity: '/account/security',
 } as const;
 

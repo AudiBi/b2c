@@ -118,6 +118,7 @@ model Company {
   idempotencyKeys       IdempotencyKey[]
   counters              Counter[]
   customers             Customer[]
+  customerMembers       CustomerMember[]
   customerAddresses     CustomerAddress[]
   beneficiaries         Beneficiary[]
   warehouses            Warehouse[]
@@ -206,6 +207,7 @@ model User {
   drivenRoutes       Route[]
   assignedClaims     Claim[]
   customer           Customer?
+  teamMembership     CustomerMember?
 
   @@unique([companyId, email])
   @@unique([id, companyId])
@@ -374,6 +376,25 @@ model Counter {
 }
 
 // Profil client d'un utilisateur de type CUSTOMER. Le code client identifie les colis reçus en entrepôt.
+// Membre de l'équipe d'un compte professionnel : un utilisateur (jamais propriétaire lui-même) rattaché à UN compte.
+// Son rôle (lecteur ou opérateur) est porté par user_roles ; ses droits sont limités (voir packages/shared/src/roles.ts).
+model CustomerMember {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  companyId  String   @map("company_id") @db.Uuid
+  customerId String   @map("customer_id") @db.Uuid
+  userId     String   @unique @map("user_id") @db.Uuid
+  invitedBy  String?  @map("invited_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  customer Customer @relation(fields: [customerId, companyId], references: [id, companyId])
+  user     User     @relation(fields: [userId, companyId], references: [id, companyId])
+
+  @@unique([userId, companyId])
+  @@index([companyId, customerId])
+  @@map("customer_members")
+}
+
 model Customer {
   id                String       @id @default(uuid(7)) @db.Uuid
   companyId         String       @map("company_id") @db.Uuid
@@ -400,6 +421,7 @@ model Customer {
   routeStops         RouteStop[]
   handoverCodes      HandoverCode[]
   claims             Claim[]
+  members            CustomerMember[]
 
   @@unique([companyId, customerCode])
   @@unique([id, companyId])

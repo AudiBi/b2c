@@ -1,3 +1,4 @@
+import { accountCustomerId } from '../customers/account';
 import { Injectable } from '@nestjs/common';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { FileKind, FileObject, FileOwnerType } from '@prisma/client';
@@ -53,7 +54,7 @@ export class FilesService {
       const prealert = await tx.prealert.findUnique({ where: { id: ownerId }, include: { package: true, customer: true } });
       if (!prealert) throw notFound();
       if (auth.kind === 'CUSTOMER') {
-        if (prealert.customer.userId !== auth.userId) throw notFound();
+        if (prealert.customerId !== (await accountCustomerId(tx, auth.userId))) throw notFound();
         if (!auth.permissions.has(mode === 'write' ? 'prealert:create_own' : 'prealert:read_own')) throw forbidden();
         // Plus de modification de la facture une fois le colis arrivé
         if (mode === 'write' && (prealert.status !== 'OPEN' || prealert.package.status !== 'AWAITING_RECEIPT')) {
@@ -69,7 +70,7 @@ export class FilesService {
     const pkg = await tx.package.findUnique({ where: { id: ownerId }, include: { customer: true } });
     if (!pkg) throw notFound();
     if (auth.kind === 'CUSTOMER') {
-      if (mode === 'write' || pkg.customer?.userId !== auth.userId) throw mode === 'write' ? forbidden() : notFound();
+      if (mode === 'write' || !pkg.customerId || pkg.customerId !== (await accountCustomerId(tx, auth.userId))) throw mode === 'write' ? forbidden() : notFound();
       if (!auth.permissions.has('package:read_own')) throw forbidden();
       return;
     }

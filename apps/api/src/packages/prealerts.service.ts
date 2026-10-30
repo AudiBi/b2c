@@ -1,3 +1,4 @@
+import { memberAccount } from '../customers/account';
 import { Injectable } from '@nestjs/common';
 import { Prisma, type Package, type Prealert, type Warehouse } from '@prisma/client';
 import { formatTrackingNumber, type CreatePrealertInput, type PackageStatus, type UpdatePrealertInput } from '@b2c/shared';
@@ -46,7 +47,8 @@ export class PrealertsService {
   private async customerOf(tx: Tx, auth: AuthContext) {
     if (auth.kind !== 'CUSTOMER') throw AppException.forbidden('CUSTOMER_ONLY', 'Réservé aux comptes clients');
     const user = await tx.user.findUniqueOrThrow({ where: { id: auth.userId } });
-    return { customer: await this.customers.ensureCustomer(tx, user), user };
+    // Un membre d'équipe agit pour le compte de son propriétaire : jamais de profil client créé pour lui
+    return { customer: (await memberAccount(tx, user.id)) ?? (await this.customers.ensureCustomer(tx, user)), user };
   }
 
   /** Une préalerte active par numéro de suivi marchand dans l'entreprise ; verrou pour rester exact sous concurrence. */
@@ -228,7 +230,7 @@ export class PortalPackagesService {
   private async customerId(tx: Tx, auth: AuthContext): Promise<string> {
     if (auth.kind !== 'CUSTOMER') throw AppException.forbidden('CUSTOMER_ONLY', 'Réservé aux comptes clients');
     const user = await tx.user.findUniqueOrThrow({ where: { id: auth.userId } });
-    return (await this.customers.ensureCustomer(tx, user)).id;
+    return ((await memberAccount(tx, user.id)) ?? (await this.customers.ensureCustomer(tx, user))).id;
   }
 
   async list(auth: AuthContext, query: { limit: number; cursor?: string; status?: PackageStatus; q?: string }) {

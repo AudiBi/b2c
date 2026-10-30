@@ -1,3 +1,4 @@
+import { memberAccount } from '../customers/account';
 import { Injectable } from '@nestjs/common';
 import type { Claim, ClaimMessage, Prisma } from '@prisma/client';
 import type { ClaimStatus } from '@b2c/shared';
@@ -51,7 +52,8 @@ export class ClaimsService {
 
   private async customerOf(tx: Tx, auth: AuthContext) {
     if (auth.kind !== 'CUSTOMER') throw AppException.forbidden('CUSTOMER_ONLY', 'Réservé aux comptes clients');
-    return tx.customer.findUnique({ where: { userId: auth.userId } });
+    // Un membre d'équipe voit et ouvre les réclamations du compte de son propriétaire (selon son rôle)
+    return (await memberAccount(tx, auth.userId)) ?? tx.customer.findUnique({ where: { userId: auth.userId } });
   }
 
   /** Prévient le client qu'il y a du nouveau (réponse visible, changement d'état). */

@@ -62,7 +62,7 @@ describe('Row-Level Security', () => {
     expect(await rawApp.session.count()).toBe(0);
     // Seuls les rôles système (référentiel non sensible, entreprise plateforme) restent lisibles
     const visibleRoles = await rawApp.role.findMany();
-    expect(visibleRoles).toHaveLength(12);
+    expect(visibleRoles).toHaveLength(14);
     expect(visibleRoles.every((role) => role.companyId === PLATFORM_COMPANY_ID && role.isSystem)).toBe(true);
   });
 
@@ -125,7 +125,7 @@ describe('Row-Level Security', () => {
 
   it('les rôles système sont lisibles par toutes les entreprises mais pas modifiables', async () => {
     const roles = await t.db.run({ companyId: companyA.id }, (tx) => tx.role.findMany());
-    expect(roles.filter((r) => r.companyId === PLATFORM_COMPANY_ID)).toHaveLength(12);
+    expect(roles.filter((r) => r.companyId === PLATFORM_COMPANY_ID)).toHaveLength(14);
     await expect(
       t.db.run({ companyId: companyA.id }, (tx) =>
         tx.role.create({ data: { companyId: PLATFORM_COMPANY_ID, code: 'FAUX_ROLE', name: 'Faux' } }),

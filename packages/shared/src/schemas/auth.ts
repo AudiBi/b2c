@@ -132,6 +132,19 @@ export const updateCustomRoleSchema = z
 export type UpdateCustomRoleInput = z.infer<typeof updateCustomRoleSchema>;
 export const roleCodeParamSchema = z.strictObject({ code: z.string().refine(isCustomRoleCode, 'unknown_role') });
 
+/** Invitation d'un membre dans l'équipe d'un compte professionnel : seulement lecteur ou opérateur. */
+export const teamRoleSchema = z.enum(['READER', 'OPERATOR']);
+export const teamInviteSchema = z.strictObject({
+  email: emailSchema,
+  firstName: nameSchema,
+  lastName: nameSchema,
+  locale: z.enum(LOCALES).default('fr'),
+  role: teamRoleSchema,
+});
+export type TeamInviteInput = z.infer<typeof teamInviteSchema>;
+export const teamRoleChangeSchema = z.strictObject({ role: teamRoleSchema });
+export const teamMemberParamSchema = z.strictObject({ userId: uuidSchema });
+
 export const createStaffSchema = z.strictObject({
   email: emailSchema,
   firstName: nameSchema,

@@ -61,7 +61,7 @@ Critère de sortie : tests verts exécutés, migration appliquée à une base vi
 - Le **créole** n'a pas été relu par un locuteur natif ; les **textes légaux** sont des projets à faire valider par un juriste ; le contenu éditorial doit être adapté à l'entreprise (marque, entrepôts, délais, moyens de paiement).
 - Accessibilité : contrôle automatique (axe) seulement ; **audit manuel et test avec lecteur d'écran à faire** avant d'annoncer une conformité.
 - ~~Le suivi public et le calculateur ne sont pas actifs~~ : **activés en phase 5**. La liste des agences est vide (phase 6).
-- Compte professionnel : sous-utilisateurs non réalisés (CLI-11) ; vérification du téléphone non réalisée (CLI-03).
+- Compte professionnel : équipe réalisée plus tard (voir « Ajout : équipe d’un compte professionnel ») ; vérification du téléphone non réalisée (CLI-03).
 - Poids du JavaScript (~235 Ko compressés) à réduire (voir WEB.md) ; pas de mesure de performance sur réseau mobile.
 - Un site = une entreprise (une construction par entreprise) ; pas de bascule par nom de domaine.
 - Déploiement du site non testé sur un vrai serveur nginx/Apache (exemple de configuration fourni dans WEB.md).
@@ -228,6 +228,8 @@ Demande de l'utilisateur : « détacher le panel admin du site, le faire sépar�
 - **Défauts trouvés** : nom accessible du menu du compte sans son texte visible (WCAG 2.5.3, relevé par axe) ; durée d'attente trop courte du premier écran chargé à la demande dans les tests d'interface ; test de signature de webhook sensible à la lenteur de la machine (marge élargie).
 
 **Ajout : rôles personnalisés** (migration `0010_custom_roles`, droit `role:manage`) : l'administrateur d'une entreprise crée des rôles avec les droits de son choix (anti-escalade, effet immédiat, audit), les attribue à son personnel avec une portée (entreprise, entrepôt, agence) ; garde-fous en base (rôle système intouchable, identité et portée figées).
+
+**Ajout : équipe d'un compte professionnel** (migration `0011_team_members`, rôles `TEAM_READER` / `TEAM_OPERATOR`) — conçue pour le **moindre privilège** : seul le **propriétaire** (client professionnel, droit `team:manage_own`) invite, change le rôle et retire des membres (10 au plus, lien d'activation de 72 h, activation sur le site). Un **lecteur** voit colis, factures et réclamations ; un **opérateur** voit les colis, déclare les achats et ouvre des réclamations. Jamais : payer, voir ou générer le code de remise, modifier adresses, bénéficiaires, profil ou équipe. Le retrait coupe l'accès **immédiatement** (rôle supprimé, sessions fermées, compte désactivé), tout est audité (`team.member_invited/role_changed/removed`), un membre n'appartient qu'à **une seule** équipe et n'a jamais de profil client propre (déclencheurs en base). La double authentification du propriétaire est exigée pour inviter ou changer un rôle quand `REQUIRE_STAFF_2FA` est actif. Écran « Mon équipe » sur le site ; menu et tableau de bord filtrés selon les droits.
 
 **Réserves** : voir « Limites connues » de [ADMIN.md](ADMIN.md) — pas de réinitialisation du second facteur par un administrateur, une entreprise par construction, écrans repris tels quels des phases 6 à 8 (contenu inchangé, habillage nouveau), créole des nouveaux textes à relire, panel essayé sur la pile de production **locale** seulement.
 
