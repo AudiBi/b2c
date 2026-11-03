@@ -1285,6 +1285,7 @@ export const ht: Messages = {
     roles: {
       title: 'Wòl ak dwa',
       lead: 'Wòl yo fiks ; chak youn gen dwa egzat. Yo bay yon itilizatè ak yon pòte (antrepriz, depo oswa ajans).',
+      platformNote: 'Ou fè pati ekip platfòm lan : tout wòl katalòg la parèt isit la an lekti sèlman. Yo bay yo nan chak antrepriz ; ekip platfòm lan bay sèlman wòl sipè administratè a.',
       permissionsCount: '{count} dwa',
       system: 'Wòl sistèm',
       showPermissions: 'Wè dwa yo',

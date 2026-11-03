@@ -417,6 +417,7 @@ describe('Rôles, permissions et administration des utilisateurs', () => {
       expect(codes).toContain('COMPANY_ADMIN');
       expect(codes).not.toContain('SUPER_ADMIN');
     });
+
   });
 
   describe("journal d'audit des actions d'administration", () => {
@@ -460,6 +461,12 @@ describe('Rôles, permissions et administration des utilisateurs', () => {
     beforeAll(async () => {
       superAdmin = await platformAdmin(t);
       superToken = (await login(t, superAdmin)).accessToken;
+    });
+
+    it("l'équipe plateforme voit tout le catalogue des rôles système (lecture seule)", async () => {
+      const res = await api(t).get('/v1/admin/roles').set(bearer(superToken));
+      const codes = res.body.map((r: any) => r.code);
+      for (const code of ['SUPER_ADMIN', 'COMPANY_ADMIN', 'DRIVER', 'TEAM_READER', 'CUSTOMER_BUSINESS']) expect(codes).toContain(code);
     });
 
     // Préfixe de suivi unique (2 à 4 lettres) : la base impose l'unicité entre entreprises

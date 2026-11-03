@@ -54,8 +54,8 @@ export class RolesService {
     const inPlatform = auth.companyId === PLATFORM_COMPANY_ID;
     const rows = await this.db.run({ companyId: auth.companyId }, (tx) => tx.role.findMany({ include, orderBy: [{ isSystem: 'desc' }, { name: 'asc' }] }));
     return rows
-      // Les rôles de l'équipe plateforme ne sont pas proposés aux entreprises, et inversement.
-      .filter((role) => !role.isSystem || (role.code === 'SUPER_ADMIN') === inPlatform)
+      // Une entreprise ne voit pas le rôle de l'équipe plateforme ; l'équipe plateforme voit tout le catalogue (lecture seule : elle ne les attribue pas).
+      .filter((role) => inPlatform || !role.isSystem || role.code !== 'SUPER_ADMIN')
       .map(toRoleDto);
   }
 

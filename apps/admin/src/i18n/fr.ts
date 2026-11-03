@@ -1285,6 +1285,7 @@ export const fr = {
     roles: {
       title: 'Rôles et droits',
       lead: 'Les rôles sont fixes ; chacun regroupe des droits précis. Ils s’attribuent à un utilisateur avec une portée (entreprise, entrepôt ou agence).',
+      platformNote: 'Vous êtes dans l’équipe plateforme : tous les rôles du catalogue sont listés ici en lecture seule. Ils s’attribuent dans chaque entreprise ; l’équipe plateforme n’attribue que le rôle de super administrateur.',
       permissionsCount: '{count} droits',
       system: 'Rôle système',
       showPermissions: 'Voir les droits',

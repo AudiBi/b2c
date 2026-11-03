@@ -35,7 +35,7 @@ export function RolesPage() {
   const scopes = new Map(ROLE_DEFINITIONS.map((d) => [d.code as string, d.allowedScopes]));
   // Les rôles système sont définis dans le code : si le serveur n'en renvoie aucun (entreprise sans lignes de rôles), on affiche le catalogue partagé
   const audience = user?.kind === 'PLATFORM' ? 'PLATFORM' : 'STAFF';
-  const fallback: RoleItem[] = ROLE_DEFINITIONS.filter((d) => d.audience === audience).map((d) => ({ code: d.code as string, name: d.name, description: d.description, isSystem: true, permissions: [...d.permissions].sort() }));
+  const fallback: RoleItem[] = ROLE_DEFINITIONS.filter((d) => audience === 'PLATFORM' || d.audience !== 'PLATFORM').map((d) => ({ code: d.code as string, name: d.name, description: d.description, isSystem: true, permissions: [...d.permissions].sort() }));
   const items = roles.data && roles.data.length > 0 ? roles.data : roles.isLoading || roles.isError ? [] : fallback;
   const custom = items.filter((x) => x.custom);
   const system = items.filter((x) => !x.custom);
@@ -114,6 +114,7 @@ export function RolesPage() {
         lead={r.lead}
         actions={canManage ? <Button onClick={() => setEditing('new')}><Icon name="plus" width={16} height={16} /> {r.editor.create}</Button> : undefined}
       />
+      {user?.kind === 'PLATFORM' ? <Alert tone="info">{r.platformNote}</Alert> : null}
       {notice ? <Alert tone="success" live>{notice}</Alert> : null}
       {error ? <Alert tone="danger" live>{error}</Alert> : null}
       {roles.isLoading ? <p role="status">{m.common.loading}</p> : null}

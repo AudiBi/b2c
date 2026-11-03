@@ -28,7 +28,7 @@ Exécutés le 2026-10-30 (suites automatisées rejouées après l'équipe et le 
 | `packages/shared` (catalogue, `PermissionSet`, schémas, machine d'états des colis, des lots, numéro de suivi, finance et notifications, **remise, tournées, réclamations, période du tableau de bord**) | 91 | ✅ |
 | API `rls.spec.ts` (isolation au niveau de la base) | 18 | ✅ |
 | API `auth.spec.ts` | 40 | ✅ |
-| API `iam.spec.ts` (politique des routes, matrice des rôles, invitations, plateforme) | 47 | ✅ |
+| API `iam.spec.ts` (politique des routes, matrice des rôles, invitations, plateforme) | 48 | ✅ |
 | API `customers.spec.ts` (code client, profil, adresses, bénéficiaires, entrepôts, adresses de réception, public) | 48 | ✅ |
 | API `calculator.spec.ts` (formules pures : unités, poids volumétrique, arrondis, tranches, suppléments, taxes, décimal exact) | 26 | ✅ |
 | API `pricing.spec.ts` (grilles : brouillon/activation/immuabilité/chevauchement, catégories, calculateur public, estimations client) | 29 | ✅ |
@@ -53,7 +53,7 @@ Exécutés le 2026-10-30 (suites automatisées rejouées après l'équipe et le 
 | Site, unitaires (10 fichiers : pages publiques et espace client ; les écrans du personnel sont dans le panel) | 163 | ✅ |
 | **Panel d'administration, unitaires** (5 fichiers : écrans du personnel repris de `phase6` à `phase9` + `admin.test.tsx` : accès, connexion, utilisateurs, rôles, entreprises, textes) | 92 | ✅ |
 | Site, recette navigateur | 91 | ✅ |
-| **Total de la suite standard** | **996** | **996 réussis** (7 tests de stockage S3 ignorés, exécutés à part). Un test de notifications (`tick`) a échoué **une fois** dans une série complète et réussi à chaque rejeu isolé (2 fois) : intermittence non élucidée |
+| **Total de la suite standard** | **997** | **997 réussis** (7 tests de stockage S3 ignorés, exécutés à part). Un test de notifications (`tick`) a échoué **une fois** dans une série complète et réussi à chaque rejeu isolé (2 fois) : intermittence non élucidée |
 
 Stockage S3 contre un **vrai SeaweedFS** (`npm run test:s3`) : **10 tests sur 10 réussis** (3 de configuration + 7 de stockage, dont le parcours API complet), exécutés le 2026-10-28. Ils sont ignorés par `npm test` pour ne pas exiger ce service : la suite l'affiche comme « ignorés », elle ne les compte pas comme vérifiés.
 

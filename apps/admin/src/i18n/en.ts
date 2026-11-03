@@ -1282,6 +1282,7 @@ export const en: Messages = {
     roles: {
       title: 'Roles and permissions',
       lead: 'Roles are fixed; each groups precise permissions. They are assigned to a user with a scope (company, warehouse or agency).',
+      platformNote: 'You are on the platform team: every role of the catalogue is listed here, read-only. They are assigned inside each company; the platform team only assigns the super administrator role.',
       permissionsCount: '{count} permissions',
       system: 'System role',
       showPermissions: 'Show permissions',
