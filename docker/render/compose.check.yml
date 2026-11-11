@@ -70,7 +70,7 @@ services:
       args:
         IMAGE_TARGET: web-render
         VITE_COMPANY_SLUG: check
-        VITE_BRAND_NAME: B2C
+        VITE_BRAND_NAME: B2C Shipping Express
         SITE_URL: https://site.example.test
         ADMIN_URL: https://admin.example.test
     depends_on: [api]

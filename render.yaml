@@ -119,8 +119,10 @@ services:
         value: noreply@b2cxpress.com
       - key: SMTP_PASSWORD
         sync: false
+      - key: APP_NAME
+        value: B2C Shipping Express
       - key: MAIL_FROM
-        value: B2C <noreply@b2cxpress.com>
+        value: B2C Shipping Express <noreply@b2cxpress.com>
       # Pièces jointes sur le disque ci-dessus
       - key: STORAGE_DRIVER
         value: disk
@@ -167,7 +169,7 @@ services:
       - key: VITE_COMPANY_SLUG # identifiant public de l'entreprise (identique à celui créé dans le panel)
         sync: false
       - key: VITE_BRAND_NAME
-        value: B2C
+        value: B2C Shipping Express
       # Référencement (facultatif, docs/SEO.md) : laisser vide tant que non fournis
       - key: SEO_GOOGLE_SITE_VERIFICATION
         value: ""

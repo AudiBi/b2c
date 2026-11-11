@@ -16,7 +16,7 @@ export function usePageMeta(key: SeoKey): void {
   const { m } = useI18n();
   const collector = useContext(HeadContext);
   const entry = m.seo[key];
-  const title = key === 'home' ? `${config.brandName} | ${entry.title}` : `${entry.title} | ${config.brandName}`;
+  const title = key === 'home' ? `${config.brandShortName} | ${entry.title}` : `${entry.title} | ${config.brandShortName}`;
 
   if (collector) {
     collector.title = title;

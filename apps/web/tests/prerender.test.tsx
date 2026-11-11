@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { prerenderTargets, render } from '../src/entry-server';
+import { config } from '../src/config';
 import { catalogs } from '../src/i18n';
 
 describe('rendu serveur de toutes les pages', () => {
@@ -23,7 +24,8 @@ describe('rendu serveur de toutes les pages', () => {
     expect(html).toContain('src="/logo-mark.svg"');
     expect(html).toContain('src="/logo.svg"');
     // images décoratives (alt vide) : le nom de la marque est porté par un texte réservé aux lecteurs d'écran dans le lien d'accueil
-    expect(html).toMatch(/<a [^>]*class="brand"[^>]*>[\s\S]*?<img [^>]*alt=""[\s\S]*?<span class="sr-only">B2C<\/span>/);
+    expect(html).toMatch(/<a [^>]*class="brand"[^>]*>[\s\S]*?<img [^>]*alt=""[\s\S]*?<span class="sr-only">[^<]+<\/span>/);
+    expect(html).toContain(`<span class="sr-only">${config.brandName}</span>`);
     // dimensions déclarées : pas de saut de mise en page au chargement
     expect(html).toMatch(/<img [^>]*src="\/logo-mark.svg"[^>]*width="\d+"[^>]*height="48"/);
   });

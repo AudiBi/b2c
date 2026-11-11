@@ -2,7 +2,8 @@
 // Résultat dans dist/client (à déployer tel quel derrière un serveur web statique).
 //   SITE_URL=https://exemple.com npm run build   (URL publique : canonical, hreflang, sitemap)
 // Variables facultatives (aucune valeur n'est inventée : ce qui n'est pas fourni n'est pas publié) :
-//   VITE_BRAND_NAME                  nom de la marque (titres, Open Graph, données structurées)
+//   VITE_BRAND_NAME                  nom complet de la marque (Open Graph, données structurées)
+//   VITE_BRAND_SHORT_NAME            nom court des titres de page (« B2C » par défaut)
 //   SEO_GOOGLE_SITE_VERIFICATION     code de vérification Google Search Console (balise meta)
 //   SEO_BING_SITE_VERIFICATION       code de vérification Bing Webmaster Tools (balise meta)
 //   SEO_ORGANIZATION_JSON            {"email":"…","telephone":"…","sameAs":["https://…"],"address":{"streetAddress":"…","addressLocality":"…","addressCountry":"HT"}}
@@ -61,7 +62,8 @@ async function organization() {
 
 const site = {
   siteUrl,
-  brandName: process.env.VITE_BRAND_NAME ?? 'B2C',
+  brandName: process.env.VITE_BRAND_NAME ?? 'B2C Shipping Express',
+  shortName: process.env.VITE_BRAND_SHORT_NAME ?? 'B2C',
   googleVerification: process.env.SEO_GOOGLE_SITE_VERIFICATION || undefined,
   bingVerification: process.env.SEO_BING_SITE_VERIFICATION || undefined,
   organization: await organization(),
@@ -113,7 +115,7 @@ await write(
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0b2545" />
     <meta name="robots" content="noindex, follow" />
-    <title>${esc(site.brandName)} | Langue / Lang / Language</title>
+    <title>${esc(site.shortName)} | Langue / Lang / Language</title>
     <meta name="description" content="Choisissez votre langue · Chwazi lang ou · Choose your language" />
     ${verification ? `${verification}\n    ` : ''}<link rel="canonical" href="${siteUrl}/" />
     ${LANGS.map((l) => `<link rel="alternate" hreflang="${l}" href="${urlOf(l, '')}" />`).join('\n    ')}

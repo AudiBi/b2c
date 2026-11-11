@@ -15,7 +15,10 @@ export interface SiteOrganization {
 export interface SiteSeo {
   /** URL publique du site, sans barre finale (« https://exemple.com »). */
   siteUrl: string;
+  /** Nom complet (og:site_name, données structurées). */
   brandName: string;
+  /** Nom court des titres de page (par défaut : le nom complet). */
+  shortName?: string;
   /** Codes de vérification des outils pour webmasters (balises meta). */
   googleVerification?: string;
   bingVerification?: string;
@@ -62,6 +65,7 @@ function organizationNode(site: SiteSeo) {
     '@type': org.address ? ['Organization', 'LocalBusiness'] : 'Organization',
     '@id': `${site.siteUrl}/#organization`,
     name: site.brandName,
+    ...(site.shortName && site.shortName !== site.brandName ? { alternateName: site.shortName } : {}),
     url: `${site.siteUrl}/`,
     logo: { '@type': 'ImageObject', url: `${site.siteUrl}/apple-touch-icon.png`, width: 180, height: 180 },
     image: `${site.siteUrl}/og-image.png`,
@@ -94,7 +98,7 @@ const WEBPAGE_TYPE: Partial<Record<PageKey, string>> = { about: 'AboutPage', con
 export function buildJsonLd(page: HeadPage, site: SiteSeo): object {
   const m = catalogs[page.lang];
   const url = pageUrl(site, page.lang, page.path);
-  const title = pageTitle(page.lang, page.key, site.brandName);
+  const title = pageTitle(page.lang, page.key, site.shortName ?? site.brandName);
   const description = pageDescription(page.lang, page.key);
   const graph: Record<string, unknown>[] = [
     organizationNode(site),
@@ -103,6 +107,7 @@ export function buildJsonLd(page: HeadPage, site: SiteSeo): object {
       '@id': `${site.siteUrl}/#website`,
       url: `${site.siteUrl}/`,
       name: site.brandName,
+      ...(site.shortName && site.shortName !== site.brandName ? { alternateName: site.shortName } : {}),
       inLanguage: [...LANGS],
       publisher: { '@id': `${site.siteUrl}/#organization` },
     },
@@ -173,7 +178,7 @@ export const jsonLdScript = (data: object) => `<script type="application/ld+json
 
 /** Balises <head> propres à une page (titre, description, robots, canonical, hreflang, Open Graph, Twitter, JSON-LD, vérifications). */
 export function buildHeadTags(page: HeadPage, site: SiteSeo): string[] {
-  const title = pageTitle(page.lang, page.key, site.brandName);
+  const title = pageTitle(page.lang, page.key, site.shortName ?? site.brandName);
   const description = pageDescription(page.lang, page.key);
   const url = pageUrl(site, page.lang, page.path);
   const tags = [`<title>${esc(title)}</title>`, `<meta name="description" content="${esc(description)}" />`];

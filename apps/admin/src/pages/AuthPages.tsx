@@ -21,7 +21,7 @@ function AuthLayout({ title, lead, children }: { title: string; lead?: string; c
     <div className="auth-page">
       <aside className="auth-aside">
         <div className="plate">
-          <img src="/logo-mark.svg" alt={config.brandName} width="80" height="44" />
+          <img src="/logo-mark.svg" alt={config.brandName} width="77" height="44" />
         </div>
         <div>
           <h2>{m.admin.login.asideTitle}</h2>

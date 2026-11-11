@@ -145,3 +145,28 @@ describe('données structurées JSON-LD', () => {
     expect(buildJsonLd(home, rich)).toHaveProperty('@context', 'https://schema.org');
   });
 });
+
+describe('nom de la marque : complet ou court', () => {
+  const full: SiteSeo = { siteUrl: 'https://exemple.test', brandName: 'B2C Shipping Express', shortName: 'B2C' };
+  const home = indexed.find((t) => t.lang === 'fr' && t.key === 'home')!;
+  const faq = indexed.find((t) => t.lang === 'fr' && t.key === 'faq')!;
+
+  it('les titres portent le nom court (longueur d’affichage), les aperçus et les données structurées le nom complet', () => {
+    const tags = buildHeadTags(faq, full).join('\n');
+    expect(tags).toContain(`<title>${pageTitle('fr', 'faq', 'B2C')}</title>`);
+    expect(tags).toContain('<meta property="og:site_name" content="B2C Shipping Express" />');
+    const graph = jsonLdOf(buildHeadTags(home, full))!['@graph'];
+    expect(graph.find((n) => n['@type'] === 'Organization')).toMatchObject({ name: 'B2C Shipping Express', alternateName: 'B2C' });
+    expect(graph.find((n) => n['@type'] === 'WebSite')).toMatchObject({ name: 'B2C Shipping Express', alternateName: 'B2C' });
+  });
+
+  it.each(indexed.map((t) => [`/${t.lang}${t.path}`, t] as const))('%s : titre de 66 caractères au plus avec le nom court', (_url, target) => {
+    expect(pageTitle(target.lang, target.key, 'B2C').length).toBeLessThanOrEqual(66);
+  });
+
+  it('sans nom court, le nom complet sert aux titres et aucun alternateName n’est publié', () => {
+    const solo: SiteSeo = { siteUrl: 'https://exemple.test', brandName: 'B2C' };
+    expect(buildHeadTags(faq, solo).join('')).toContain(pageTitle('fr', 'faq', 'B2C'));
+    expect(JSON.stringify(jsonLdOf(buildHeadTags(home, solo)))).not.toContain('alternateName');
+  });
+});

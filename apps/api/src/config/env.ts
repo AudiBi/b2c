@@ -18,7 +18,7 @@ const csv = z
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    APP_NAME: z.string().default('B2C'),
+    APP_NAME: z.string().default('B2C Shipping Express'),
     API_PORT: z.coerce.number().int().min(1).max(65535).default(3100),
     API_PUBLIC_URL: z.url().default('http://localhost:3100'),
     WEB_PUBLIC_URL: z.url().default('http://localhost:5173'),

@@ -1,7 +1,7 @@
 # Spécifications fonctionnelles et non fonctionnelles
 
 Phase 2. Source : cahier des charges de l'utilisateur (sections 3 à 19) et [PROJECT_AUDIT.md](PROJECT_AUDIT.md).
-Nom de marque : **B2C** (« Business to Customer », nom du logo fourni) ; il reste une variable de configuration (`VITE_BRAND_NAME`, `APP_NAME`), jamais en dur dans le code. « TransitHaïti » était le nom provisoire des phases 1 à 10.
+Nom de marque : **B2C Shipping Express** (nom du logo fourni ; **B2C** comme nom court dans les titres de page, `VITE_BRAND_SHORT_NAME`) ; il reste une variable de configuration (`VITE_BRAND_NAME`, `APP_NAME`), jamais en dur dans le code. « TransitHaïti » était le nom provisoire des phases 1 à 10.
 
 ## 1. Hypothèses retenues (validées par l'utilisateur le 2026-10-24)
 

@@ -111,7 +111,7 @@ export function AdminShell() {
       <aside className={`sidebar${open ? ' open' : ''}`}>
         <div className="side-brand">
           <Link to={paths.home} aria-label={config.brandName}>
-            <img src="/logo-mark.svg" alt="" width="62" height="34" />
+            <img src="/logo-mark.svg" alt="" width="60" height="34" />
           </Link>
         </div>
         <div className="side-tenant">{m.admin.panel} · {user.kind === 'PLATFORM' ? m.admin.topbar.platformTeam : config.companySlug}</div>

@@ -36,7 +36,8 @@ Variables lues **à la construction** (fichier `.env` de la racine ; seules cell
 | Variable | Rôle |
 |---|---|
 | `VITE_COMPANY_SLUG` | Entreprise servie par ce site. **Une construction = une entreprise** |
-| `VITE_BRAND_NAME` | Nom de marque affiché (« B2C » par défaut) |
+| `VITE_BRAND_NAME` | Nom de marque complet (« B2C Shipping Express » par défaut) : pied de page, aperçu des réseaux sociaux, données structurées |
+| `VITE_BRAND_SHORT_NAME` | Nom court des titres de page (« B2C » par défaut) : les titres restent sous la limite d'affichage des moteurs de recherche |
 | `VITE_API_URL` | Vide par défaut (même origine). À renseigner seulement si l'API est sur un autre domaine (alors configurer CORS et revoir le cookie de session) |
 | `SITE_URL` | URL publique, utilisée au pré-rendu pour `canonical`, `hreflang`, `sitemap.xml`, `robots.txt`. **À définir pour toute mise en ligne** |
 
@@ -109,18 +110,18 @@ Textes en trois langues (créole à relire). Le total de la facture et le solde 
 - **Journal d'audit** : lecture seule, filtres, détails avant / après.
 Textes en trois langues (créole à relire). Pas de carte ni d'itinéraire, pas d'application mobile pour le livreur (écran responsive seulement).
 
-## Logo B2C
+## Logo B2C Shipping Express
 
-Le logo fourni (`IMG-20260326-WA0026.svg`, 294 Ko : une trame vectorisée automatiquement en 870 tracés, avec un fond gris clair et des filets parasites) a été **retracé proprement** : deux couleurs (bleu #03526F, gris #878787), fond transparent, contours lissés, filet clair entre le « 2 » et les lettres comblé. Résultat dans `apps/web/public/` :
+Le logo fourni (`B2C_Shipping_Express_logo_transparent.svg`, 75 Ko : 20 courbes tracées automatiquement, en deux couleurs, bleu #04536E et gris #878788, sur fond transparent) a été **allégé** (coordonnées arrondies à l'unité sur 4 800 de large) et décliné en plusieurs fichiers. L'écart visuel avec l'original a été mesuré : 0,05 % des pixels, uniquement sur les contours. L'original est conservé dans `docs/brand/B2C_Shipping_Express_logo_transparent.svg`. Pour le remplacer : allégement avec svgo (précision 0), rognage du symbole « B2C » par un `clipPath` exact (une `viewBox` seule laisse apparaître le haut de la ligne de texte), puis rendu des PNG par Chrome ; les fichiers sont copiés dans `apps/web/public` et `apps/admin/public`, et le PNG des e-mails et des PDF est réencodé dans `apps/api/src/branding/logo-png.ts` avec son rapport hauteur/largeur.
 
 | Fichier | Poids | Emploi |
 |---|---|---|
-| `logo.svg` | 7,9 Ko (3,7 Ko compressé) | logo complet avec « Business to Customer » : pied de page, aperçu des réseaux sociaux |
-| `logo-mark.svg` | 5,0 Ko | mot-symbole B2C seul : en-tête (48 px de haut) |
-| `favicon.svg`, `favicon-48.png` | 5,1 Ko, 1,7 Ko | onglet du navigateur (mot-symbole sur plaque blanche) |
-| `apple-touch-icon.png` | 4,9 Ko | écran d'accueil iOS (180 px) |
-| `og-image.png` | 42 Ko | aperçu des liens partagés (1200 × 630), balises `og:image` et `twitter:card` ajoutées au pré-rendu |
-| `apps/api/src/branding/logo-png.ts` | 26 Ko (PNG en base64) | logo des PDF : factures, reçus, manifestes (en haut à droite) |
+| `logo.svg` | 8,8 Ko (3,6 Ko compressé) | logo complet « B2C SHIPPING EXPRESS » (rapport 1,559) : pied de page, aperçu des réseaux sociaux |
+| `logo-mark.svg` | 8,8 Ko | symbole « B2C » seul (rapport 1,758) : en-tête (48 px de haut) |
+| `favicon.svg`, `favicon-48.png` | 8,9 Ko, 1,6 Ko | onglet du navigateur (symbole sur plaque blanche arrondie) |
+| `apple-touch-icon.png` | 4,5 Ko | écran d'accueil iOS (180 px, fond blanc) |
+| `og-image.png` | 36 Ko | aperçu des liens partagés (1200 × 630, logo complet sur fond blanc), balises `og:image` et `twitter:card` ajoutées au pré-rendu |
+| `apps/api/src/branding/logo-png.ts` | 31 Ko (PNG 480 × 308 en base64) | logo des PDF (factures, reçus, manifestes) et des e-mails |
 
 **Où il apparaît** : en-tête de toutes les pages (publiques, connexion, espace client et du personnel), pied de page (sur une plaque blanche, car le pied de page est bleu foncé), onglet, aperçu des liens partagés, PDF. **Pas** dans les e-mails (texte brut) ni dans les modèles de notification. Les images sont décoratives (`alt` vide) : le nom de la marque reste porté par un texte réservé aux lecteurs d'écran, et des tests le vérifient (pré-rendu, PDF).
 
