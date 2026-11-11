@@ -201,6 +201,33 @@ describe('fiche d’un colis (personnel)', () => {
     });
   });
 
+  it('pesée : la confirmation reste affichée quand le colis passe à « pesé » (le formulaire disparaît, pas le message)', async () => {
+    let weighed = false;
+    signedIn(perms, {
+      [`GET /v1/admin/packages/${P}`]: () => json(200, detail(weighed ? { status: 'REGISTERED_WEIGHED' } : {})),
+      'GET /v1/admin/agencies': { items: [] },
+      [`GET /v1/admin/warehouses/${W}/locations`]: { items: [] },
+      [`POST /v1/admin/packages/${P}/register`]: () => {
+        weighed = true;
+        return json(200, pkg({ status: 'REGISTERED_WEIGHED' }));
+      },
+      'GET /v1/files': { items: [] },
+    });
+    const user = userEvent.setup();
+    renderAt(`/packages/${P}`);
+    const weighing = await screen.findByRole('region', { name: fr.staff.package.weigh.title });
+    await user.type(within(weighing).getByLabelText(fr.staff.package.weigh.weight), '2');
+    await user.type(within(weighing).getByLabelText(fr.staff.package.weigh.length), '40');
+    await user.type(within(weighing).getByLabelText(fr.staff.package.weigh.width), '30');
+    await user.type(within(weighing).getByLabelText(fr.staff.package.weigh.height), '20');
+    await user.click(within(weighing).getByRole('button', { name: fr.staff.package.weigh.submit }));
+    await waitFor(() => expect(calls(`POST /v1/admin/packages/${P}/register`)).toHaveLength(1));
+    // le formulaire a disparu (statut « pesé »), la confirmation reste
+    await waitFor(() => expect(screen.queryByLabelText(fr.staff.package.weigh.weight)).not.toBeInTheDocument());
+    const done = await screen.findByRole('region', { name: fr.staff.package.weigh.title });
+    expect(within(done).getByText(fr.staff.package.weigh.done)).toBeInTheDocument();
+  });
+
   it('changement de statut : le motif est exigé avant tout appel, le type d’anomalie accompagne une retenue', async () => {
     signedIn(perms, {
       [`GET /v1/admin/packages/${P}`]: detail({ status: 'REGISTERED_WEIGHED' }),

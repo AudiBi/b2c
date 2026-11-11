@@ -1058,6 +1058,29 @@
         ]
       }
     },
+    "/v1/admin/users/{id}/two-factor/reset": {
+      "post": {
+        "operationId": "AdminUsersController_resetTwoFactor",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Réinitialise la double authentification d'un membre du personnel (sessions fermées, e-mail d'alerte, audit)",
+        "tags": [
+          "Administration : utilisateurs"
+        ],
+        "x-permissions": [
+          "user:update"
+        ]
+      }
+    },
     "/v1/admin/roles": {
       "get": {
         "operationId": "RolesController_list",

@@ -1,4 +1,4 @@
-import { api, bearer, buildTestApp, login, makeCompany, makeCustomer, makeTenant, makeUser, uniq, type TestApp, type TestUser } from './helpers';
+import { api, bearer, buildTestApp, lastMailTo, login, makeCompany, makeCustomer, makeTenant, makeUser, uniq, type TestApp, type TestUser } from './helpers';
 import { base32Decode, hotp, stepAt } from '../src/security/totp';
 
 const errorCode = (res: { body: any }) => res.body?.error?.code;
@@ -255,6 +255,88 @@ describe('Double authentification (TOTP)', () => {
       const count = await t.db.run({ companyId: b.company.id }, (tx) => tx.totpRecoveryCode.count());
       expect(count).toBe(0);
       expect(uniq('x')).toBeTruthy();
+    });
+  });
+
+  describe('réinitialisation par un administrateur (second facteur et codes de secours perdus)', () => {
+    const reset = (token: string, userId: string) => api(t).post(`/v1/admin/users/${userId}/two-factor/reset`).set(bearer(token));
+
+    async function world() {
+      const tenant = await makeTenant(t);
+      const staff = await makeUser(t, { company: tenant.company, roleCode: 'BILLING_AGENT' });
+      const staffSession = await login(t, staff);
+      await enrol(t, staff, staffSession.accessToken);
+      return { ...tenant, staff, staffToken: staffSession.accessToken };
+    }
+
+    it('supprime le secret et les codes de secours, ferme les sessions, prévient la personne par e-mail et laisse une trace d’audit', async () => {
+      const w = await world();
+      expect((await t.admin.totpRecoveryCode.count({ where: { userId: w.staff.id } }))).toBe(10);
+      const res = await reset(w.token, w.staff.id);
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ id: w.staff.id, kind: 'STAFF' });
+
+      const stored = await t.admin.user.findUniqueOrThrow({ where: { id: w.staff.id } });
+      expect([stored.totpSecretEnc, stored.totpEnabledAt, stored.totpLastStep]).toEqual([null, null, null]);
+      expect(await t.admin.totpRecoveryCode.count({ where: { userId: w.staff.id } })).toBe(0);
+      expect(await t.admin.session.count({ where: { userId: w.staff.id, revokedAt: null } })).toBe(0);
+      // l'ancien jeton d'accès ne sert plus
+      expect((await api(t).get('/v1/auth/me').set(bearer(w.staffToken))).status).toBe(401);
+
+      const audit = await t.admin.auditLog.findMany({ where: { companyId: w.company.id, action: 'user.two_factor_reset' } });
+      expect(audit).toHaveLength(1);
+      expect(audit[0]).toMatchObject({ entityId: w.staff.id, actorUserId: w.admin.id });
+      expect(JSON.stringify(audit[0])).not.toMatch(/totp_secret|recovery/i);
+      const mail = lastMailTo(t, w.staff.email);
+      expect(mail.subject).toContain('double authentification');
+
+      // la personne se reconnecte avec son seul mot de passe et peut reconfigurer un second facteur
+      const again = await login(t, w.staff);
+      expect((await api(t).get('/v1/me/2fa').set(bearer(again.accessToken))).body).toMatchObject({ enabled: false, pending: false });
+      expect((await post(t, '/v1/me/2fa/setup', again.accessToken, { password: w.staff.password })).status).toBe(200);
+    });
+
+    it('2FA obligatoire pour le personnel : après la réinitialisation, tout est bloqué sauf la reconfiguration', async () => {
+      const w = await world();
+      expect((await reset(w.token, w.staff.id)).status).toBe(200);
+      const session = await login(strict, w.staff);
+      expect(errorCode(await api(strict).get('/v1/admin/packages').set(bearer(session.accessToken)))).toBe('TOTP_ENROLLMENT_REQUIRED');
+      expect((await post(strict, '/v1/me/2fa/setup', session.accessToken, { password: w.staff.password })).status).toBe(200);
+    });
+
+    it('refus : soi-même, un compte client, un compte sans second facteur, un compte inconnu ou d’une autre entreprise', async () => {
+      const w = await world();
+      expect(errorCode(await reset(w.token, w.admin.id))).toBe('CANNOT_RESET_SELF');
+      const customer = await makeUser(t, { company: w.company, roleCode: 'CUSTOMER_INDIVIDUAL' });
+      expect(errorCode(await reset(w.token, customer.id))).toBe('NOT_STAFF_ACCOUNT');
+      const plain = await makeUser(t, { company: w.company, roleCode: 'BILLING_AGENT' });
+      const conflict = await reset(w.token, plain.id);
+      expect([conflict.status, errorCode(conflict)]).toEqual([409, 'TWO_FACTOR_NOT_ACTIVE']);
+      expect((await reset(w.token, '0198f2b2-0000-7000-8000-000000000000')).status).toBe(404);
+      const other = await world();
+      expect((await reset(w.token, other.staff.id)).status).toBe(404); // la RLS cache les comptes des autres entreprises
+      expect((await t.admin.user.findUniqueOrThrow({ where: { id: other.staff.id } })).totpEnabledAt).not.toBeNull();
+    });
+
+    it('droits : sans « user:update » refusé ; un compte qui détient moins de droits ne peut pas neutraliser celui d’un autre', async () => {
+      const w = await world();
+      const billingToken = (await login(t, await makeUser(t, { company: w.company, roleCode: 'BILLING_AGENT' }))).accessToken;
+      expect((await reset(billingToken, w.staff.id)).status).toBe(403);
+
+      // Un rôle personnalisé « user:update + user:read » ne suffit pas pour réinitialiser un administrateur
+      const role = await api(t).post('/v1/admin/roles').set(bearer(w.token)).send({ name: `Support ${uniq('r')}`, scopeType: 'COMPANY', permissions: ['user:update', 'user:read'] });
+      expect(role.status).toBe(201);
+      const support = await makeUser(t, { company: w.company, roleCode: 'BILLING_AGENT' });
+      expect((await api(t).post(`/v1/admin/users/${support.id}/roles`).set(bearer(w.token)).send({ roleCode: role.body.code })).status).toBe(201);
+      const supportToken = (await login(t, support)).accessToken;
+      const secondAdmin = await makeUser(t, { company: w.company, roleCode: 'COMPANY_ADMIN' });
+      const adminSession = await login(t, secondAdmin);
+      await enrol(t, secondAdmin, adminSession.accessToken);
+      const blocked = await reset(supportToken, secondAdmin.id);
+      expect([blocked.status, errorCode(blocked)]).toEqual([403, 'TARGET_HAS_MORE_PERMISSIONS']);
+      expect((await t.admin.user.findUniqueOrThrow({ where: { id: secondAdmin.id } })).totpEnabledAt).not.toBeNull();
+      // …mais il peut réinitialiser un compte de facturation (droits inclus dans les siens)
+      expect((await reset(supportToken, w.staff.id)).status).toBe(200);
     });
   });
 });

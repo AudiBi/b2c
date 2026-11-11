@@ -155,7 +155,12 @@ function WeighPanel({ pkg, onDone }: PanelProps) {
   const [v, setV] = useState({ weight: '', weightUnit: 'KG', length: '', width: '', height: '', dimensionUnit: 'CM', declared: '', description: '', mode: '' as '' | TransportMode });
   const [errors, setErrors] = useState<FieldErrors>({});
   const st = useActionState();
-  if (!can || !pkg.customer || !['RECEIVED_AT_WAREHOUSE', 'UNDER_INSPECTION'].includes(pkg.status)) return null;
+  if (!can || !pkg.customer) return null;
+  // Une fois le colis pesé, son statut change et le formulaire disparaît : la confirmation, elle, reste affichée
+  // (sinon elle s'effaçait avec le panneau, presque aussitôt après l'enregistrement).
+  if (!['RECEIVED_AT_WAREHOUSE', 'UNDER_INSPECTION'].includes(pkg.status)) {
+    return st.notice ? <Panel title={d.title} notice={st.notice} error={st.error}>{null}</Panel> : null;
+  }
   const set = (name: keyof typeof v, value: string) => {
     setV((c) => ({ ...c, [name]: value }));
     setErrors((c) => {

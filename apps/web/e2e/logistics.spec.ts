@@ -111,12 +111,21 @@ test.describe('logistique : du scan en entrepôt au retrait en agence', () => {
 
     // --- 6. Lot de transport ----------------------------------------------------------------------
     await nav.getByRole('link', { name: 'Lots', exact: true }).click();
+    // La base de recette garde les lots des exécutions précédentes (la liste est limitée à 50, du plus récent au plus ancien) :
+    // on note la référence du premier lot de la liste CHARGÉE, puis on attend qu'un autre lot ouvre la liste avant de l'ouvrir.
+    // Sans cela, le clic pouvait tomber sur un ancien lot « Clos ».
+    const lots = page.getByTestId('shipment-item');
+    const firstReference = async () => ((await lots.count()) > 0 ? await lots.first().locator('.mono').textContent() : null);
+    await expect(page.getByRole('button', { name: 'Nouveau lot' })).toBeVisible();
+    await expect(page.getByText('Chargement…')).toHaveCount(0);
+    const referenceBefore = await firstReference();
     await page.getByRole('button', { name: 'Nouveau lot' }).click();
     await page.getByLabel('Transporteur').fill('Transporteur de recette');
     await page.getByLabel('N° de connaissement / LTA').fill('LTA-E2E-1');
     await page.getByLabel('Agence de destination').selectOption({ label: 'Agence de recette (Delmas)' });
     await page.getByRole('button', { name: 'Créer le lot' }).click();
-    await page.getByTestId('shipment-item').first().getByRole('link', { name: /Ouvrir/ }).click();
+    await expect.poll(firstReference).not.toBe(referenceBefore);
+    await lots.first().getByRole('link', { name: /Ouvrir/ }).click();
     await expect(page.getByTestId('shipment-status')).toHaveText('Ouvert');
     const reference = (await page.getByTestId('shipment-reference').textContent()) ?? '';
     expect(reference).toMatch(/^MIA1-AIR-\d{8}-\d+$/);

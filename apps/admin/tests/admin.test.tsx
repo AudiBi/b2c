@@ -288,6 +288,25 @@ describe('fiche d’un utilisateur', () => {
     expect(await screen.findByText(fr.admin.users.roleRemoved)).toBeInTheDocument();
   });
 
+  it('réinitialise la double authentification en deux temps, seulement avec le droit « user:update »', async () => {
+    signedIn(me('STAFF', [...ADMIN, 'user:update']), { ...handlers(), [`POST /v1/admin/users/${U2}/two-factor/reset`]: () => json(200, user()) });
+    renderAt(`/users/${U2}`);
+    await userEvent.click(await screen.findByRole('button', { name: fr.admin.users.twoFactorReset }));
+    expect(calls(`POST /v1/admin/users/${U2}/two-factor/reset`)).toHaveLength(0);
+    expect(screen.getByText(fr.admin.users.twoFactorAsk)).toBeInTheDocument();
+    const section = screen.getByRole('heading', { name: fr.admin.users.twoFactorTitle }).closest('section')!;
+    await userEvent.click(within(section).getByRole('button', { name: fr.admin.users.detail.confirm }));
+    await waitFor(() => expect(calls(`POST /v1/admin/users/${U2}/two-factor/reset`)).toHaveLength(1));
+    expect(await screen.findByText(fr.admin.users.twoFactorDone)).toBeInTheDocument();
+  });
+
+  it('sans le droit « user:update », aucun bouton de réinitialisation', async () => {
+    signedIn(me('STAFF', ADMIN), handlers());
+    renderAt(`/users/${U2}`);
+    await screen.findByText('Agent de réception');
+    expect(screen.queryByRole('button', { name: fr.admin.users.twoFactorReset })).not.toBeInTheDocument();
+  });
+
   it('ajoute un rôle avec sa portée', async () => {
     signedIn(me('STAFF', ADMIN), { ...handlers(), [`POST /v1/admin/users/${U2}/roles`]: () => json(201, user()) });
     renderAt(`/users/${U2}`);

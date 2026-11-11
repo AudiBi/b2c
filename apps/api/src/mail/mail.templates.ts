@@ -1,6 +1,6 @@
 import type { Locale } from '@b2c/shared';
 
-export type AuthMailKind = 'verify-email' | 'reset-password' | 'invite' | 'already-registered';
+export type AuthMailKind = 'verify-email' | 'reset-password' | 'invite' | 'already-registered' | 'two-factor-reset';
 
 interface Params {
   appName: string;
@@ -129,6 +129,50 @@ const templates: Record<AuthMailKind, Record<Locale, Template>> = {
         paragraphs: [`Hello ${p.firstName},`, 'An account has been created for you. Choose your password to activate it.'],
         button: 'Activate my account',
         note: 'This link is valid for 72 hours.',
+      }),
+    },
+  },
+  'two-factor-reset': {
+    fr: {
+      subject: (p) => `${p.appName} : votre double authentification a été réinitialisée`,
+      text: (p) =>
+        `Bonjour ${p.firstName},
+
+Un administrateur de votre entreprise a réinitialisé la double authentification de votre compte et fermé vos sessions. À votre prochaine connexion, vous devrez la configurer de nouveau.
+
+Si vous n'avez rien demandé, prévenez immédiatement votre administrateur et changez votre mot de passe.`,
+      content: (p) => ({
+        title: 'Votre double authentification a été réinitialisée',
+        paragraphs: [`Bonjour ${p.firstName},`, 'Un administrateur de votre entreprise a réinitialisé la double authentification de votre compte et fermé vos sessions. À votre prochaine connexion, vous devrez la configurer de nouveau.'],
+        note: 'Si vous n’avez rien demandé, prévenez immédiatement votre administrateur et changez votre mot de passe.',
+      }),
+    },
+    ht: {
+      subject: (p) => `${p.appName} : yo reyinisyalize doub otantifikasyon ou`,
+      text: (p) =>
+        `Bonjou ${p.firstName},
+
+Yon administratè nan konpayi w reyinisyalize doub otantifikasyon kont ou epi fèmen sesyon w yo. Lè w konekte pwochèn fwa, w ap dwe konfigire l ankò.
+
+Si w pa t mande anyen, avèti administratè w la touswit epi chanje modpas ou.`,
+      content: (p) => ({
+        title: 'Yo reyinisyalize doub otantifikasyon ou',
+        paragraphs: [`Bonjou ${p.firstName},`, 'Yon administratè nan konpayi w reyinisyalize doub otantifikasyon kont ou epi fèmen sesyon w yo. Lè w konekte pwochèn fwa, w ap dwe konfigire l ankò.'],
+        note: 'Si w pa t mande anyen, avèti administratè w la touswit epi chanje modpas ou.',
+      }),
+    },
+    en: {
+      subject: (p) => `${p.appName}: your two-factor authentication was reset`,
+      text: (p) =>
+        `Hello ${p.firstName},
+
+An administrator of your company reset the two-factor authentication of your account and signed you out everywhere. At your next sign-in you will have to set it up again.
+
+If you did not ask for this, tell your administrator right away and change your password.`,
+      content: (p) => ({
+        title: 'Your two-factor authentication was reset',
+        paragraphs: [`Hello ${p.firstName},`, 'An administrator of your company reset the two-factor authentication of your account and signed you out everywhere. At your next sign-in you will have to set it up again.'],
+        note: 'If you did not ask for this, tell your administrator right away and change your password.',
       }),
     },
   },

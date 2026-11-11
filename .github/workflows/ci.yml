@@ -1,0 +1,94 @@
+# Intégration continue : à chaque push et chaque pull request, les mêmes commandes que celles lancées à la main
+# (docs/TEST_PLAN.md). Une anomalie dans l'un de ces contrôles fait échouer le workflow.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  # Typage, tests unitaires et tests d'API (PostgreSQL, Redis et Mailpit tournent en conteneurs, comme en développement)
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: "Environnement de test (secrets aléatoires, jamais versionnés)"
+        run: npm run setup:env
+      - name: Services (PostgreSQL, Redis, Mailpit)
+        run: npm run docker:up
+      - name: Typage
+        run: npm run typecheck
+      - name: Tests (partagé, API, site, panel)
+        run: npm test
+      - name: "Journaux des services en cas d'échec"
+        if: failure()
+        run: docker compose -f docker/compose.dev.yml --env-file .env logs --tail 100
+
+  # Site construit : contrôleur SEO (titres, canonical, hreflang, JSON-LD, liens, sitemap, robots…)
+  seo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: "Construction du site (adresse publique fictive : seules la cohérence et la structure sont contrôlées)"
+        run: npm run build && SITE_URL=https://exemple.test npm run build:web
+      - run: npm run seo:check
+
+  # Dépendances de production : aucune vulnérabilité connue de niveau élevé ou critique
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+
+  # Parcours dans un vrai navigateur (Chromium) : site, panel, accessibilité WCAG 2.1 AA, scénarios métier
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run setup:env
+      - run: npm run docker:up
+      - name: Navigateur Chromium de Playwright
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: "Rapports en cas d'échec"
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: apps/web/test-results
+          retention-days: 7

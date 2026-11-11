@@ -55,6 +55,7 @@ Une route qui ne déclare ni accès public, ni accès « tout utilisateur connec
 | `POST /v1/admin/users/{id}/roles` | `role:assign` | Attribue un rôle et sa portée |
 | `DELETE /v1/admin/users/{id}/roles/{userRoleId}` | `role:assign` | Retire une attribution |
 | `POST /v1/admin/users/{id}/disable` · `/enable` | `user:disable` | Désactive (révoque les sessions) / réactive |
+| `POST /v1/admin/users/{id}/two-factor/reset` | `user:update` | Réinitialise la double authentification d'un compte du **personnel** : secret et codes de secours supprimés, sessions fermées, e-mail d'alerte, audit `user.two_factor_reset`. Refus : soi-même (`CANNOT_RESET_SELF`), client (`NOT_STAFF_ACCOUNT`), rien à réinitialiser (`TWO_FACTOR_NOT_ACTIVE`), compte détenant des droits que l'acteur n'a pas (`TARGET_HAS_MORE_PERMISSIONS`) |
 | `GET /v1/admin/roles` | `role:read` | Rôles système **et personnalisés** : code, nom, portées possibles, droits, nombre de titulaires |
 | `POST /v1/admin/roles` | `role:manage` | Crée un rôle personnalisé (`name`, `description?`, `scopeType` COMPANY / WAREHOUSE / AGENCY, `permissions`). Anti-escalade ; codes d'erreur `ROLE_NAME_TAKEN`, `TOO_MANY_ROLES`, `PRIVILEGE_ESCALATION` |
 | `PATCH /v1/admin/roles/{code}` | `role:manage` | Modifie nom, description, droits d'un rôle personnalisé (effet immédiat) |

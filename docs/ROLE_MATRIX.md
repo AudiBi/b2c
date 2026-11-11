@@ -13,6 +13,7 @@ Les 13 routes ouvertes à tout utilisateur connecté (profil, session, double au
 | `DELETE /v1/admin/users/:id/roles/:userRoleId` | role:assign | ✔ | ✔ | · | · | · | · | · | · | · | · | · | · | · | · |
 | `POST /v1/admin/users/:id/disable` | user:disable | ✔ | ✔ | · | · | · | · | · | · | · | · | · | · | · | · |
 | `POST /v1/admin/users/:id/enable` | user:disable | ✔ | ✔ | · | · | · | · | · | · | · | · | · | · | · | · |
+| `POST /v1/admin/users/:id/two-factor/reset` | user:update | · | ✔ | · | · | · | · | · | · | · | · | · | · | · | · |
 | `GET /v1/admin/roles` | role:read | ✔ | ✔ | · | · | · | · | · | · | · | · | · | · | · | ✔ |
 | `POST /v1/admin/roles` | role:manage | · | ✔ | · | · | · | · | · | · | · | · | · | · | · | · |
 | `PATCH /v1/admin/roles/:code` | role:manage | · | ✔ | · | · | · | · | · | · | · | · | · | · | · | · |

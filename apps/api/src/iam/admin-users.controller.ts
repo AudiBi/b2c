@@ -83,4 +83,13 @@ export class AdminUsersController {
   enable(@CurrentAuth() auth: AuthContext, @VParams() params: z.infer<typeof idParamSchema>) {
     return this.users.setDisabled(auth, params.id, false);
   }
+
+  @Post(':id/two-factor/reset')
+  @HttpCode(200)
+  @RequirePermission('user:update')
+  @Validate({ params: idParamSchema })
+  @ApiOperation({ summary: "Réinitialise la double authentification d'un membre du personnel (sessions fermées, e-mail d'alerte, audit)" })
+  resetTwoFactor(@CurrentAuth() auth: AuthContext, @VParams() params: z.infer<typeof idParamSchema>) {
+    return this.users.resetTwoFactor(auth, params.id);
+  }
 }

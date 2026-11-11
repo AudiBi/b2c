@@ -26,10 +26,12 @@ export function UserDetailPage() {
   const agencies = useAgencies();
   const canAssign = useCan('role:assign');
   const canDisable = useCan('user:disable');
+  const canResetTwoFactor = useCan('user:update');
   const [pick, setPick] = useState<{ roleCode: string; scopeType: ScopeType; scopeId: string }>({ roleCode: '', scopeType: 'COMPANY', scopeId: '' });
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
   const [confirmDisable, setConfirmDisable] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -104,6 +106,24 @@ export function UserDetailPage() {
               </div>
             ) : (
               <Button variant="danger" onClick={() => setConfirmDisable(true)}>{u.disable}</Button>
+            )}
+          </section>
+        ) : null}
+
+        {canResetTwoFactor && !self && isStaffAccount ? (
+          <section className="card" aria-labelledby="two-factor">
+            <h2 id="two-factor">{u.twoFactorTitle}</h2>
+            <p className="muted">{u.twoFactorLead}</p>
+            {confirmReset ? (
+              <div className="stack">
+                <Alert tone="warning">{u.twoFactorAsk}</Alert>
+                <div className="form-actions">
+                  <Button variant="danger" disabled={busy} onClick={() => { setConfirmReset(false); void run(() => api(`/v1/admin/users/${id}/two-factor/reset`, { method: 'POST' }), u.twoFactorDone); }}>{d.confirm}</Button>
+                  <Button variant="outline" onClick={() => setConfirmReset(false)}>{d.cancel}</Button>
+                </div>
+              </div>
+            ) : (
+              <Button variant="outline" onClick={() => setConfirmReset(true)}>{u.twoFactorReset}</Button>
             )}
           </section>
         ) : null}

@@ -214,6 +214,51 @@ export class AdminUsersService {
     });
   }
 
+
+  /**
+   * Réinitialise la double authentification d'un membre du PERSONNEL qui a perdu son second facteur et ses codes de secours
+   * (la seule autre issue était une intervention en base). Garde-fous : jamais pour soi-même ; l'acteur doit détenir tous les droits
+   * du compte visé (un administrateur de rang inférieur ne peut pas neutraliser le second facteur d'un autre) ; le compte visé voit
+   * toutes ses sessions fermées, est prévenu par e-mail et devra reconfigurer le second facteur (obligatoire pour le personnel) ;
+   * l'opération est auditée.
+   */
+  async resetTwoFactor(auth: AuthContext, userId: string) {
+    if (userId === auth.userId) {
+      throw AppException.badRequest('CANNOT_RESET_SELF', 'Gérez votre propre double authentification depuis votre page Sécurité');
+    }
+    const target = await this.db.run({ companyId: auth.companyId }, async (tx) => {
+      const user = await tx.user.findUnique({ where: { id: userId }, include: withRoles });
+      if (!user) throw AppException.notFound('USER_NOT_FOUND', 'Utilisateur introuvable');
+      if (user.kind !== 'STAFF') {
+        throw AppException.badRequest('NOT_STAFF_ACCOUNT', 'Seule la double authentification du personnel peut être réinitialisée ici');
+      }
+      if (!user.totpEnabledAt && !user.totpSecretEnc) {
+        throw AppException.conflict('TWO_FACTOR_NOT_ACTIVE', "Ce compte n'a pas de double authentification à réinitialiser");
+      }
+      // L'acteur doit détenir tous les droits du compte visé
+      for (const assignment of user.userRoles) {
+        const role = await resolveRole(tx, auth.companyId, assignment.role.code);
+        const missing = role.permissions.find((permission) => !auth.permissions.can(permission as never));
+        if (missing) throw AppException.forbidden('TARGET_HAS_MORE_PERMISSIONS', 'Ce compte détient des droits que vous n’avez pas');
+      }
+      await tx.user.update({ where: { id: userId }, data: { totpSecretEnc: null, totpEnabledAt: null, totpLastStep: null } });
+      await tx.totpRecoveryCode.deleteMany({ where: { userId } });
+      const sessions = await tx.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
+      await this.audit.record(tx, {
+        companyId: auth.companyId,
+        action: 'user.two_factor_reset',
+        entityType: 'user',
+        entityId: userId,
+        before: { twoFactorEnabled: user.totpEnabledAt !== null },
+        after: { twoFactorEnabled: false, sessionsRevoked: sessions.count },
+      });
+      return { email: user.email, firstName: user.firstName, locale: user.locale as Locale, dto: toUserDto(await tx.user.findUniqueOrThrow({ where: { id: userId }, include: withRoles })) };
+    });
+    // L'e-mail d'alerte part après l'enregistrement ; un échec d'envoi n'annule pas la réinitialisation (elle reste dans l'audit)
+    await this.mail.sendAuthMail('two-factor-reset', target.email, target.locale, { firstName: target.firstName });
+    return target.dto;
+  }
+
   private async attachRole(tx: Tx, auth: AuthContext, userId: string, assignment: RoleAssignmentInput): Promise<void> {
     // Un rôle système vit dans l'entreprise plateforme (partagé) ; un rôle personnalisé, dans l'entreprise qui l'a créé
     const role = await tx.role.findUnique({
