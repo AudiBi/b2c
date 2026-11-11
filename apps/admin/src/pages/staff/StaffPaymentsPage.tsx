@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { closeCashSessionSchema, exportQuerySchema, financeSettingsSchema, openCashSessionSchema, rejectPaymentSchema } from '@b2c/shared';
+import { CURRENCIES, closeCashSessionSchema, exportQuerySchema, financeSettingsSchema, openCashSessionSchema, rejectPaymentSchema } from '@b2c/shared';
 import { api, apiDownload } from '../../api/client';
 import { apiErrorMessage, issuesToErrors, type FieldErrors } from '../../forms/validation';
 import { useI18n } from '../../i18n';
@@ -130,6 +130,7 @@ function Cash() {
   const sessions = useCashSessions();
   const agencies = useAgencies();
   const [agencyId, setAgencyId] = useState('');
+  const [currency, setCurrency] = useState<string>('');
   const [opening, setOpening] = useState('0');
   const [closing, setClosing] = useState<string | null>(null);
   const [counted, setCounted] = useState('');
@@ -154,7 +155,7 @@ function Cash() {
   async function open(event: FormEvent) {
     event.preventDefault();
     const amount = parseDecimal(opening);
-    const parsed = openCashSessionSchema.safeParse({ agencyId: agencyId || undefined, openingAmount: amount ?? undefined });
+    const parsed = openCashSessionSchema.safeParse({ agencyId: agencyId || undefined, currency: currency || undefined, openingAmount: amount ?? undefined });
     if (amount === null || !parsed.success) {
       setErrors({ openingAmount: m.validation.number });
       return;
@@ -191,6 +192,7 @@ function Cash() {
           <h3 style={{ fontSize: '1.05rem' }}>{s.open}</h3>
           <div className="form-grid form-grid-2">
             <SelectField name="cashScope" label={s.scope} value={agencyId} onChange={setAgencyId} options={[{ value: '', label: m.finance.staff.invoice.company }, ...(agencies.data?.items ?? []).map((a) => ({ value: a.id, label: `${a.name} (${a.city})` }))]} />
+            <SelectField name="cashCurrency" label={s.currency} value={currency} onChange={setCurrency} options={[{ value: '', label: '—' }, ...CURRENCIES.map((c) => ({ value: c, label: c }))]} />
             <TextField name="openingAmount" label={s.openingAmount} inputMode="decimal" value={opening} onChange={setOpening} error={errors.openingAmount} />
           </div>
           <div className="form-actions">
@@ -205,7 +207,7 @@ function Cash() {
           <li key={c.id} className="card" data-testid="cash-session">
             <div className="row-card">
               <div>
-                <strong>{agencyLabel(c.agencyId)}</strong> · {s.openingAmount} : {formatAmount(c.openingAmount, lang)}
+                <strong>{agencyLabel(c.agencyId)}</strong> · {c.currency} · {s.openingAmount} : {formatAmount(c.openingAmount, lang)}
                 <p className="muted" style={{ margin: '4px 0 0' }}>
                   {s.openSince} {formatDateTime(c.openedAt, lang)}
                   {c.closedAt ? ` · ${s.closedAt} ${formatDateTime(c.closedAt, lang)}` : ''}

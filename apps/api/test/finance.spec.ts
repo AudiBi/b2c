@@ -634,7 +634,7 @@ describe('Finance : factures, paiements, caisse, remboursements, export', () => 
       expect((await api(t).get(`/v1/admin/payments/${paid.id}/receipt.pdf`).set(bearer(b.token))).status).toBe(404);
       expect((await api(t).get('/v1/admin/invoices').set(bearer(b.token))).body.items).toHaveLength(0);
       expect((await api(t).get('/v1/admin/payments').set(bearer(b.token))).body.items).toHaveLength(0);
-      expect((await cash(b.token, { invoiceId: invoice.id, amount: 1 })).status).toBe(409); // pas de caisse chez B
+      expect((await cash(b.token, { invoiceId: invoice.id, amount: 1 })).status).toBe(404); // la facture d'une autre entreprise est introuvable (avant même la caisse)
       expect((await draft(b.token, { customerId: a.c1, extraLines: [{ kind: 'OTHER', description: 'x', amount: 1 }] })).status).toBe(404);
     });
 

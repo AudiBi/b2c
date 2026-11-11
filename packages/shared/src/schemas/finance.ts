@@ -110,7 +110,7 @@ export const listPaymentsQuerySchema = z.strictObject({
   invoiceId: z.uuid().optional(),
 });
 
-export const openCashSessionSchema = z.strictObject({ agencyId: z.uuid().optional(), openingAmount: z.number().min(0).max(10_000_000).optional() });
+export const openCashSessionSchema = z.strictObject({ agencyId: z.uuid().optional(), currency: z.enum(CURRENCIES).optional(), openingAmount: z.number().min(0).max(10_000_000).optional() });
 export const closeCashSessionSchema = z.strictObject({ countedAmount: z.number().min(0).max(100_000_000) });
 
 export const exportQuerySchema = z

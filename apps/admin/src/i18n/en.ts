@@ -893,6 +893,7 @@ export const en: Messages = {
           none: 'No cash sessions.',
           open: 'Open a register',
           openingAmount: 'Opening float',
+          currency: 'Register currency',
           scope: 'Register of',
           opened: 'Register opened.',
           close: 'Close',

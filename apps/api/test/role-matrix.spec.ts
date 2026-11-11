@@ -278,4 +278,42 @@ describe('Matrice rôles × routes', () => {
     for (const id of [wA.id, wB.id]) expect((await get(tenant.token, `/v1/admin/warehouses/${id}/locations`)).status).toBe(200);
     for (const id of [aX.id, aY.id]) expect((await get(tenant.token, `/v1/admin/agencies/${id}/packages`)).status).toBe(200);
   }, 120_000);
+
+  it('caisse : un responsable d’agence ne voit, n’ouvre et ne clôture que la caisse de SON agence ; la facturation (entreprise) les gère toutes', async () => {
+    const tenant = await makeTenant(t);
+    const [aX, aY] = [await makeAgency(t, tenant.token), await makeAgency(t, tenant.token)];
+    const as = async (roleCode: RoleCode, scope?: { type: 'AGENCY'; id: string }) => (await login(t, await makeUser(t, { company: tenant.company, roleCode, scope }))).accessToken;
+    const manager = await as('AGENCY_MANAGER', { type: 'AGENCY', id: aX.id });
+    const billing = await as('BILLING_AGENT');
+    const open = (token: string, body: Record<string, unknown>) => api(t).post('/v1/admin/cash-sessions').set(bearer(token)).send(body);
+    const close = (token: string, id: string) => api(t).post(`/v1/admin/cash-sessions/${id}/close`).set(bearer(token)).send({ countedAmount: 0 });
+    const list = async (token: string) => ((await api(t).get('/v1/admin/cash-sessions').set(bearer(token))).body.items as { id: string }[]).map((x) => x.id);
+
+    // La facturation (portée entreprise) ouvre la caisse de l'entreprise et celles des deux agences
+    const company = (await open(billing, {})).body;
+    const sessionX = (await open(billing, { agencyId: aX.id })).body;
+    const sessionY = (await open(billing, { agencyId: aY.id })).body;
+    for (const s of [company, sessionX, sessionY]) expect(s.id).toBeDefined();
+
+    // Le responsable de l'agence X ne voit que la caisse X
+    expect(await list(manager)).toEqual([sessionX.id]);
+    expect((await list(billing)).sort()).toEqual([company.id, sessionX.id, sessionY.id].sort());
+
+    // Il ne clôture ni la caisse d'une autre agence, ni celle de l'entreprise
+    for (const other of [sessionY, company]) {
+      const res = await close(manager, other.id);
+      expect([res.status, res.body?.error?.code]).toEqual([403, 'FORBIDDEN']);
+    }
+    for (const id of [sessionY.id, company.id]) expect((await t.admin.cashSession.findUniqueOrThrow({ where: { id } })).closedAt).toBeNull();
+
+    // Il clôture la sienne ; la facturation clôture les autres
+    expect((await close(manager, sessionX.id)).status).toBe(200);
+    expect((await close(billing, sessionY.id)).status).toBe(200);
+    expect((await close(billing, company.id)).status).toBe(200);
+
+    // Un responsable d'agence d'une AUTRE agence n'a aucun accès à la caisse de X (ouverture refusée)
+    const managerY = await as('AGENCY_MANAGER', { type: 'AGENCY', id: aY.id });
+    expect((await open(managerY, { agencyId: aX.id })).status).toBe(403);
+    expect((await open(managerY, { agencyId: aY.id })).status).toBe(201);
+  }, 120_000);
 });

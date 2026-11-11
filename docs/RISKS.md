@@ -26,7 +26,7 @@ Verdict : **la plateforme n'est pas prête à être ouverte au public en l'état
 | B3 | **Transporteurs aériens et maritimes, cartes et itinéraires** | Non intégrés : départs et arrivées de lots saisis à la main, pas de position ni de date prévue |
 | B4 | **Stockage des pièces jointes** | Disque local par défaut (volume à sauvegarder). Le stockage S3 n'est testé que contre SeaweedFS ; pas d'AWS S3 ni d'autre fournisseur, pas de chiffrement des objets, pas d'antivirus |
 | B5 | **Une entreprise par site** | Le site est construit pour une seule entreprise ; plusieurs entreprises demandent plusieurs constructions et domaines, ou un développement |
-| B6 | **Devises** | Facturation par devise, mais le solde d'un colis additionne des factures **sans conversion** et la caisse n'est sûre qu'avec une seule devise par agence |
+| B6 | **Devises** | Facturation par devise : une facture ne mélange jamais deux devises (`CURRENCY_MISMATCH`) et un colis ne se facture qu'une fois, donc son solde reste dans une seule devise. **La caisse a une devise** (migration 0014) : un encaissement en espèces entre dans la caisse ouverte de la devise de sa facture, sinon il est refusé ; une agence qui encaisse deux devises ouvre deux caisses, et attendu, compté et écart restent dans la devise de la caisse. Aucune **conversion** entre devises n'existe : c'est voulu |
 | B7 | **Signature de remise** | Absente (preuves : code, pièce d'identité à 4 caractères, photo) ; la photo est ajoutée par le personnel, le livreur ne peut pas la prendre depuis son écran |
 
 ## C. Risques techniques majeurs (acceptables avec une réserve connue)

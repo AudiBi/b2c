@@ -896,6 +896,7 @@ export const fr = {
           none: 'Aucune session de caisse.',
           open: 'Ouvrir une caisse',
           openingAmount: 'Fond de caisse',
+          currency: 'Devise de la caisse',
           scope: 'Caisse de',
           opened: 'Caisse ouverte.',
           close: 'Clôturer',

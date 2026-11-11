@@ -86,8 +86,9 @@ export class PaymentsService {
   // Espèces (employé)
   // ---------------------------------------------------------------------------------------------
 
-  private async openSession(tx: Tx, agencyId: string | null) {
-    return tx.cashSession.findFirst({ where: { agencyId, closedAt: null } });
+  /** Caisse ouverte de l'agence (ou de l'entreprise) POUR CETTE DEVISE : une caisse n'a qu'une devise. */
+  private async openSession(tx: Tx, agencyId: string | null, currency: string) {
+    return tx.cashSession.findFirst({ where: { agencyId, currency, closedAt: null } });
   }
 
   async recordCash(auth: AuthContext, input: { invoiceId: string; amount: number; reference?: string; agencyId?: string }, idempotencyKey?: string) {
@@ -97,8 +98,11 @@ export class PaymentsService {
     const run = async (tx: Tx) => {
       const amount = money(input.amount);
       if (input.agencyId && !(await tx.agency.findUnique({ where: { id: input.agencyId } }))) throw AppException.notFound('AGENCY_NOT_FOUND', 'Agence introuvable');
-      const session = await this.openSession(tx, input.agencyId ?? null);
-      if (!session) throw AppException.conflict('CASH_SESSION_REQUIRED', "Ouvrez la caisse avant d'encaisser des espèces");
+      // La caisse est choisie d'après la devise de la facture : jamais d'encaissement dans une caisse d'une autre devise
+      const target = await tx.invoice.findUnique({ where: { id: input.invoiceId }, select: { currency: true } });
+      if (!target) throw AppException.notFound('INVOICE_NOT_FOUND', 'Facture introuvable');
+      const session = await this.openSession(tx, input.agencyId ?? null, target.currency);
+      if (!session) throw new AppException(409, 'CASH_SESSION_REQUIRED', `Ouvrez la caisse en ${target.currency} avant d'encaisser des espèces dans cette devise`, { currency: target.currency });
       const invoice = await this.assertPayable(tx, input.invoiceId, amount);
       let payment: Payment;
       try {
@@ -260,8 +264,8 @@ export class PaymentsService {
   // Caisse
   // ---------------------------------------------------------------------------------------------
 
-  private sessionDto(s: { id: string; agencyId: string | null; openedAt: Date; openingAmount: Decimal; closedAt: Date | null; countedAmount: Decimal | null; expectedAmount: Decimal | null; difference: Decimal | null }) {
-    return { id: s.id, agencyId: s.agencyId, openedAt: s.openedAt, openingAmount: dec(s.openingAmount), closedAt: s.closedAt, countedAmount: dec(s.countedAmount), expectedAmount: dec(s.expectedAmount), difference: dec(s.difference) };
+  private sessionDto(s: { id: string; agencyId: string | null; currency: string; openedAt: Date; openingAmount: Decimal; closedAt: Date | null; countedAmount: Decimal | null; expectedAmount: Decimal | null; difference: Decimal | null }) {
+    return { id: s.id, agencyId: s.agencyId, currency: s.currency, openedAt: s.openedAt, openingAmount: dec(s.openingAmount), closedAt: s.closedAt, countedAmount: dec(s.countedAmount), expectedAmount: dec(s.expectedAmount), difference: dec(s.difference) };
   }
 
   private cashScope(auth: AuthContext, agencyId: string | null | undefined): void {
@@ -269,17 +273,18 @@ export class PaymentsService {
     if (!allowed) throw AppException.forbidden('FORBIDDEN', 'Permission insuffisante pour cette caisse');
   }
 
-  async openCash(auth: AuthContext, input: { agencyId?: string; openingAmount?: number }) {
+  async openCash(auth: AuthContext, input: { agencyId?: string; currency?: string; openingAmount?: number }) {
     this.cashScope(auth, input.agencyId);
     try {
       return await this.db.run({ companyId: auth.companyId }, async (tx) => {
         if (input.agencyId && !(await tx.agency.findUnique({ where: { id: input.agencyId } }))) throw AppException.notFound('AGENCY_NOT_FOUND', 'Agence introuvable');
-        const session = await tx.cashSession.create({ data: { companyId: auth.companyId, agencyId: input.agencyId, openedBy: auth.userId, openingAmount: money(input.openingAmount ?? 0) } });
+        const currency = input.currency ?? (await tx.company.findUniqueOrThrow({ where: { id: auth.companyId }, select: { defaultCurrency: true } })).defaultCurrency;
+        const session = await tx.cashSession.create({ data: { companyId: auth.companyId, agencyId: input.agencyId, currency, openedBy: auth.userId, openingAmount: money(input.openingAmount ?? 0) } });
         await this.audit.record(tx, { companyId: auth.companyId, action: 'cash_session.opened', entityType: 'cash_session', entityId: session.id });
         return this.sessionDto(session);
       });
     } catch (error) {
-      if (isUniqueViolation(error) || /cash_sessions_one_open/.test(String((error as Error).message))) throw AppException.conflict('CASH_SESSION_OPEN', 'Une caisse est déjà ouverte ici');
+      if (isUniqueViolation(error) || /cash_sessions_one_open/.test(String((error as Error).message))) throw AppException.conflict('CASH_SESSION_OPEN', 'Une caisse est déjà ouverte ici dans cette devise');
       throw error;
     }
   }
@@ -295,7 +300,7 @@ export class PaymentsService {
       const now = new Date();
       const collected = await tx.payment.aggregate({ where: { cashSessionId: sessionId, method: 'CASH', status: { in: ['CONFIRMED', 'REFUNDED_PARTIAL', 'REFUNDED'] } }, _sum: { amount: true } });
       const refunded = await tx.refund.aggregate({
-        where: { createdAt: { gte: session.openedAt, lte: now }, payment: { method: 'CASH', agencyId: session.agencyId } },
+        where: { createdAt: { gte: session.openedAt, lte: now }, payment: { method: 'CASH', agencyId: session.agencyId, currency: session.currency } },
         _sum: { amount: true },
       });
       const expected = new D(session.openingAmount).add(collected._sum.amount ?? 0).sub(refunded._sum.amount ?? 0);

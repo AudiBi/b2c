@@ -1320,6 +1320,7 @@ model CashSession {
   agencyId       String?   @map("agency_id") @db.Uuid
   openedBy       String?   @map("opened_by") @db.Uuid
   openedAt       DateTime  @default(now()) @map("opened_at") @db.Timestamptz(6)
+  currency       String    @default("USD") @db.Char(3)
   openingAmount  Decimal   @default(0) @map("opening_amount") @db.Decimal(14, 2)
   closedAt       DateTime? @map("closed_at") @db.Timestamptz(6)
   closedBy       String?   @map("closed_by") @db.Uuid

@@ -896,6 +896,7 @@ export const ht: Messages = {
           none: 'Pa gen sesyon kès.',
           open: 'Louvri yon kès',
           openingAmount: 'Lajan nan kès la',
+          currency: 'Lajan kès la',
           scope: 'Kès pou',
           opened: 'Kès louvri.',
           close: 'Fèmen',

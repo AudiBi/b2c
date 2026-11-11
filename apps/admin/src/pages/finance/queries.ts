@@ -64,6 +64,7 @@ export interface PaymentOptions {
 export interface CashSession {
   id: string;
   agencyId: string | null;
+  currency: string;
   openedAt: string;
   openingAmount: string;
   closedAt: string | null;
