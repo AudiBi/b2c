@@ -6,6 +6,7 @@ import { issuesToErrors, apiErrorMessage, type FieldErrors } from '../forms/vali
 import { format, useI18n } from '../i18n';
 import { formatMoney, formatWeight, parseDecimal } from '../lib/format';
 import { usePageMeta } from '../seo';
+import { RelatedPages } from '../components/RelatedPages';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
 import { CheckField, FormMessage, RadioGroupField, SelectField, TextField } from '../components/ui/Fields';
@@ -303,6 +304,7 @@ export function CalculatorPage() {
       <Section>
         <CtaBand title={c.cta} text={c.ctaText} primary={{ page: 'register', label: c.cta }} secondary={{ page: 'faq', label: m.nav.faq }} />
       </Section>
+      <RelatedPages keys={['services', 'howItWorks', 'faq']} />
     </>
   );
 }

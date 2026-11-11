@@ -4,14 +4,14 @@
   var langs = ['fr', 'ht', 'en'];
   try {
     var stored = localStorage.getItem('b2c.lang');
-    if (langs.indexOf(stored) >= 0) return location.replace('/' + stored + '/');
+    if (langs.indexOf(stored) >= 0) return location.replace('/' + stored);
   } catch (e) {
     /* stockage indisponible */
   }
   var prefs = navigator.languages || [navigator.language];
   for (var i = 0; i < prefs.length; i++) {
     var base = String(prefs[i]).toLowerCase().split('-')[0];
-    if (langs.indexOf(base) >= 0) return location.replace('/' + base + '/');
+    if (langs.indexOf(base) >= 0) return location.replace('/' + base);
   }
-  location.replace('/fr/');
+  location.replace('/fr');
 })();

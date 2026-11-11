@@ -26,6 +26,7 @@
     "typecheck": "npm run build:shared && npm run prisma:generate && npm -w @b2c/api run typecheck && npm -w @b2c/web run typecheck && npm -w @b2c/admin run typecheck",
     "test": "npm run build:shared && npm run prisma:generate && npm -w @b2c/shared test && npm -w @b2c/api test && npm -w @b2c/web test && npm -w @b2c/admin test",
     "build:web": "npm -w @b2c/web run build",
+    "seo:check": "npm -w @b2c/web run seo:check",
     "dev:api": "npm run build && node --env-file=.env apps/api/dist/main.js",
     "dev:web": "npm -w @b2c/web run dev",
     "preview:web": "npm -w @b2c/web run preview",

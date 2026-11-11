@@ -1,9 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
-import { AcceptInvitePage, ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, VerifyEmailPage } from './pages/AuthPages';
 import { ContactPage } from './pages/ContactPage';
 import { HomePage } from './pages/HomePage';
-import { CalculatorPage } from './pages/CalculatorPage';
+import { AcceptInvitePage, CalculatorPage, ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, VerifyEmailPage } from './lazy-pages';
 import { AboutPage, FaqPage, HowItWorksPage, LegalPage, ServiceDetailPage, ServicesPage } from './pages/InfoPages';
 import { TrackingPage } from './pages/TrackingPage';
 import { LocationsPage } from './pages/LocationsPage';

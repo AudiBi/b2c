@@ -63,13 +63,20 @@ test('le HTML pré-rendu contient le contenu sans JavaScript, avec canonical et 
 
 test('les pages utilitaires ne sont pas référencées (noindex) et le sitemap liste les pages publiques', async ({ request }) => {
   const html = await (await request.get('/fr/forgot-password')).text();
-  expect(html).toContain('<meta name="robots" content="noindex"');
+  expect(html).toContain('<meta name="robots" content="noindex, nofollow"');
+  // La connexion est explorable mais non référencée ; les pages de l'espace client ne le sont jamais (balise et en-tête)
+  expect(await (await request.get('/fr/login')).text()).toContain('<meta name="robots" content="noindex, follow"');
+  expect((await request.get('/fr/login')).headers()['x-robots-tag']).toBe('noindex, follow');
+  expect((await request.get('/fr/account/packages')).headers()['x-robots-tag']).toBe('noindex, nofollow');
+  expect((await request.get('/fr/forgot-password')).headers()['x-robots-tag']).toBe('noindex, nofollow');
   const sitemap = await (await request.get('/sitemap.xml')).text();
-  expect((sitemap.match(/<url>/g) ?? []).length).toBe(17 * 3);
+  expect((sitemap.match(/<url>/g) ?? []).length).toBe(16 * 3);
   expect(sitemap).not.toContain('forgot-password');
+  expect(sitemap).not.toContain('/login');
   expect(sitemap).not.toContain('/account');
   const robots = await (await request.get('/robots.txt')).text();
   expect(robots).toContain('Disallow: /fr/account');
+  expect(robots).toContain('Disallow: /v1/');
   expect(robots).toContain('Sitemap: http://localhost:4173/sitemap.xml');
 });
 
@@ -77,7 +84,7 @@ test('la racine propose le choix de la langue et redirige selon la préférence 
   const context = await browser.newContext({ locale: 'en-US' });
   const page = await context.newPage();
   await page.goto('/');
-  await page.waitForURL('**/en/');
+  await page.waitForURL('**/en');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await context.close();
 
@@ -161,4 +168,48 @@ test('entrepôts : la liste vient de l’API ; contact : coordonnées configuré
   } finally {
     await request.put('/v1/admin/settings/public-contact', { headers, data: { phones: [] } });
   }
+});
+
+test('SEO : une seule adresse par page (301 sans barre finale), données structurées valides sans JavaScript, 404 non référencée', async ({ request }) => {
+  const redirect = await request.get('/en/services/air/', { maxRedirects: 0 });
+  expect(redirect.status()).toBe(301);
+  expect(redirect.headers().location).toBe('/en/services/air');
+
+  const html = await (await request.get('/en/services/air')).text();
+  const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
+  expect(blocks).toHaveLength(1);
+  const types = blocks[0]['@graph'].map((node: { '@type': string }) => node['@type']);
+  expect(types).toEqual(expect.arrayContaining(['Organization', 'WebSite', 'WebPage', 'BreadcrumbList', 'Service']));
+  expect(html).toContain('<nav class="breadcrumbs"');
+  expect(html).toContain('<meta name="robots" content="index, follow');
+  expect(html).toContain('property="og:site_name"');
+  expect(html).toContain('name="twitter:title"');
+
+  const missing = await request.get('/fr/page-qui-nexiste-pas');
+  expect(missing.status()).toBe(404);
+  expect(missing.headers()['x-robots-tag']).toBe('noindex, nofollow');
+  expect(await missing.text()).toContain('<meta name="robots" content="noindex');
+});
+
+test('SEO : les textes et les métadonnées de chaque langue sont dans leur langue (pas de mélange)', async ({ request }) => {
+  for (const [lang, word, descriptionWord] of [['fr', 'questions', 'clients'], ['ht', 'kesyon', 'kliyan'], ['en', 'questions', 'customers']] as const) {
+    const html = await (await request.get(`/${lang}/faq`)).text();
+    expect(html).toContain(`<html lang="${lang}">`);
+    expect(html.match(/<title>([^<]+)<\/title>/)?.[1].toLowerCase()).toContain(word);
+    expect(html.match(/name="description" content="([^"]+)"/)?.[1].toLowerCase()).toContain(descriptionWord);
+    expect(html).toContain(`property="og:locale" content="${{ fr: 'fr_FR', ht: 'ht_HT', en: 'en_US' }[lang]}"`);
+  }
+});
+
+test('performance : la page est servie compressée et seule la langue de la page est téléchargée', async ({ page }) => {
+  const scripts: string[] = [];
+  page.on('response', (response) => {
+    if (response.url().endsWith('.js')) scripts.push(response.url());
+  });
+  const response = await page.goto('/ht/services');
+  expect(response?.headers()['content-encoding']).toMatch(/br|gzip/);
+  await page.waitForLoadState('networkidle');
+  const names = scripts.map((url) => new URL(url).pathname.split('/').pop() ?? '');
+  expect(names.some((n) => /^ht-/.test(n))).toBe(true);
+  expect(names.some((n) => /^(fr|en)-/.test(n))).toBe(false);
 });

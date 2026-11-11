@@ -7,6 +7,7 @@ import { apiErrorMessage } from '../forms/validation';
 import { format, useI18n } from '../i18n';
 import { formatDateTime } from '../lib/format';
 import { usePageMeta } from '../seo';
+import { RelatedPages } from '../components/RelatedPages';
 import { Alert } from '../components/ui/Alert';
 import { Button, ButtonLink } from '../components/ui/Button';
 import { TextField } from '../components/ui/Fields';
@@ -123,6 +124,7 @@ export function TrackingPage() {
           <ButtonLink page="register">{t.cta}</ButtonLink>
         </p>
       </Section>
+      <RelatedPages keys={['howItWorks', 'faq', 'locations']} />
     </>
   );
 }

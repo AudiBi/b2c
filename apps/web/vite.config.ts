@@ -13,7 +13,7 @@ export default defineConfig({
   },
   // @b2c/shared est livré en ESM pour le navigateur ; en rendu serveur il est inclus dans le paquet
   ssr: { noExternal: ['@b2c/shared'] },
-  build: { sourcemap: false, target: 'es2022' },
+  build: { sourcemap: false, target: 'es2022', manifest: true },
   test: {
     environment: 'jsdom',
     globals: true,

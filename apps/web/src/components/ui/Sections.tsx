@@ -1,3 +1,4 @@
+import { Breadcrumbs } from '../Breadcrumbs';
 import type { ReactNode } from 'react';
 import { ButtonLink } from './Button';
 import { Icon, type IconName } from './Icon';
@@ -7,6 +8,7 @@ export function PageHero({ title, lead, children }: { title: string; lead?: stri
   return (
     <section className="page-hero">
       <div className="container">
+        <Breadcrumbs />
         <h1>{title}</h1>
         {lead ? <p className="lead">{lead}</p> : null}
         {children}

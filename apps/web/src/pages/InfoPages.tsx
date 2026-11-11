@@ -1,5 +1,6 @@
 import { useI18n } from '../i18n';
 import { usePageMeta } from '../seo';
+import { RelatedPages } from '../components/RelatedPages';
 import { LocLink } from '../components/LocLink';
 import { Alert } from '../components/ui/Alert';
 import { ButtonLink } from '../components/ui/Button';
@@ -44,6 +45,7 @@ export function AboutPage() {
           <ButtonLink page="register">{a.cta}</ButtonLink>
         </p>
       </Section>
+      <RelatedPages keys={['services', 'howItWorks', 'contact']} />
     </>
   );
 }
@@ -130,6 +132,7 @@ export function HowItWorksPage() {
       <Section>
         <CtaBand title={h.ctaTitle} text={m.home.ctaText} primary={{ page: 'register', label: h.cta }} secondary={{ page: 'faq', label: h.faqLink }} />
       </Section>
+      <RelatedPages keys={['register', 'calculator', 'faq']} />
     </>
   );
 }
@@ -153,6 +156,7 @@ export function FaqPage() {
           <ButtonLink page="contact">{f.stillCta}</ButtonLink>
         </div>
       </Section>
+      <RelatedPages keys={['howItWorks', 'tracking', 'contact']} />
     </>
   );
 }

@@ -2,6 +2,8 @@
 
 Phase 4. Site public (17 pages, 3 langues) et espace client. Il s'appuie sur l'API de la phase 3 ; il ne contient aucune règle métier (les schémas de validation sont ceux de `packages/shared`).
 
+> **Référencement (SEO)** : audit, optimisations, mesures, configurations externes et stratégie sur 90 jours dans [SEO.md](SEO.md). Après toute modification de page : `npm run build:web && npm run seo:check`.
+
 ## Pile et principes
 
 | Sujet | Choix |

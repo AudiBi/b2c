@@ -3,9 +3,9 @@ import { prerenderTargets, render } from '../src/entry-server';
 import { catalogs } from '../src/i18n';
 
 describe('rendu serveur de toutes les pages', () => {
-  it('produit 63 pages : 17 publiques + 4 utilitaires, dans 3 langues', () => {
+  it('produit 63 pages : 17 publiques + 4 utilitaires, dans 3 langues (16 référencées : la connexion ne l’est pas)', () => {
     expect(prerenderTargets).toHaveLength(21 * 3);
-    expect(prerenderTargets.filter((t) => t.index)).toHaveLength(17 * 3);
+    expect(prerenderTargets.filter((t) => t.index)).toHaveLength(16 * 3);
   });
 
   it.each(prerenderTargets.map((t) => [`/${t.lang}${t.path}`, t] as const))('%s : un seul h1, un titre, aucune valeur « undefined »', (url, target) => {

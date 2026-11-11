@@ -41,14 +41,32 @@ const SECURITY_HEADERS = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
 };
 
-const send = (res, status, file, immutable) => {
+// Envoie la version pré-compressée (.br puis .gz, produites au pré-rendu) quand le navigateur l'accepte, comme le serveur de production
+// En-tête X-Robots-Tag des pages jamais référencées (comme nginx en production)
+const robotsHeader = (pathname) => {
+  if (/^\/(fr|ht|en)\/(account(\/|$)|forgot-password|reset-password|verify-email|accept-invite)/.test(pathname)) return 'noindex, nofollow';
+  if (/^\/(fr|ht|en)\/login\/?$/.test(pathname)) return 'noindex, follow';
+  return null;
+};
+
+const send = async (res, status, file, immutable, acceptEncoding = '', robots = null) => {
+  let encoding = null;
+  for (const candidate of [['br', '.br'], ['gzip', '.gz']]) {
+    if (acceptEncoding.includes(candidate[0]) && (await stat(`${file}${candidate[1]}`).catch(() => null))) {
+      encoding = candidate;
+      break;
+    }
+  }
   res.writeHead(status, {
     'Content-Type': types[extname(file)] ?? 'application/octet-stream',
     'Cache-Control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache',
     'X-Content-Type-Options': 'nosniff',
+    Vary: 'Accept-Encoding',
+    ...(robots ? { 'X-Robots-Tag': robots } : {}),
+    ...(encoding ? { 'Content-Encoding': encoding[0] } : {}),
     ...(extname(file) === '.html' ? SECURITY_HEADERS : {}),
   });
-  createReadStream(file).pipe(res);
+  createReadStream(encoding ? `${file}${encoding[1]}` : file).pipe(res);
 };
 
 createServer(async (req, res) => {
@@ -64,9 +82,15 @@ createServer(async (req, res) => {
     return;
   }
 
+  // Une seule adresse par page : « /fr/services/ » est redirigé (301) vers « /fr/services » (comme nginx)
+  if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
+    res.writeHead(301, { Location: `${url.pathname.replace(/\/+$/, '')}${url.search}` });
+    return res.end();
+  }
+
   const file = await fileFor(url.pathname);
-  if (file) return send(res, 200, file, url.pathname.startsWith('/assets/'));
+  if (file) return send(res, 200, file, url.pathname.startsWith('/assets/'), req.headers['accept-encoding'], robotsHeader(url.pathname));
   // Espace client : coquille de l'application ; le reste : page 404
-  if (/^\/(fr|ht|en)\/account(\/|$)/.test(url.pathname)) return send(res, 200, join(root, '200.html'));
-  return send(res, 404, join(root, '404.html'));
+  if (/^\/(fr|ht|en)\/account(\/|$)/.test(url.pathname)) return send(res, 200, join(root, '200.html'), false, req.headers['accept-encoding'], robotsHeader(url.pathname));
+  return send(res, 404, join(root, '404.html'), false, req.headers['accept-encoding'], 'noindex, nofollow');
 }).listen(port, () => console.log(`Site servi sur http://localhost:${port} (API : ${api.origin})`));

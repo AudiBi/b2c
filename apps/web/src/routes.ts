@@ -45,6 +45,15 @@ export const publicPages = [
   'locations', 'howItWorks', 'faq', 'contact', 'register', 'login', 'terms', 'privacy',
 ] as const satisfies readonly PageKey[];
 
+/**
+ * Pages publiques volontairement NON référencées : la connexion n'a aucune valeur de recherche. Elles restent explorables
+ * (liens suivis) mais portent « noindex » et ne figurent pas dans le sitemap.
+ */
+export const noindexPublicPages: readonly PageKey[] = ['login'];
+
+/** Page parente dans le fil d'Ariane (les pages de service dépendent de « Nos services »). */
+export const parentPage: Partial<Record<PageKey, PageKey>> = { air: 'services', sea: 'services', international: 'services', local: 'services' };
+
 /** Pages utilitaires de l'authentification : pré-rendues (coquille) mais non référencées (noindex). */
 export const utilityPages = ['forgotPassword', 'resetPassword', 'verifyEmail', 'acceptInvite'] as const satisfies readonly PageKey[];
 

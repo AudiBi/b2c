@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useParams } from 'react-router';
-import { I18nProvider, isLang, useI18n } from '../../i18n';
+import { I18nProvider, isLang, useCatalogReady, useI18n, type Lang } from '../../i18n';
 import { NotFoundPage } from '../../pages/NotFoundPage';
 import { Footer } from './Footer';
 import { Header } from './Header';
@@ -31,7 +31,9 @@ function Shell() {
       </a>
       <Header />
       <main id="main" ref={main} tabIndex={-1} style={{ outline: 'none' }}>
-        <Outlet />
+        <Suspense fallback={null}>
+          <Outlet />
+        </Suspense>
       </main>
       <Footer />
     </>
@@ -42,6 +44,13 @@ function Shell() {
 export function LangLayout() {
   const { lang } = useParams();
   if (!isLang(lang)) return <NotFoundPage />;
+  return <LoadedLang lang={lang} />;
+}
+
+/** Attend les textes de la langue (téléchargés à la demande) avant d'afficher la page. */
+function LoadedLang({ lang }: { lang: Lang }) {
+  const ready = useCatalogReady(lang);
+  if (!ready) return null;
   return (
     <I18nProvider lang={lang}>
       <Shell />

@@ -160,3 +160,7 @@ Tailles d'images constatées : `web` 76 Mo, `api` 810 Mo, `migrate` 1,39 Go.
 - Renouvellement de certificat, planification des sauvegardes, rotation des journaux, copie hors serveur : décrits mais **non essayés**.
 - Le rôle de migration `b2c_migrator` est le super-utilisateur du conteneur PostgreSQL (comme en développement) : la fonction de recherche publique `SECURITY DEFINER` en dépend. Un hébergement PostgreSQL géré (sans super-utilisateur) n'a pas été essayé et demanderait de revoir les droits (voir SECURITY.md).
 - Redirection HTTP→HTTPS : l'adresse de redirection ne reprend pas le port ; sur des ports non standard (essai local en 8080/8443) elle pointe vers le port 443. Sans effet avec les ports 80/443.
+
+## Référencement : ce que le déploiement doit fournir
+
+Détails dans [SEO.md](SEO.md). Au déploiement du site : `PUBLIC_HOST` définitif (il devient `SITE_URL`, base des canonical, hreflang et du sitemap) ; en option `SEO_GOOGLE_SITE_VERIFICATION`, `SEO_BING_SITE_VERIFICATION` et `SEO_ORGANIZATION_JSON` (arguments de construction, voir `.env.production.example`). Le fichier `docker/nginx/default.conf.template` redirige les adresses à barre finale (301), pose `X-Robots-Tag` sur l'espace client et les pages d'authentification, sert les fichiers pré-compressés (`gzip_static`) et distingue le cache des ressources versionnées (`immutable`) des images (une semaine). Après chaque construction : `npm run seo:check`.

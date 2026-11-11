@@ -1,5 +1,6 @@
 import { useI18n, type Lang } from '../i18n';
 import { usePageMeta } from '../seo';
+import { RelatedPages } from '../components/RelatedPages';
 import { usePublicAgencies, usePublicWarehouses } from '../api/public';
 import { Alert } from '../components/ui/Alert';
 import { ButtonLink } from '../components/ui/Button';
@@ -84,6 +85,7 @@ export function LocationsPage() {
           </ul>
         ) : null}
       </Section>
+      <RelatedPages keys={['tracking', 'register', 'contact']} />
     </>
   );
 }
