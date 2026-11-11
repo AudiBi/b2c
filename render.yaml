@@ -1,0 +1,239 @@
+# Blueprint Render : pile de production de la plateforme. Procédure, coûts, limites et vérifications : docs/RENDER.md.
+#
+# Architecture (même région : le réseau privé de Render ne relie que les services d'une même région) :
+#
+#   Internet ──HTTPS (Render)──► b2c-web (nginx : site, panel, /v1 relayé) ──réseau privé──► b2c-api ──► b2c-postgres
+#                                                                                              └──────► b2c-redis
+#   b2c-backup : sauvegarde quotidienne chiffrée de la base, copiée hors de Render (stockage objet compatible S3)
+#   b2c-migrate : tâche ponctuelle (migrations + droits/rôles + premier administrateur), à lancer à la main à chaque déploiement
+#
+# PostgreSQL n'est PAS la base managée de Render : la plateforme exige un propriétaire de tables super-utilisateur (fonctions
+# SECURITY DEFINER qui contournent la RLS : suivi public et file de notifications), ce que la base managée n'offre pas.
+# Elle tourne donc dans un service privé avec disque persistant. Sauvegardes : à votre charge (docs/RENDER.md § 5).
+#
+# Domaines : site https://b2cxpress.com, panel https://admin.b2cxpress.com. Les valeurs « sync: false » (mots de passe, identifiant de l'entreprise,
+# premier administrateur) sont demandées à la création du Blueprint : jamais écrites dans le dépôt.
+
+services:
+  # ------------------------------------------------------------------------------------------
+  # Redis (limites de débit, jetons à usage unique) : privé, sans éviction de clés
+  # ------------------------------------------------------------------------------------------
+  - type: keyvalue
+    name: b2c-redis
+    region: virginia
+    plan: starter
+    maxmemoryPolicy: noeviction
+    ipAllowList: [] # aucun accès depuis Internet : seulement le réseau privé
+
+  # ------------------------------------------------------------------------------------------
+  # PostgreSQL 17 : rôles b2c_migrator (propriétaire, super-utilisateur du conteneur) et b2c_app (API, soumis à la RLS)
+  # ------------------------------------------------------------------------------------------
+  - type: pserv
+    name: b2c-postgres
+    runtime: docker
+    region: virginia
+    plan: starter
+    dockerfilePath: ./docker/render/postgres.Dockerfile
+    dockerContext: .
+    disk:
+      name: pgdata
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 10
+    envVars:
+      - key: POSTGRES_USER
+        value: b2c_migrator
+      - key: POSTGRES_DB
+        value: b2c
+      - key: PGDATA
+        value: /var/lib/postgresql/data/pgdata # sous-dossier : la racine d'un disque Render contient « lost+found »
+      - key: POSTGRES_PASSWORD # mot de passe de b2c_migrator : hexadécimal (32 caractères), à garder pour b2c-migrate
+        sync: false
+      - key: B2C_APP_PASSWORD # mot de passe de b2c_app : hexadécimal (32 caractères), à reprendre dans DATABASE_URL
+        sync: false
+
+  # ------------------------------------------------------------------------------------------
+  # API NestJS : service privé (seul nginx la joint)
+  # ------------------------------------------------------------------------------------------
+  - type: pserv
+    name: b2c-api
+    runtime: docker
+    region: virginia
+    plan: starter
+    dockerfilePath: ./docker/Dockerfile
+    dockerContext: .
+    disk:
+      name: files
+      mountPath: /data/files # pièces jointes (STORAGE_DRIVER=disk) : à sauvegarder
+      sizeGB: 10
+    envVars:
+      - key: IMAGE_TARGET # cible du Dockerfile (Render n'en propose pas)
+        value: api-render
+      - key: PORT
+        value: "10000"
+      - key: API_PORT
+        value: "10000"
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: TRUST_PROXY # un seul saut : nginx (b2c-web)
+        value: "true"
+      - key: ENABLE_DOCS
+        value: "false"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: REQUIRE_STAFF_2FA
+        value: "true"
+      # Adresses publiques (https://…, sans barre finale)
+      - key: API_PUBLIC_URL
+        value: https://b2cxpress.com
+      - key: WEB_PUBLIC_URL
+        value: https://b2cxpress.com
+      - key: ADMIN_PUBLIC_URL
+        value: https://admin.b2cxpress.com
+      - key: CORS_ORIGINS # « https://site,https://panel »
+        value: "https://b2cxpress.com,https://admin.b2cxpress.com"
+      # Données : rôle b2c_app (jamais b2c_migrator)
+      - key: DATABASE_URL # postgresql://b2c_app:<B2C_APP_PASSWORD>@b2c-postgres:5432/b2c
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: b2c-redis
+          property: connectionString
+      # Secrets générés par Render : SAUVEGARDER TOTP_ENCRYPTION_KEY hors Render (la perdre rend les secrets 2FA illisibles)
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: TOTP_ENCRYPTION_KEY
+        generateValue: true
+      # E-mail : Namecheap Private Email (docs/DEPLOYMENT.md § E-mail)
+      - key: MAIL_TRANSPORT
+        value: smtp
+      - key: SMTP_HOST
+        value: mail.privateemail.com
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_SECURE
+        value: "true"
+      - key: SMTP_USER
+        value: noreply@b2cxpress.com
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        value: B2C <noreply@b2cxpress.com>
+      # Pièces jointes sur le disque ci-dessus
+      - key: STORAGE_DRIVER
+        value: disk
+      - key: FILES_DIR
+        value: /data/files
+      # Confirmation de paiement par un prestataire : laisser vide tant qu'aucun n'est branché
+      - key: PAYMENT_WEBHOOK_PROVIDER
+        value: ""
+      - key: PAYMENT_WEBHOOK_SECRET
+        value: ""
+
+  # ------------------------------------------------------------------------------------------
+  # Site, panel d'administration et relais /v1 : nginx (même origine : le cookie de session a pour chemin /v1/auth)
+  # Deux domaines personnalisés à rattacher à CE service : le site (SERVER_NAME) et le panel (ADMIN_SERVER_NAME).
+  # ------------------------------------------------------------------------------------------
+  - type: web
+    name: b2c-web
+    runtime: docker
+    region: virginia
+    plan: starter
+    dockerfilePath: ./docker/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/live
+    envVars:
+      - key: IMAGE_TARGET
+        value: web-render
+      - key: PORT
+        value: "10000"
+      - key: API_UPSTREAM
+        fromService:
+          type: pserv
+          name: b2c-api
+          property: hostport
+      # Au démarrage (nginx) : noms d'hôte sans « https:// »
+      - key: SERVER_NAME # site
+        value: b2cxpress.com
+      - key: ADMIN_SERVER_NAME # panel
+        value: admin.b2cxpress.com
+      # À la CONSTRUCTION du site (canonical, hreflang, sitemap, liens du panel) : adresses complètes https://…
+      - key: SITE_URL
+        value: https://b2cxpress.com
+      - key: ADMIN_URL
+        value: https://admin.b2cxpress.com
+      - key: VITE_COMPANY_SLUG # identifiant public de l'entreprise (identique à celui créé dans le panel)
+        sync: false
+      - key: VITE_BRAND_NAME
+        value: B2C
+      # Référencement (facultatif, docs/SEO.md) : laisser vide tant que non fournis
+      - key: SEO_GOOGLE_SITE_VERIFICATION
+        value: ""
+      - key: SEO_BING_SITE_VERIFICATION
+        value: ""
+      - key: SEO_ORGANIZATION_JSON
+        value: ""
+
+  # ------------------------------------------------------------------------------------------
+  # Migrations : tâche ponctuelle. « schedule » est un 29 février (jamais en pratique) : elle ne se lance qu'à la main
+  # (bouton « Trigger Run » du tableau de bord) à chaque déploiement. Elle seule connaît le mot de passe de b2c_migrator.
+  # ------------------------------------------------------------------------------------------
+  - type: cron
+    name: b2c-migrate
+    runtime: docker
+    region: virginia
+    plan: starter
+    schedule: "0 0 29 2 *"
+    dockerfilePath: ./docker/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: IMAGE_TARGET
+        value: migrate
+      - key: DATABASE_URL # b2c_app (même valeur que pour b2c-api)
+        sync: false
+      - key: DIRECT_URL # postgresql://b2c_migrator:<POSTGRES_PASSWORD>@b2c-postgres:5432/b2c
+        sync: false
+      # Premier administrateur (créé une seule fois) : renseigner, lancer, puis EFFACER ces deux valeurs
+      - key: SEED_SUPERADMIN_EMAIL
+        sync: false
+      - key: SEED_SUPERADMIN_PASSWORD
+        sync: false
+
+  # ------------------------------------------------------------------------------------------
+  # Sauvegarde quotidienne de la base : pg_dump → chiffrement → stockage objet S3 hors de Render → relecture de la copie.
+  # Échoue (et Render l'indique) si une étape échoue. Restauration et exercice : docs/RENDER.md § 5.
+  # 07:00 UTC = 02:00 ou 03:00 à Port-au-Prince selon la saison.
+  # ------------------------------------------------------------------------------------------
+  - type: cron
+    name: b2c-backup
+    runtime: docker
+    region: virginia
+    plan: starter
+    schedule: "0 7 * * *"
+    dockerfilePath: ./docker/render/backup.Dockerfile
+    dockerContext: .
+    envVars:
+      - key: PGHOST
+        value: b2c-postgres
+      - key: PGUSER
+        value: b2c_migrator
+      - key: PGDATABASE
+        value: b2c
+      - key: PGPASSWORD # mot de passe de b2c_migrator (le même que POSTGRES_PASSWORD)
+        sync: false
+      - key: BACKUP_PASSPHRASE # phrase de chiffrement : à GARDER hors de Render (sans elle, les sauvegardes sont illisibles)
+        sync: false
+      - key: BACKUP_S3_BUCKET # bucket dédié, dans un compte distinct de Render
+        sync: false
+      - key: BACKUP_S3_ENDPOINT # adresse du service compatible S3 (vide pour AWS S3)
+        sync: false
+      - key: AWS_DEFAULT_REGION
+        sync: false
+      - key: AWS_ACCESS_KEY_ID # clé réservée à ce bucket, avec le droit d'écrire et de lister (pas d'autre droit)
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: BACKUP_RETENTION_DAYS # suppression des sauvegardes de plus de N jours (au moins 7 sont toujours gardées)
+        value: "30"

@@ -2,6 +2,8 @@
 
 Ce guide décrit comment installer la plateforme sur **un serveur** avec Docker, comment la sauvegarder, la restaurer et la mettre à jour. Il a été **exécuté pour de vrai sur un poste de développement** (Windows 11, Docker Desktop, conteneurs Linux) avec un domaine `localhost` et un certificat auto-signé : les commandes et résultats ci-dessous viennent de cet essai. **Rien n'a été essayé sur un serveur Linux public, avec un vrai domaine, un vrai certificat ni un vrai fournisseur d'e-mail** : voir « Ce qui n'a pas été vérifié » et [RISKS.md](RISKS.md) avant d'ouvrir le service au public.
 
+> **Hébergement sur Render** : voir [RENDER.md](RENDER.md) (Blueprint `render.yaml`, domaines `b2cxpress.com` et `admin.b2cxpress.com`). Le présent guide décrit le déploiement sur un serveur avec Docker Compose.
+
 ## 1. Architecture déployée
 
 ```
@@ -164,3 +166,13 @@ Tailles d'images constatées : `web` 76 Mo, `api` 810 Mo, `migrate` 1,39 Go.
 ## Référencement : ce que le déploiement doit fournir
 
 Détails dans [SEO.md](SEO.md). Au déploiement du site : `PUBLIC_HOST` définitif (il devient `SITE_URL`, base des canonical, hreflang et du sitemap) ; en option `SEO_GOOGLE_SITE_VERIFICATION`, `SEO_BING_SITE_VERIFICATION` et `SEO_ORGANIZATION_JSON` (arguments de construction, voir `.env.production.example`). Le fichier `docker/nginx/default.conf.template` redirige les adresses à barre finale (301), pose `X-Robots-Tag` sur l'espace client et les pages d'authentification, sert les fichiers pré-compressés (`gzip_static`) et distingue le cache des ressources versionnées (`immutable`) des images (une semaine). Après chaque construction : `npm run seo:check`.
+
+## E-mail : Namecheap Private Email (`noreply@b2cxpress.com`)
+
+Réglages prévus (valeurs par défaut de `.env.production.example`) : hôte `mail.privateemail.com`, port **465** en TLS implicite (`SMTP_SECURE=true`) ou **587** en STARTTLS (`SMTP_SECURE=false`) ; Namecheap n'accepte que les connexions chiffrées. L'identifiant est l'adresse complète `noreply@b2cxpress.com`. **Le mot de passe se saisit uniquement dans `.env.production` sur le serveur** : il n'est dans aucun fichier du dépôt.
+
+À faire chez Namecheap et dans le DNS du domaine `b2cxpress.com` (**non fait et non vérifié ici : aucune connexion à votre compte n'a été faite**) :
+1. Dans Private Email > Settings, autoriser la connexion d'applications tierces à la boîte (sinon l'authentification SMTP est refusée).
+2. Publier les enregistrements DNS d'authentification de l'expéditeur : **SPF** (Private Email publie le sien, valeur indiquée dans votre tableau de bord Namecheap : un seul enregistrement SPF par domaine), **DKIM** (clé fournie par Namecheap pour la boîte) et **DMARC** (commencer par `p=none` avec une adresse de rapports, puis durcir). Sans eux, les messages de confirmation et de réinitialisation risquent d'arriver en courrier indésirable (risque A2 de [RISKS.md](RISKS.md)).
+3. Essayer pour de bon : démarrer la pile, créer un compte client avec une vraie boîte, vérifier la réception du lien de confirmation et son placement (boîte de réception ou indésirables) chez Gmail, Outlook et la messagerie utilisée par vos clients en Haïti ; contrôler les en-têtes du message reçu (`SPF`, `DKIM`, `DMARC` : `pass`).
+4. Le débit d'envoi d'une boîte Private Email est limité par Namecheap : suivre les e-mails en échec dans le journal des notifications du panel.

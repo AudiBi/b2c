@@ -61,7 +61,7 @@ Le **personnel** (administrateur de l'entreprise, réception, caisse, livreur…
 npm run dev:web          # http://localhost:5173 (l'API doit tourner : le site la joint par le proxy /v1)
 ```
 
-Le site sert **une entreprise** (variable `VITE_COMPANY_SLUG`, `demo` par défaut). Pour qu'elle existe, créez-la : `DEMO_PASSWORD='…' npm run db:seed:demo` (voir plus bas), ou, avec un super administrateur, `POST /v1/platform/companies`. Pour voir des adresses de réception, créez un entrepôt (`POST /v1/admin/warehouses`, rôle administrateur) : sans entrepôt actif, l'espace client l'indique. Version de production du site : `npm run build:web` (dossier `apps/web/dist/client`) puis `npm run preview:web` pour l'essayer sur http://localhost:4173. Détails et déploiement : [docs/WEB.md](docs/WEB.md). Référencement naturel : [docs/SEO.md](docs/SEO.md) (`npm run seo:check` après un build).
+Le site sert **une entreprise** (variable `VITE_COMPANY_SLUG`, `demo` par défaut). Pour qu'elle existe, créez-la : `DEMO_PASSWORD='…' npm run db:seed:demo` (voir plus bas), ou, avec un super administrateur, `POST /v1/platform/companies`. Pour voir des adresses de réception, créez un entrepôt (`POST /v1/admin/warehouses`, rôle administrateur) : sans entrepôt actif, l'espace client l'indique. Version de production du site : `npm run build:web` (dossier `apps/web/dist/client`) puis `npm run preview:web` pour l'essayer sur http://localhost:4173. Détails et déploiement : [docs/WEB.md](docs/WEB.md). Hébergement Render : [docs/RENDER.md](docs/RENDER.md) (`render.yaml`). Référencement naturel : [docs/SEO.md](docs/SEO.md) (`npm run seo:check` après un build).
 
 Les e-mails envoyés en développement (confirmation, invitation, réinitialisation) s'affichent dans Mailpit : http://localhost:8035.
 

@@ -1,0 +1,108 @@
+# Site sur Render (docker/render.yaml à la racine : render.yaml) : Render termine le HTTPS et relaie en HTTP sur ${PORT}.
+# Variables remplacées au démarrage du conteneur : PORT (fourni par Render), SERVER_NAME, API_UPSTREAM (hôte:port privé de l'API).
+# Adresse du client : Render (via Cloudflare) renvoie l'adresse réelle dans CF-Connecting-IP, qu'il réécrit à chaque requête ;
+# nginx la transmet à l'API dans X-Forwarded-For (l'API n'a TRUST_PROXY=true que pour ce seul saut). L'API est un service PRIVÉ :
+# nginx en est le seul client. Vérifier cet en-tête sur la plateforme réelle (docs/RENDER.md) avant d'ouvrir au public.
+
+map $http_cf_connecting_ip $b2c_client_ip {
+    default $http_cf_connecting_ip;
+    ""      $remote_addr;
+}
+map $http_x_forwarded_proto $b2c_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
+# Nom d'hôte inconnu (adresse *.onrender.com, mauvais domaine) : jamais de contenu dupliqué, redirection vers le domaine officiel.
+# Les contrôles de santé de Render passent par ici (ils ne portent pas forcément le bon nom d'hôte).
+server {
+    listen ${PORT} default_server;
+    server_name _;
+    server_tokens off;
+    location = /health/live  { proxy_pass http://${API_UPSTREAM}; }
+    location = /health/ready { proxy_pass http://${API_UPSTREAM}; }
+    location / {
+        return 301 https://${SERVER_NAME}$request_uri;
+    }
+}
+
+server {
+    listen ${PORT};
+    server_name ${SERVER_NAME};
+
+
+    root /usr/share/nginx/html;
+    server_tokens off;
+    absolute_redirect off; # redirections relatives : aucune dépendance au nom d'hôte ni au port vus par nginx
+    client_max_body_size 10m;
+    # Compression : le pré-rendu produit déjà les versions .gz de chaque fichier du site (gzip_static) ; gzip à la volée
+    # ne sert plus qu'aux réponses de l'API. Brotli (.br) est aussi produit mais nginx n'y ajoute pas de module : voir docs/SEO.md.
+    gzip on;
+    gzip_static on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_min_length 256;
+    gzip_types text/css application/javascript application/json image/svg+xml text/plain application/xml;
+
+    include /etc/nginx/security-headers.conf;
+
+    # API : même domaine que le site (le cookie de session a pour chemin /v1/auth)
+    location /v1/ {
+        proxy_pass http://${API_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $b2c_client_ip;
+        proxy_set_header X-Forwarded-Proto $b2c_proto;
+        proxy_read_timeout 30s;
+        include /etc/nginx/security-headers.conf;
+    }
+    location = /health/live  { proxy_pass http://${API_UPSTREAM}; include /etc/nginx/security-headers.conf; }
+    location = /health/ready { proxy_pass http://${API_UPSTREAM}; include /etc/nginx/security-headers.conf; }
+
+    # Espace client : coquille de l'application (le routage se fait dans le navigateur)
+    # Jamais référencé : l'en-tête X-Robots-Tag s'ajoute à la balise meta (robots.txt n'est PAS une protection : l'accès est protégé par la connexion)
+    location ~ ^/(fr|ht|en)/account(/|$) {
+        try_files /200.html =404;
+        add_header Cache-Control "no-cache" always;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+        include /etc/nginx/security-headers.conf;
+    }
+    # Pages d'authentification : explorables mais non référencées (la connexion suit ses liens, les pages de jeton non)
+    location ~ ^/(fr|ht|en)/(forgot-password|reset-password|verify-email|accept-invite)/?$ {
+        try_files $uri/index.html =404;
+        add_header Cache-Control "no-cache" always;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+        include /etc/nginx/security-headers.conf;
+    }
+    location ~ ^/(fr|ht|en)/login/?$ {
+        try_files $uri/index.html =404;
+        add_header Cache-Control "no-cache" always;
+        add_header X-Robots-Tag "noindex, follow" always;
+        include /etc/nginx/security-headers.conf;
+    }
+    location ^~ /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        include /etc/nginx/security-headers.conf;
+        try_files $uri =404;
+    }
+    # Images, icônes et feuilles de la page de langue : noms non versionnés, donc une semaine (et non « immutable »)
+    location ~* \.(?:svg|png|ico|webp|avif|css|js)$ {
+        add_header Cache-Control "public, max-age=604800" always;
+        include /etc/nginx/security-headers.conf;
+        try_files $uri =404;
+    }
+    location / {
+        # Une seule adresse par page : « /fr/services/ » est redirigé (301) vers « /fr/services », l'adresse canonique
+        rewrite ^/(.+)/$ /$1 permanent;
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/security-headers.conf;
+        try_files $uri $uri/index.html =404;
+    }
+    error_page 404 /404.html;
+    location = /404.html {
+        internal;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+        include /etc/nginx/security-headers.conf;
+    }
+}

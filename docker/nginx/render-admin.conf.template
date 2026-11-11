@@ -1,0 +1,40 @@
+# Panel d'administration sur Render : même service nginx que le site, autre nom de domaine (ADMIN_SERVER_NAME).
+# Les variables $b2c_client_ip et $b2c_proto sont définies dans render.conf.template.
+
+server {
+    listen ${PORT};
+    server_name ${ADMIN_SERVER_NAME};
+
+
+    root /usr/share/nginx/admin;
+    server_tokens off;
+    client_max_body_size 10m;
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml text/plain;
+
+    # allow 203.0.113.0/24;
+    # deny all;
+
+    include /etc/nginx/admin-security-headers.conf;
+
+    location /v1/ {
+        proxy_pass http://${API_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $b2c_client_ip;
+        proxy_set_header X-Forwarded-Proto $b2c_proto;
+        proxy_read_timeout 30s;
+        include /etc/nginx/admin-security-headers.conf;
+    }
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        include /etc/nginx/admin-security-headers.conf;
+        try_files $uri =404;
+    }
+    # Application monopage : tout chemin qui n'est pas un fichier est résolu par le routeur du navigateur
+    location / {
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/admin-security-headers.conf;
+        try_files $uri /index.html;
+    }
+}

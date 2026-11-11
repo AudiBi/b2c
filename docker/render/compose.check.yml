@@ -1,0 +1,86 @@
+# Contrôle LOCAL de l'architecture Render (ce n'est PAS un déploiement) : mêmes images, mêmes cibles et mêmes variables que render.yaml,
+# sur un réseau Docker. Sert à vérifier avant de payer : migrations avec un propriétaire super-utilisateur dans un service privé,
+# API démarrée avec le disque monté en root, nginx en HTTP sur $PORT, relais /v1, domaines site et panel, redirection des hôtes inconnus.
+#   docker compose -f docker/render/compose.check.yml up -d --build
+#   curl -H "Host: site.example.test" http://localhost:8090/fr
+#   docker compose -f docker/render/compose.check.yml down -v
+# Tous les secrets ci-dessous sont des valeurs jetables, propres à ce contrôle.
+name: b2c-render-check
+
+services:
+  postgres:
+    build: { context: ../.., dockerfile: docker/render/postgres.Dockerfile }
+    environment:
+      POSTGRES_USER: b2c_migrator
+      POSTGRES_DB: b2c
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_PASSWORD: check0migrator0password000000000
+      B2C_APP_PASSWORD: check0app0password00000000000000
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U b2c_migrator -d b2c"], interval: 3s, retries: 30 }
+
+  redis:
+    image: redis:7-alpine
+    healthcheck: { test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"], interval: 3s, retries: 30 }
+
+  migrate:
+    build: { context: ../.., dockerfile: docker/Dockerfile, args: { IMAGE_TARGET: migrate } }
+    restart: "no"
+    depends_on: { postgres: { condition: service_healthy } }
+    environment:
+      DATABASE_URL: postgresql://b2c_app:check0app0password00000000000000@postgres:5432/b2c
+      DIRECT_URL: postgresql://b2c_migrator:check0migrator0password000000000@postgres:5432/b2c
+      SEED_SUPERADMIN_EMAIL: check-admin@example.test
+      SEED_SUPERADMIN_PASSWORD: Check-Admin-Password-2026-xyz
+
+  api:
+    build: { context: ../.., dockerfile: docker/Dockerfile, args: { IMAGE_TARGET: api-render } }
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    environment:
+      PORT: "10000"
+      API_PORT: "10000"
+      NODE_ENV: production
+      TRUST_PROXY: "true"
+      ENABLE_DOCS: "false"
+      COOKIE_SECURE: "true"
+      REQUIRE_STAFF_2FA: "true"
+      API_PUBLIC_URL: https://site.example.test
+      WEB_PUBLIC_URL: https://site.example.test
+      ADMIN_PUBLIC_URL: https://admin.example.test
+      CORS_ORIGINS: https://site.example.test,https://admin.example.test
+      DATABASE_URL: postgresql://b2c_app:check0app0password00000000000000@postgres:5432/b2c
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: check0jwt0secret000000000000000000000000000000000000
+      TOTP_ENCRYPTION_KEY: check0totp0key00000000000000000000000000000000000
+      MAIL_TRANSPORT: smtp
+      SMTP_HOST: localhost
+      SMTP_PORT: "465"
+      SMTP_SECURE: "true"
+      MAIL_FROM: B2C <noreply@example.test>
+      STORAGE_DRIVER: disk
+      FILES_DIR: /data/files
+    volumes: ["files:/data/files"] # volume nommé : appartient à root, comme un disque Render
+
+  web:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile
+      args:
+        IMAGE_TARGET: web-render
+        VITE_COMPANY_SLUG: check
+        VITE_BRAND_NAME: B2C
+        SITE_URL: https://site.example.test
+        ADMIN_URL: https://admin.example.test
+    depends_on: [api]
+    environment:
+      PORT: "10000"
+      API_UPSTREAM: api:10000
+      SERVER_NAME: site.example.test
+      ADMIN_SERVER_NAME: admin.example.test
+    ports: ["8090:10000"]
+
+volumes:
+  pgdata:
+  files:

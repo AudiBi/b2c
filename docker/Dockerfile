@@ -3,6 +3,10 @@
 #   docker build -f docker/Dockerfile --target web --build-arg VITE_COMPANY_SLUG=ma-societe --build-arg SITE_URL=https://exemple.com -t b2c-web .
 # Normalement construites par docker/compose.prod.yml (voir docs/DEPLOYMENT.md).
 
+# Cible de l'image finale quand la plateforme ne permet pas de choisir une cible (Render) : IMAGE_TARGET=api-render, web-render, migrate…
+# Sans variable : « web », comme avant (docker compose indique toujours sa cible explicitement).
+ARG IMAGE_TARGET=web
+
 # ---------------------------------------------------------------------------------------------
 # Construction : installe tout, compile le package partagé, le client Prisma et l'API
 # ---------------------------------------------------------------------------------------------
@@ -85,3 +89,28 @@ COPY docker/nginx/admin-security-headers.conf /etc/nginx/admin-security-headers.
 COPY --from=web-build /app/apps/web/dist/client /usr/share/nginx/html
 COPY --from=admin-build /app/apps/admin/dist /usr/share/nginx/admin
 EXPOSE 80 443
+
+# ---------------------------------------------------------------------------------------------
+# Render (voir render.yaml et docs/RENDER.md)
+# ---------------------------------------------------------------------------------------------
+# API : comme « api », mais démarre en root pour rendre le disque monté inscriptible, puis abaisse les privilèges (su-exec)
+FROM api AS api-render
+USER root
+RUN apk add --no-cache su-exec
+COPY docker/render/api-entrypoint.sh /usr/local/bin/api-entrypoint.sh
+RUN chmod +x /usr/local/bin/api-entrypoint.sh
+ENTRYPOINT ["api-entrypoint.sh"]
+CMD ["node", "apps/api/dist/main.js"]
+
+# Site et panel : nginx en HTTP sur $PORT (Render termine le HTTPS) ; le site et le panel partagent le même service
+FROM nginx:1.27-alpine AS web-render
+COPY docker/nginx/render.conf.template /etc/nginx/templates/00-site.conf.template
+COPY docker/nginx/render-admin.conf.template /etc/nginx/templates/10-admin.conf.template
+COPY docker/nginx/security-headers.conf /etc/nginx/security-headers.conf
+COPY docker/nginx/admin-security-headers.conf /etc/nginx/admin-security-headers.conf
+COPY --from=web-build /app/apps/web/dist/client /usr/share/nginx/html
+COPY --from=admin-build /app/apps/admin/dist /usr/share/nginx/admin
+EXPOSE 10000
+
+# Image finale par défaut : la cible demandée par IMAGE_TARGET
+FROM ${IMAGE_TARGET} AS final
