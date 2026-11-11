@@ -1,7 +1,7 @@
 # Matrice rôles × routes
 
 Générée par `apps/api/test/role-matrix.spec.ts` (`ROLE_MATRIX_OUT=1`). ✔ = autorisé, · = refusé (403), ◐ = autorisé par le rôle mais limité à son entrepôt / son agence / sa caisse (la garde l’admet, le service refuse hors portée). Chaque case a été **vérifiée** contre l’API en marche, pas seulement déduite du catalogue.
-Les routes ouvertes à tout utilisateur connecté (profil, déconnexion…) et les routes publiques n’y figurent pas.
+Les 13 routes ouvertes à tout utilisateur connecté (profil, session, double authentification…) sont vérifiées à part (accessibles à tous les rôles) et les routes publiques n’y figurent pas.
 
 | Route | Permissions | SUPER_ADMIN | COMPANY_ADMIN | LOGISTICS_MANAGER | WAREHOUSE_MANAGER | RECEPTION_AGENT | BILLING_AGENT | AGENCY_MANAGER | CUSTOMER_SERVICE | DRIVER | CUSTOMER_INDIVIDUAL | CUSTOMER_BUSINESS | TEAM_READER | TEAM_OPERATOR | AUDITOR |
 |---|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
