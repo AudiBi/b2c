@@ -301,7 +301,7 @@ a:hover { color: var(--brand-800); }
 .auth-page { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); background: var(--surface); }
 .auth-aside { position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: 48px; color: #fff; background: radial-gradient(1200px 600px at 0% 0%, #0b5f80 0%, transparent 60%), linear-gradient(160deg, #042636 0%, #0b1d2c 100%); overflow: hidden; }
 .auth-aside .plate { align-self: flex-start; padding: 10px 14px; background: #fff; border-radius: 12px; line-height: 0; }
-.auth-aside .plate img { height: 44px; width: auto; }
+.auth-aside .plate img { height: 84px; width: auto; }
 .auth-aside h2 { color: #fff; font-size: 1.9rem; max-width: 18ch; line-height: 1.15; }
 .auth-aside p { color: #b9d3e0; max-width: 42ch; }
 .auth-aside ul { list-style: none; padding: 0; margin: 24px 0 0; display: grid; gap: 12px; color: #d4e6ef; }

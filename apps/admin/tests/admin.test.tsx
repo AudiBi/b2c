@@ -1,3 +1,4 @@
+import { config } from '../src/config';
 import { QueryClient } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -135,7 +136,7 @@ describe('connexion', () => {
     renderAt('/login');
     await fillAndSubmit();
     await waitFor(() => expect(calls('POST /v1/auth/login')).toHaveLength(1));
-    expect(bodyOf(calls('POST /v1/auth/login')[0])).toMatchObject({ companySlug: 'demo', email: 'moi@example.test' });
+    expect(bodyOf(calls('POST /v1/auth/login')[0])).toMatchObject({ companySlug: config.companySlug, email: 'moi@example.test' });
     expect(await screen.findByRole('heading', { name: 'Bonjour Aud' })).toBeInTheDocument();
   });
 
