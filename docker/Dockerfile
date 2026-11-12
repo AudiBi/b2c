@@ -81,7 +81,7 @@ ENV VITE_COMPANY_SLUG=$VITE_COMPANY_SLUG VITE_BRAND_NAME=$VITE_BRAND_NAME VITE_S
 RUN npm -w @b2c/admin run build
 
 # Un seul nginx, deux noms de domaine : le site (SERVER_NAME) et le panel (ADMIN_SERVER_NAME)
-FROM nginx:1.27-alpine AS web
+FROM nginx:1.31-alpine AS web
 COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY docker/nginx/admin.conf.template /etc/nginx/templates/admin.conf.template
 COPY docker/nginx/security-headers.conf /etc/nginx/security-headers.conf
@@ -103,7 +103,7 @@ ENTRYPOINT ["api-entrypoint.sh"]
 CMD ["node", "apps/api/dist/main.js"]
 
 # Site et panel : nginx en HTTP sur $PORT (Render termine le HTTPS) ; le site et le panel partagent le même service
-FROM nginx:1.27-alpine AS web-render
+FROM nginx:1.31-alpine AS web-render
 COPY docker/nginx/render.conf.template /etc/nginx/templates/00-site.conf.template
 COPY docker/nginx/render-admin.conf.template /etc/nginx/templates/10-admin.conf.template
 COPY docker/nginx/security-headers.conf /etc/nginx/security-headers.conf
