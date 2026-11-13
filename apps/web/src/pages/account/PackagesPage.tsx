@@ -4,6 +4,7 @@ import { PACKAGE_STATUSES } from '@b2c/shared';
 import { useI18n } from '../../i18n';
 import { formatMoney, formatWeight } from '../../lib/format';
 import { localizedPath } from '../../routes';
+import { HtgHint } from '../../components/HtgHint';
 import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
 import { SelectField, TextField } from '../../components/ui/Fields';
@@ -195,7 +196,7 @@ export function PackageDetailPage() {
               <>
                 <dl className="kv">
                   <dt>{d.freight}</dt>
-                  <dd data-testid="package-freight">{formatMoney(data.fees.freight, data.fees.currency, lang)}</dd>
+                  <dd data-testid="package-freight">{formatMoney(data.fees.freight, data.fees.currency, lang)}<HtgHint amount={data.fees.freight} currency={data.fees.currency} /></dd>
                   {data.fees.extras && Number(data.fees.extras) > 0 ? (
                     <>
                       <dt>{d.extras}</dt>

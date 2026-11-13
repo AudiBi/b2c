@@ -7,6 +7,7 @@ import { format, useI18n } from '../i18n';
 import { formatMoney, formatWeight, parseDecimal } from '../lib/format';
 import { usePageMeta } from '../seo';
 import { RelatedPages } from '../components/RelatedPages';
+import { HtgHint } from '../components/HtgHint';
 import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
 import { CheckField, FormMessage, RadioGroupField, SelectField, TextField } from '../components/ui/Fields';
@@ -277,6 +278,7 @@ export function CalculatorPage() {
                       <th scope="row">{c.result.total}</th>
                       <td className="num" data-testid="quote-total">
                         {formatMoney(quote.result.total, quote.result.currency, lang)}
+                        <HtgHint amount={quote.result.total} currency={quote.result.currency} />
                       </td>
                     </tr>
                   </tfoot>

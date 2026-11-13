@@ -11,6 +11,8 @@ export const paths = {
   accountSecurity: '/security',
   accountStaffReception: '/reception',
   accountStaffCounter: '/counter',
+  accountStaffCustoms: '/customs',
+  accountStaffRates: '/rates',
   accountStaffPackages: '/packages',
   accountStaffWarehouse: '/warehouse',
   accountStaffShipments: '/shipments',

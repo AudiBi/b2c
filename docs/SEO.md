@@ -129,7 +129,7 @@ Référence en français (équivalents en créole et en anglais dans les métado
 | Expédition aérienne | informationnelle / transactionnelle | expédition aérienne vers Haïti | colis urgents, poids facturable, frais détaillés |
 | Expédition maritime | informationnelle | expédition maritime vers Haïti | colis volumineux, délais indicatifs, bateau |
 | Transport international | informationnelle | transport international de colis vers Haïti | lots, manifeste, événements de transport |
-| Livraison locale | informationnelle | retrait en agence et livraison de colis en Haïti | bénéficiaires autorisés, remise sécurisée, tournées |
+| Retrait en agence | informationnelle | retrait de colis en agence en Haïti | bénéficiaires autorisés, pièce d’identité, remise sécurisée |
 | Calculateur | outil | calculateur de frais d'expédition vers Haïti | poids volumétrique, poids facturable, estimation |
 | Suivi | navigationnelle | suivi de colis vers Haïti | numéro de suivi, statut, historique |
 | Entrepôts et agences | locale | entrepôts à l'étranger et agences de retrait en Haïti | adresses, villes |

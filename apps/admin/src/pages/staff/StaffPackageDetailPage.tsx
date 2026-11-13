@@ -14,6 +14,7 @@ import { FormMessage, RadioGroupField, SelectField, TextAreaField, TextField } f
 import { StatusBadge, statusLabel } from '../../components/PackageParts';
 import { FilesPanel } from '../shared/FilesPanel';
 import { HandoverPanel } from '../delivery/HandoverPanel';
+import { CustomsLinesCard } from './CustomsLinesCard';
 import { staffKeys, useAgencies, useCan, useLocations, useStaffPackage, type StaffPackageDetail, type TransportMode } from './queries';
 
 /** Cadre d'action avec son propre message de succès ou d'erreur, annoncé aux lecteurs d'écran. */
@@ -80,6 +81,7 @@ export function StaffPackageDetailPage() {
           <TransitionPanel pkg={pkg} onDone={refresh} />
           <LocationPanel pkg={pkg} onDone={refresh} />
           <AgencyPanel pkg={pkg} onDone={refresh} />
+          <CustomsLinesCard packageId={pkg.id} invoiced={['AWAITING_PAYMENT', 'READY_TO_SHIP', 'IN_TRANSIT', 'ARRIVED_DESTINATION', 'IN_CUSTOMS', 'RECEIVED_AT_AGENCY', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(pkg.status)} />
           <HandoverPanel packageId={pkg.id} status={pkg.status} onDone={refresh} />
           <NotePanel pkg={pkg} onDone={refresh} />
 

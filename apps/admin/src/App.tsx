@@ -1,5 +1,6 @@
 import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
+import { config } from './config';
 import { AcceptInvitePage, ForgotPasswordPage, LoginPage, ResetPasswordPage } from './pages/AuthPages';
 import { HomePage } from './pages/HomePage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -28,6 +29,8 @@ const UsersPage = lazy(() => import('./pages/admin/UsersPage').then((m) => ({ de
 const UserDetailPage = lazy(() => import('./pages/admin/UserDetailPage').then((m) => ({ default: m.UserDetailPage })));
 const RolesPage = lazy(() => import('./pages/admin/RolesPage').then((m) => ({ default: m.RolesPage })));
 const StaffCounterPage = lazy(() => import('./pages/staff/StaffCounterPage').then((m) => ({ default: m.StaffCounterPage })));
+const StaffCustomsPage = lazy(() => import('./pages/staff/StaffCustomsPage').then((m) => ({ default: m.StaffCustomsPage })));
+const StaffRateCardsPage = lazy(() => import('./pages/staff/StaffRateCardsPage').then((m) => ({ default: m.StaffRateCardsPage })));
 const CompaniesPage = lazy(() => import('./pages/admin/CompaniesPage').then((m) => ({ default: m.CompaniesPage })));
 
 export function AppRoutes() {
@@ -42,16 +45,22 @@ export function AppRoutes() {
         <Route path="dashboard" element={<StaffDashboardPage />} />
         <Route path="reception" element={<StaffReceptionPage />} />
         <Route path="counter" element={<StaffCounterPage />} />
+        <Route path="customs" element={<StaffCustomsPage />} />
+        <Route path="rates" element={<StaffRateCardsPage />} />
         <Route path="packages" element={<StaffPackagesPage />} />
         <Route path="packages/:id" element={<StaffPackageDetailPage />} />
         <Route path="warehouse" element={<StaffWarehousePage />} />
         <Route path="shipments" element={<StaffShipmentsPage />} />
         <Route path="shipments/:id" element={<StaffShipmentDetailPage />} />
         <Route path="agency" element={<StaffAgencyPage />} />
-        <Route path="routes" element={<StaffRoutesPage />} />
-        <Route path="routes/:id" element={<StaffRouteDetailPage />} />
-        <Route path="my-routes" element={<StaffRoutesPage mine />} />
-        <Route path="my-routes/:id" element={<StaffRouteDetailPage mine />} />
+        {config.features.delivery ? (
+          <>
+            <Route path="routes" element={<StaffRoutesPage />} />
+            <Route path="routes/:id" element={<StaffRouteDetailPage />} />
+            <Route path="my-routes" element={<StaffRoutesPage mine />} />
+            <Route path="my-routes/:id" element={<StaffRouteDetailPage mine />} />
+          </>
+        ) : null}
         <Route path="claims" element={<StaffClaimsPage />} />
         <Route path="claims/:id" element={<StaffClaimDetailPage />} />
         <Route path="billing" element={<StaffInvoicesPage />} />

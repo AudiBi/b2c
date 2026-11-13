@@ -1,4 +1,4 @@
-import { api, bearer, buildTestApp, login, makeCustomer, makeTenant, makeUser, makeWarehouse, type TestApp } from './helpers';
+import { api, bearer, buildTestApp, login, makeCustomer, makeTenant, makeUser, makeWarehouse, processNotifications, type TestApp } from './helpers';
 
 const errorCode = (res: { body: any }) => res.body?.error?.code;
 
@@ -58,9 +58,30 @@ describe('Comptoir : clients sans compte et colis créés par le personnel', () 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('RECEIVED_AT_WAREHOUSE');
 
+    // suivi public par l'ancien code : propre à l'entreprise, sans donnée personnelle
+    const tracked = await api(t).get(`/v1/public/tracking/legacy/${tenant.company.slug}/B2C-0001`);
+    expect(tracked.status).toBe(200);
+    expect(tracked.body.status).toBe('RECEIVED_AT_WAREHOUSE');
+    expect(JSON.stringify(tracked.body)).not.toContain('Jean Pierre');
+    expect((await api(t).get(`/v1/public/tracking/legacy/${tenant.company.slug}/B2C-9999`)).status).toBe(404);
+    expect((await api(t).get(`/v1/public/tracking/legacy/inconnue-xyz/B2C-0001`)).status).toBe(404);
+
     const again = await post(tenant.token, '/v1/admin/packages/counter', body);
     expect(again.status).toBe(409);
     expect(errorCode(again)).toBe('LEGACY_TRACKING_EXISTS');
+  });
+
+  it("un client sans e-mail ne reçoit aucun e-mail : la notification est écartée (NO_EMAIL), jamais envoyée à l'adresse factice", async () => {
+    const tenant = await makeTenant(t);
+    const warehouse = await makeWarehouse(t, tenant.token);
+    const customer = await post(tenant.token, '/v1/admin/customers', { firstName: 'Sans', lastName: 'Courriel' });
+    const created = await post(tenant.token, '/v1/admin/packages/counter', { warehouseId: warehouse.id, customerId: customer.body.id, transportMode: 'AIR', recipientName: 'Jean Pierre' });
+    expect(created.status).toBe(201);
+    await processNotifications(t, tenant.company.id);
+    const rows = await t.admin.notification.findMany({ where: { companyId: tenant.company.id, customerId: customer.body.id } });
+    const email = rows.filter((r) => r.channel === 'EMAIL');
+    expect(email.length).toBeGreaterThan(0);
+    for (const row of email) expect(row).toMatchObject({ status: 'SKIPPED', skipReason: 'NO_EMAIL' });
   });
 
   it("interdit la création de clients et de colis à un compte client", async () => {

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { apiDownload } from '../../api/client';
 import { apiErrorMessage } from '../../forms/validation';
-import { useI18n } from '../../i18n';
+import { format, useI18n } from '../../i18n';
 import { formatDateTime, formatMoney } from '../../lib/format';
 import { saveBlob } from '../../lib/download';
 import { Button } from '../../components/ui/Button';
 import { FormMessage } from '../../components/ui/Fields';
-import type { InvoiceDetail, InvoiceStatus, Payment, PaymentStatus } from './queries';
+import { useFxRate, type InvoiceDetail, type InvoiceStatus, type Payment, type PaymentStatus } from './queries';
 
 const invoiceTone = (status: InvoiceStatus) => (status === 'PAID' ? ' badge-success' : status === 'VOID' || status === 'CREDITED' ? ' badge-danger' : status === 'ISSUED' || status === 'PARTIALLY_PAID' ? ' badge-warning' : '');
 const paymentTone = (status: PaymentStatus) => (status === 'CONFIRMED' ? ' badge-success' : status === 'FAILED' || status === 'CANCELLED' ? ' badge-danger' : status === 'PENDING' ? ' badge-warning' : '');
@@ -27,6 +27,8 @@ export function InvoiceLines({ invoice }: { invoice: InvoiceDetail }) {
   const t = m.finance.totals;
   const money = (value: string) => formatMoney(value, invoice.currency, lang);
   const hasCredit = Number(invoice.creditedTotal) > 0;
+  const fx = useFxRate().data?.htgPerUsd ?? null;
+  const showHtg = fx !== null && invoice.currency === 'USD';
   return (
     <table className="table" aria-label={m.finance.common.lines}>
       <tbody>
@@ -68,6 +70,14 @@ export function InvoiceLines({ invoice }: { invoice: InvoiceDetail }) {
             {money(invoice.balance)}
           </td>
         </tr>
+        {showHtg ? (
+          <tr>
+            <th scope="row">{format(t.htgEquivalent, { rate: String(fx) })}</th>
+            <td className="num" data-testid="invoice-htg">
+              ≈ {formatMoney(Number(invoice.balance) * fx, 'HTG', lang)}
+            </td>
+          </tr>
+        ) : null}
       </tfoot>
     </table>
   );

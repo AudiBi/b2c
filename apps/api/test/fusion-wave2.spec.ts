@@ -76,6 +76,10 @@ describe('Fusion, vagues 0 et 2 : prix convenu, MonCash, taux en gourdes', () =>
       expect(second.body.history.map((h: any) => h.htgPerUsd)).toEqual([140, 135]);
       expect((await api(t).put('/v1/admin/settings/fx-rate').set(bearer(w.billing)).send({ htgPerUsd: 1 })).status).toBe(403);
       expect((await api(t).put('/v1/admin/settings/fx-rate').set(bearer(w.token)).send({ htgPerUsd: 0 })).status).toBe(400);
+      // lisible par tout utilisateur connecté (équivalent affiché sur les factures), jamais par un visiteur
+      expect((await api(t).get('/v1/me/fx-rate').set(bearer(w.customer.token))).body.htgPerUsd).toBe(140);
+      expect((await api(t).get('/v1/me/fx-rate').set(bearer(w.billing))).body.htgPerUsd).toBe(140);
+      expect((await api(t).get('/v1/me/fx-rate')).status).toBe(401);
     });
   });
 });

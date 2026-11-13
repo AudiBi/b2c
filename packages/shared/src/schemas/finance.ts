@@ -55,6 +55,8 @@ export const createInvoiceSchema = z
     packageIds: z.array(z.uuid()).max(50).default([]),
     extraLines: z.array(extraLineSchema).max(20).default([]),
     /** Prix convenu d'un colis à la place du tarif calculé : permission `price:override`, motif obligatoire, écart journalisé. */
+    /** Rabais par unité (baril) sur un colis facturé à l'unité : permission `discount:apply` et plafond de l'entreprise. */
+    unitDiscounts: z.array(z.strictObject({ packageId: z.uuid(), perUnit: moneySchema })).max(50).default([]),
     priceOverrides: z
       .array(z.strictObject({ packageId: z.uuid(), amount: moneySchema, reason: text(300) }))
       .max(50)

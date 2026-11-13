@@ -13,4 +13,5 @@ export * from './shipment-status';
 export * from './schemas/logistics';
 export * from './schemas/finance';
 export * from './schemas/delivery';
+export * from './schemas/customs';
 export * from './notifications';

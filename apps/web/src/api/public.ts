@@ -128,8 +128,17 @@ export interface TrackingResult {
   events: TrackingEvent[];
 }
 
-export const trackPackage = (number: string, signal?: AbortSignal) =>
-  api<TrackingResult>(`/v1/public/tracking/${encodeURIComponent(number.trim())}`, { auth: false, signal });
+/** Ancien code de l'outil de gestion (ex. B2C-261001-0001) : cherché dans l'entreprise du site. */
+const LEGACY_CODE = /^[A-Za-z0-9]{2,6}-\d{6}-\d{3,5}$/;
+
+export const trackPackage = (number: string, signal?: AbortSignal) => {
+  const value = number.trim();
+  const path = LEGACY_CODE.test(value) ? `/v1/public/tracking/legacy/${encodeURIComponent(config.companySlug)}/${encodeURIComponent(value)}` : `/v1/public/tracking/${encodeURIComponent(value)}`;
+  return api<TrackingResult>(path, { auth: false, signal });
+};
+
+/** Taux gourdes/dollar de l'entreprise (équivalent indicatif) ; null s'il n'est pas réglé. */
+export const getFxRate = (signal?: AbortSignal) => api<{ htgPerUsd: number | null }>(`${base}/fx-rate`, { auth: false, signal });
 
 export interface PublicAgency {
   name: string;

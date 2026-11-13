@@ -17,5 +17,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],
+    // Les écrans de livraison existent encore : les tests les exercent, activés (hors production, ils sont masqués par défaut)
+    env: { VITE_FEATURE_DELIVERY: 'true' },
   },
 });

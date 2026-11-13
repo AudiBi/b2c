@@ -21,6 +21,7 @@ import { PackagesModule } from './packages/packages.module';
 import { PlatformModule } from './platform/platform.module';
 import { PlatformSharedModule } from './platform/platform-shared.module';
 import { PricingModule } from './pricing/pricing.module';
+import { CustomsModule } from './customs/customs.module';
 import { RedisModule } from './redis/redis.module';
 import { SecurityModule } from './security/security.module';
 
@@ -59,6 +60,7 @@ export class AppModule {
         IamModule,
         CustomersModule,
         PricingModule,
+        CustomsModule,
         PackagesModule,
         FilesModule,
         LogisticsModule,

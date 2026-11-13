@@ -6,6 +6,8 @@ export const config = {
   companySlug: import.meta.env.VITE_COMPANY_SLUG ?? 'demo',
   /** Adresse du site public (lien « Voir le site »). Vide : lien masqué. */
   siteUrl: import.meta.env.VITE_SITE_URL ?? '',
+  /** Livraison à domicile (tournées, livreurs) : désactivée par défaut, la remise se fait à l'agence (VITE_FEATURE_DELIVERY=true pour la réactiver). */
+  features: { delivery: import.meta.env.VITE_FEATURE_DELIVERY === 'true' },
   /** Vide = même origine (proxy en développement, reverse proxy en production). */
   apiBase: import.meta.env.VITE_API_URL ?? '',
 } as const;

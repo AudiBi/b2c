@@ -9,6 +9,7 @@ import { CounterService } from '../infra/counter.service';
 import { displayName, OutboxService } from '../notifications/outbox.service';
 import { PackagesService } from '../packages/packages.service';
 import type { AuthContext } from '../security/auth.types';
+import { readFxRate } from './fx';
 import { D, LedgerService, money, type Decimal } from './ledger.service';
 
 type InvoiceFull = Invoice & {
@@ -108,6 +109,14 @@ export class InvoicesService {
           if (percent > maxDiscountPercent) throw new AppException(422, 'DISCOUNT_ABOVE_CAP', `La remise dépasse le plafond de l'entreprise (${maxDiscountPercent} %)`, { max: maxDiscountPercent });
         }
 
+        if (input.unitDiscounts.length > 0) {
+          if (!auth.permissions.can('discount:apply')) throw AppException.forbidden('DISCOUNT_NOT_ALLOWED', "Vous n'avez pas le droit d'accorder une remise");
+          for (const u of input.unitDiscounts) {
+            if (!input.packageIds.includes(u.packageId)) throw AppException.badRequest('UNIT_DISCOUNT_PACKAGE_UNKNOWN', "Un rabais désigne un colis qui n'est pas sur la facture");
+          }
+          if (new Set(input.unitDiscounts.map((u) => u.packageId)).size !== input.unitDiscounts.length) throw AppException.badRequest('UNIT_DISCOUNT_DUPLICATE', 'Un colis a deux rabais');
+        }
+        const unitDiscounts = new Map(input.unitDiscounts.map((u) => [u.packageId, u.perUnit]));
         if (input.priceOverrides.length > 0 && !auth.permissions.can('price:override')) {
           throw AppException.forbidden('PRICE_OVERRIDE_NOT_ALLOWED', "Vous n'avez pas le droit de fixer un prix à la main");
         }
@@ -152,9 +161,28 @@ export class InvoicesService {
               const label = line.kind === 'FREIGHT' ? 'Fret' : (line.label?.fr ?? line.code);
               lines.push({ kind, description: `${label} — ${display}`.slice(0, 200), amount: new D(line.amount), packageId: pkg.id });
             }
+            const perUnit = unitDiscounts.get(pkg.id);
+            if (perUnit !== undefined) {
+              const r = snapshot.result as unknown as { basis?: string; quantity?: number; freight?: string };
+              const quantity = r.quantity ?? 1;
+              const unitPrice = new D(r.freight ?? '0').div(quantity);
+              if (r.basis !== 'UNIT') throw new AppException(422, 'UNIT_DISCOUNT_NOT_APPLICABLE', "Le rabais par unité ne s'applique qu'à un colis facturé à l'unité (baril)", { trackingNumber: pkg.trackingNumber });
+              if (new D(String(perUnit)).gt(unitPrice)) throw new AppException(422, 'UNIT_DISCOUNT_TOO_HIGH', 'Le rabais dépasse le prix unitaire', { trackingNumber: pkg.trackingNumber });
+              const { maxDiscountPercent } = await this.ledger.settings(tx);
+              if (new D(String(perUnit)).div(unitPrice).mul(100).gt(maxDiscountPercent)) throw new AppException(422, 'DISCOUNT_ABOVE_CAP', `La remise dépasse le plafond de l'entreprise (${maxDiscountPercent} %)`, { max: maxDiscountPercent });
+              lines.push({ kind: 'DISCOUNT', description: `Rabais ${money(perUnit).toFixed(2)} × ${quantity} — ${display}`.slice(0, 200), amount: money(perUnit).mul(quantity).neg(), packageId: pkg.id });
+            }
           } else if (extraFreight.length === 0) {
             throw new AppException(409, 'PACKAGE_NOT_PRICED', "Aucun tarif n'a été calculé pour ce colis : saisissez son fret", { trackingNumber: pkg.trackingNumber });
           }
+        }
+        // Frais CONATEL saisis sur les colis : lignes CUSTOMS (reversées), en dollars comme la table
+        const customsLines = await tx.packageCustomsLine.findMany({ where: { packageId: { in: input.packageIds } }, include: { item: true }, orderBy: { createdAt: 'asc' } });
+        for (const cl of customsLines) {
+          const pkg = packages.find((p) => p.id === cl.packageId);
+          currencies.add(cl.currency);
+          const label = `CONATEL — ${cl.item.name}${cl.item.size ? ` ${cl.item.size}` : ''}${cl.quantity > 1 ? ` × ${cl.quantity}` : ''} — ${formatTrackingNumber(pkg?.trackingNumber ?? '')}`;
+          lines.push({ kind: 'CUSTOMS', description: label.slice(0, 200), amount: cl.fee, packageId: cl.packageId });
         }
         for (const extra of input.extraLines) {
           if (extra.packageId && !input.packageIds.includes(extra.packageId)) throw AppException.badRequest('EXTRA_LINE_PACKAGE_UNKNOWN', "Une ligne désigne un colis qui n'est pas sur la facture");
@@ -166,8 +194,12 @@ export class InvoicesService {
         const sum = (kinds: (l: { kind: string }) => boolean) => lines.filter(kinds).reduce((acc, l) => acc.add(l.amount), new D(0));
         const subtotal = sum((l) => l.kind !== 'TAX' && l.kind !== 'DISCOUNT');
         const taxTotal = sum((l) => l.kind === 'TAX');
-        const discount = money(subtotal.mul(percent).div(100));
-        if (discount.gt(0)) lines.push({ kind: 'DISCOUNT', description: `Remise ${percent} %`, amount: discount.neg(), packageId: null });
+        const lineDiscounts = sum((l) => l.kind === 'DISCOUNT').neg();
+        // Les frais CONATEL sont reversés à l'organisme : aucune remise en pourcentage ne les touche
+        const percentBase = subtotal.sub(sum((l) => l.kind === 'CUSTOMS'));
+        const percentDiscount = money(percentBase.mul(percent).div(100));
+        if (percentDiscount.gt(0)) lines.push({ kind: 'DISCOUNT', description: `Remise ${percent} %`, amount: percentDiscount.neg(), packageId: null });
+        const discount = percentDiscount.add(lineDiscounts);
         const total = subtotal.sub(discount).add(taxTotal);
 
         const invoice = await tx.invoice.create({
@@ -363,7 +395,10 @@ export class InvoicesService {
   async pdfData(auth: AuthContext, id: string, mine: boolean) {
     const invoice = mine ? await this.getMine(auth, id) : await this.get(auth, id);
     if (!invoice.number) throw AppException.conflict('INVOICE_NOT_ISSUED', "Un brouillon n'a pas de PDF : émettez la facture");
-    const company = await this.db.run({ companyId: auth.companyId }, (tx) => tx.company.findUniqueOrThrow({ where: { id: auth.companyId }, select: { name: true } }));
-    return { company: company.name, invoice };
+    const { company, rate } = await this.db.run({ companyId: auth.companyId }, async (tx) => ({
+      company: await tx.company.findUniqueOrThrow({ where: { id: auth.companyId }, select: { name: true } }),
+      rate: await readFxRate(tx, auth.companyId),
+    }));
+    return { company: company.name, invoice, htgPerUsd: rate };
   }
 }

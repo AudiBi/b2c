@@ -8,6 +8,7 @@ export const ht: Messages = {
   lang: { fr: 'Français', ht: 'Kreyòl ayisyen', en: 'English' },
 
   common: {
+    indicative: 'endikatif',
     loading: 'Ap chaje…',
     retry: 'Eseye ankò',
     save: 'Anrejistre',
@@ -73,7 +74,7 @@ export const ht: Messages = {
     air: 'Voye pa avyon',
     sea: 'Voye pa bato',
     international: 'Transpò entènasyonal',
-    local: 'Livrezon lokal an Ayiti',
+    local: 'Retrè nan ajans an Ayiti',
     calculator: 'Kalkilatè frè',
     tracking: 'Swivi pakè',
     locations: 'Depo ak ajans',
@@ -87,7 +88,7 @@ export const ht: Messages = {
   },
 
   footer: {
-    tagline: 'Achte aletranje, resevwa an Ayiti : resepsyon, ekspedisyon ak livrezon swiv soti nan kòmansman rive nan fen.',
+    tagline: 'Achte aletranje, resevwa an Ayiti : resepsyon, ekspedisyon ak retrè nan ajans swiv soti nan kòmansman rive nan fen.',
     explore: 'Eksplore',
     help: 'Èd',
     legal: 'Enfòmasyon legal',
@@ -99,13 +100,13 @@ export const ht: Messages = {
   related: { title: 'Pou ale pi lwen' },
 
   seo: {
-    home: { title: 'Voye pakè pou Ayiti : avyon, bato ak swivi', description: 'Achte aletranje, resevwa an Ayiti : adrès resepsyon, ekspedisyon pa avyon oswa pa bato, swivi chak etap epi retrè nan ajans oswa livrezon.' },
+    home: { title: 'Voye pakè pou Ayiti : avyon, bato ak swivi', description: 'Achte aletranje, resevwa an Ayiti : adrès resepsyon, ekspedisyon pa avyon oswa pa bato, swivi chak etap epi retrè nan ajans.' },
     about: { title: 'Ki moun nou ye ? Sèvis ekspedisyon pou Ayiti', description: 'Misyon nou : fè voye pakè pou Ayiti vin klè, swiv a chak etap epi aksesib, depi resepsyon nan depo a jiska remèt la.' },
-    services: { title: 'Sèvis ekspedisyon ak livrezon nou yo pou Ayiti', description: 'Ekspedisyon pa avyon oswa pa bato, transpò entènasyonal an lo, retrè nan ajans ak livrezon lokal : tout sèvis nou yo pou voye yon pakè an Ayiti.' },
+    services: { title: 'Sèvis ekspedisyon nou yo pou Ayiti', description: 'Ekspedisyon pa avyon oswa pa bato, transpò entènasyonal an lo, retrè nan ajans : tout sèvis nou yo pou voye yon pakè an Ayiti.' },
     air: { title: 'Ekspedisyon pa avyon pou Ayiti : pakè rapid', description: 'Voye pakè ijan, lejè oswa ki gen valè pa avyon pou Ayiti : etap yo, kalkil selon pwa k ap peze, frè detaye ak prekosyon pou konnen.' },
     sea: { title: 'Ekspedisyon pa bato pou Ayiti : gwo pakè', description: 'Yon opsyon ekonomik pou pakè lou oswa gwo pou Ayiti : kijan transpò pa bato a mache, delè endikatif ak pwen pou fè atansyon.' },
     international: { title: 'Transpò entènasyonal pakè pou Ayiti', description: 'Pakè ou yo mete ansanm nan lo ak manifès epi swivi evènman transpò yo, depi depo aletranje a jiska ajans destinasyon an Ayiti.' },
-    local: { title: 'Retrè nan ajans ak livrezon pakè an Ayiti', description: 'Pran pakè ou nan ajans oswa fè livre l an Ayiti : benefisyè otorize, tounen livrezon ak remèt sekirize ak kòd.' },
+    local: { title: 'Retrè pakè nan ajans an Ayiti', description: 'Pran pakè ou nan yon ajans an Ayiti : benefisyè otorize, pyès idantite ak remèt sekirize ak kòd.' },
     calculator: { title: 'Kalkilatè frè ekspedisyon pou Ayiti', description: 'Estime frè pou voye pakè ou : pwa reyèl, pwa volimetrik, pwa k ap peze ak opsyon yo. Yon estimasyon klè, ki pa menm bagay ak montan final la.' },
     tracking: { title: 'Swiv pakè pou Ayiti ak nimewo swivi', description: 'Antre nimewo swivi ou pou konnen estati pakè ou, dat yo ak istwa etap yo, depi nan depo a jiska remèt la.' },
     locations: { title: 'Depo aletranje ak ajans retrè an Ayiti', description: 'Jwenn depo resepsyon nou yo aletranje ak ajans retrè nou yo an Ayiti : adrès, vil ak enfòmasyon pratik pou pakè ou yo.' },
@@ -143,7 +144,7 @@ export const ht: Messages = {
       { key: 'air', title: 'Voye pa avyon', text: 'Pou pakè ijan oswa ki gen anpil valè : mòd ki pi rapid la.' },
       { key: 'sea', title: 'Voye pa bato', text: 'Pou pakè lou oswa gwo : yon opsyon ki pi ekonomik, men ki pi dousman.' },
       { key: 'international', title: 'Transpò entènasyonal', text: 'Pakè ou yo mete ansanm nan lo, ak manifès ak swivi transpò.' },
-      { key: 'local', title: 'Livrezon lokal an Ayiti', text: 'Retrè nan ajans oswa livrezon, ak prèv remèt.' },
+      { key: 'local', title: 'Retrè nan ajans an Ayiti', text: 'Retrè nan ajans, ak prèv remèt.' },
     ],
     stepsTitle: 'Kijan sa mache',
     stepsLead: 'Kat etap, san sipriz.',
@@ -151,7 +152,7 @@ export const ht: Messages = {
       { title: 'Kreye kont ou', text: 'Enskripsyon an gratis. Ou resevwa kòd kliyan ou ak adrès resepsyon ou yo.' },
       { title: 'Achte epi deklare', text: 'Kòmande nan machann ou chwazi a ak adrès ou, apre sa deklare acha ou (pre-alèt).' },
       { title: 'Nou resevwa epi nou peze', text: 'Yo resevwa pakè ou, yo verifye li, yo peze li, epi ou wè detay frè yo.' },
-      { title: 'Pran li oswa resevwa li', text: 'Pakè ou vwayaje, li rive an Ayiti, epi ou pran li nan ajans oswa yo livre li ba ou.' },
+      { title: 'Pran li oswa resevwa li', text: 'Pakè ou vwayaje, li rive an Ayiti, epi ou pran li nan ajans lan.' },
     ],
     benefitsTitle: 'Poukisa chwazi nou',
     benefits: [
@@ -159,7 +160,7 @@ export const ht: Messages = {
       { title: 'Swivi etap pa etap', text: 'Chak chanjman estati gen dat epi yo anrejistre l. Pa gen anyen k ap parèt san yon evènman reyèl.' },
       { title: 'Frè ki klè', text: 'Pri a soti nan yon grif tarif piblik. Yon estimasyon toujou diferan de montan final la.' },
       { title: 'Avyon oswa bato', text: 'Ou chwazi ant rapidite ak ekonomi selon pakè ou.' },
-      { title: 'Retrè oswa livrezon', text: 'Pran pakè ou nan yon ajans, oswa fè yo livre l, ak yon kòd remèt si sa nesesè.' },
+      { title: 'Retrè nan ajans', text: 'Pran pakè ou nan yon ajans, ak yon kòd remèt si sa nesesè.' },
       { title: 'Peman ki gen tras', text: 'Chak peman bay yon resi epi li rete disponib nan espas ou.' },
     ],
     locationsTitle: 'Kote pou jwenn nou',
@@ -269,25 +270,25 @@ export const ht: Messages = {
       ],
     },
     local: {
-      lead: 'Pran pakè ou nan yon ajans oswa fè yo livre l, ak yon remèt ki an sekirite.',
+      lead: 'Pran pakè ou nan yon ajans, ak yon remèt ki an sekirite.',
       highlightsTitle: 'Sa pou sonje',
       highlights: [
         { title: 'Retrè nan ajans', text: 'Yo avèti w sou-le-chan pakè ou pare. Ou ka deziyen benefisyè ki otorize pran l.' },
-        { title: 'Livrezon', text: 'Pou livrezon, ou bay adrès la ak enstriksyon ki itil. Yo afekte yon livrè epi yo planifye tounen an.' },
+        { title: 'Remèt nan ajans', text: 'Ou pran pakè ou nan ajans lan avèk yon pyès idantite epi, si sa nesesè, kòd remèt ou. Pa gen livrezon lakay.' },
         { title: 'Remèt ki an sekirite', text: 'Yo ka mande yon kòd remèt, yon siyati oswa yon foto ; yo anrejistre non moun k ap pran pakè a.' },
       ],
       howTitle: 'Kijan sa pase',
       how: [
         'Pakè a rive nan ajans destinasyon an epi yo anrejistre l ak yon eskanè.',
-        'Ou resevwa yon notifikasyon : pare pou retrè oswa livrezon pwograme.',
+        'Ou resevwa yon notifikasyon : pare pou retrè.',
         'Lè yo remèt li, yo anrejistre idantite moun k ap pran l la ak prèv yo mande a.',
-        'Si livrezon an echwe, yo note rezon an epi yo ofri yon lòt tantativ.',
+        'Si yo refize remèt la (pyès idantite manke, balans ki pa peye), yo note rezon an.',
       ],
       knowTitle: 'Bon pou konnen',
       know: [
         'Yo ka mande yon pyès idantite lè yo remèt pakè a.',
         'Yon balans ki pa peye ka retade remèt la, sof si gen yon dewogasyon otorize.',
-        'Lis ajans yo ak zòn livrezon yo pibliye sou paj « Depo ak ajans ».',
+        'Lis ajans yo pibliye sou paj « Depo ak ajans ».',
       ],
     },
     ctaTitle: 'Ou anvi eseye?',
@@ -453,7 +454,7 @@ export const ht: Messages = {
       { title: 'Achte epi deklare acha ou', text: 'Kòmande nan machann nan ak adrès sa a. Apre sa antre vandè a, nimewo kòmann lan, nimewo swivi machann nan epi mete fakti a : se pre-alèt la. Nou pa konekte ak okenn machann ; se ou menm ki fè deklarasyon an.' },
       { title: 'Resepsyon, verifikasyon, peze', text: 'Lè pakè a rive nan depo a, yo konpare li ak pre-alèt ou oswa ak kòd kliyan ou, yo verifye l, yo peze l epi yo mezire l. Yo avèti w.' },
       { title: 'Peman ak ekspedisyon', text: 'Ou wè frè yo an detay epi ou peye. Apre sa yo prepare pakè a epi yo voye l pa avyon oswa pa bato.' },
-      { title: 'Rive, retrè oswa livrezon', text: 'Lè li rive, pakè a pase nan ladwann, apre sa li ale nan ajans lan. Ou pran l oswa yo livre l ba ou, ak prèv remèt.' },
+      { title: 'Rive ak retrè', text: 'Lè li rive, pakè a pase nan ladwann, apre sa li ale nan ajans lan. Ou pran l nan ajans lan, ak prèv remèt.' },
     ],
     ctaTitle: 'Kòmanse kounye a',
     cta: 'Kreye yon kont',
@@ -511,7 +512,7 @@ export const ht: Messages = {
     terms: {
       title: 'Kondisyon jeneral',
       sections: [
-        { title: '1. Objè', paragraphs: ['Kondisyon sa yo gouvène itilizasyon sèvis resepsyon, ekspedisyon ak livrezon pakè [non antrepriz la] (« antrepriz la ») ofri yo, ak itilizasyon sit sa a.'] },
+        { title: '1. Objè', paragraphs: ['Kondisyon sa yo gouvène itilizasyon sèvis resepsyon ak ekspedisyon pakè [non antrepriz la] (« antrepriz la ») ofri yo, ak itilizasyon sit sa a.'] },
         { title: '2. Kont', paragraphs: ['Kont lan pèsonèl. Ou responsab egzaktitid enfòmasyon ou yo ak konfidansyalite modpas ou. Ou dwe di nou san reta si gen yon itilizasyon san otorizasyon.', 'Yo ka sispann yon kont si gen fo deklarasyon, yon enpeye oswa si ou pa respekte kondisyon sa yo.'] },
         { title: '3. Adrès resepsyon ak pre-alèt', paragraphs: ['Adrès resepsyon pèsonalize a sèvi sèlman pou idantifye pakè ou yo. Se responsabilite ou pou deklare acha ou yo (pre-alèt) ak enfòmasyon egzak. Yon pakè yo pa ka idantifye destinatè li kenbe pou idantifikasyon.'] },
         { title: '4. Machandiz ki entèdi oswa ki reglemante', paragraphs: ['Li entèdi pou voye atik lalwa oswa antrepriz la entèdi. Lis la disponib nan men antrepriz la : [lyen oswa lis pou bay]. Antrepriz la ka kenbe, refize oswa siyale nenpòt pakè ki pa konfòm.'] },
@@ -520,7 +521,7 @@ export const ht: Messages = {
         { title: '7. Delè', paragraphs: ['Delè yo bay yo se endikasyon, yo pa garanti. Yo depann sitou de transpòtè yo, move tan ak fòmalite ladwann.'] },
         { title: '8. Depo', paragraphs: ['Yo kenbe pakè yo gratis pandan [dire pou defini]. Pi lwen pase sa, ka gen frè depo [montan pou defini]. Yon pakè pèsonn pa reklame apre [dire pou defini] ka [trete selon pwosedi yo pou defini].'] },
         { title: '9. Asirans ak responsabilite', paragraphs: ['Kondisyon asirans lan (kouvèti ki enkli, asirans konplemantè, plafon) se : [pou bay]. Responsabilite antrepriz la limite jan lalwa prevwa l epi li pa kouvri fòs majè ni domaj endirèk.'] },
-        { title: '10. Retrè ak livrezon', paragraphs: ['Yo remèt pakè a bay titilè kont lan oswa yon benefisyè otorize, apre yo fin verifye idantite li ak prèv remèt yo mande a. Antrepriz la ka refize remèt la si gen dout oswa yon balans ki pa peye.'] },
+        { title: '10. Retrè', paragraphs: ['Yo remèt pakè a bay titilè kont lan oswa yon benefisyè otorize, apre yo fin verifye idantite li ak prèv remèt yo mande a. Antrepriz la ka refize remèt la si gen dout oswa yon balans ki pa peye.'] },
         { title: '11. Reklamasyon', paragraphs: ['Chak reklamasyon dwe voye bay asistans lan nan [delè pou defini] apre remèt la oswa dat ki te prevwa a, ak nimewo swivi a ak prèv yo.'] },
         { title: '12. Done pèsonèl', paragraphs: ['Politik konfidansyalite a dekri kijan yo trete done ou yo.'] },
         { title: '13. Chanjman nan kondisyon yo', paragraphs: ['Antrepriz la ka chanje kondisyon sa yo. Vèsyon ki an vigè a se sa ki pibliye sou sit la nan dat sèvis la.'] },
@@ -532,7 +533,7 @@ export const ht: Messages = {
       sections: [
         { title: '1. Ki moun ki responsab done ou yo?', paragraphs: ['[Non antrepriz la], [adrès], se responsab tretman done pèsonèl ou yo. Kontak : gade paj « Kontak ak asistans ».'] },
         { title: '2. Done nou kolekte', paragraphs: ['Kont : non, adrès imèl, telefòn, lang, modpas (yo kenbe l sèlman sou fòm chifre ki pa ka defèt).', 'Sèvis : adrès, benefisyè otorize (non, telefòn, 4 dènye karaktè pyès idantite a), pakè, fakti, peman, echanj ak asistans lan.', 'Sekirite : adrès IP, aparèy ak dat koneksyon ak operasyon sansib yo.'] },
-        { title: '3. Poukisa nou itilize yo', paragraphs: ['Pou bay sèvis la (resepsyon, ekspedisyon, livrezon, fakti), enfòme w sou pwogrè pakè ou yo, sekirize kont ou, respekte obligasyon legal ak kontab nou yo, epi trete demann ou yo.'] },
+        { title: '3. Poukisa nou itilize yo', paragraphs: ['Pou bay sèvis la (resepsyon, ekspedisyon, remèt, fakti), enfòme w sou pwogrè pakè ou yo, sekirize kont ou, respekte obligasyon legal ak kontab nou yo, epi trete demann ou yo.'] },
         { title: '4. Ak ki moun nou pataje yo', paragraphs: ['Sèlman ak founisè ki nesesè pou sèvis la : ebèjman, voye imèl ak mesaj, peman, transpò ak ladwann. Nou pa vann done ou yo.'] },
         { title: '5. Cookies', paragraphs: ['Sit sa a pa itilize cookies piblisite ni mezi odyans. Yon sèl cookie teknik, nesesè epi an sekirite, kenbe sesyon ou konekte.'] },
         { title: '6. Dire konsèvasyon', paragraphs: ['Yo kenbe done yo pandan tan sèvis la mande a, apre sa selon dire lalwa mande yo : [dire pou defini : kont, fakti, jounal, foto pakè].'] },
@@ -1043,7 +1044,7 @@ export const ht: Messages = {
       'claim.updated': 'Reklamasyon mete ajou',
     },
     channels: { IN_APP: 'Pòtay', EMAIL: 'Imèl', WHATSAPP: 'WhatsApp' },
-    totals: { subtotal: 'Sou-total', discount: 'Rabè', tax: 'Taks', total: 'Total', credited: 'Nòt kredi', paid: 'Peye', pending: 'Ap tann validasyon', balance: 'Rès pou peye' },
+    totals: { subtotal: 'Sou-total', discount: 'Rabè', tax: 'Taks', total: 'Total', credited: 'Nòt kredi', paid: 'Peye', pending: 'Ap tann validasyon', balance: 'Rès pou peye', htgEquivalent: 'Rès an goud (endikatif, to {rate})' },
     common: { loadMore: 'Wè plis', open: 'Louvri', back: 'Retounen', packages: 'Kolis nan fakti a', payments: 'Peman', credits: 'Nòt kredi', lines: 'Detay', issuedOn: 'Emèt le', dueOn: 'Dat limit', noPayments: 'Pa gen peman.', downloadPdf: 'Fakti (PDF)', receipt: 'Resi (PDF)', amount: 'Montan', reference: 'Referans', reason: 'Rezon', all: 'Tout', draftNumber: 'Bouyon', downloadFailed: 'Telechajman an echwe.' },
     customer: {
       invoices: {
@@ -1200,7 +1201,7 @@ export const ht: Messages = {
         status: 'Estati',
         channel: 'Kanal',
         statuses: { QUEUED: 'Ap tann', SENT: 'Voye', FAILED: 'Echwe', SKIPPED: 'Sote' },
-        skipReasons: { PREFERENCE_OFF: 'Kliyan an dezaktive l', CHANNEL_NOT_CONFIGURED: 'Kanal la pa konfigire', TEMPLATE_DISABLED: 'Modèl la dezaktive' } as Record<string, string>,
+        skipReasons: { NO_EMAIL: 'Pa gen adrès imèl', PREFERENCE_OFF: 'Kliyan an dezaktive l', CHANNEL_NOT_CONFIGURED: 'Kanal la pa konfigire', TEMPLATE_DISABLED: 'Modèl la dezaktive' } as Record<string, string>,
         attempts: 'tantativ',
         nextAttempt: 'Pwochen tantativ',
         retry: 'Eseye ankò',
@@ -1266,7 +1267,7 @@ export const ht: Messages = {
     customer: {
       code: {
         title: 'Kòd livrezon',
-        lead: 'Pou resevwa kolis sa a, bay moun k ap livre l la kòd 6 chif sa a epi montre yon pyès idantite.',
+        lead: 'Pou resevwa kolis sa a, bay moun k ap remèt li a kòd 6 chif sa a epi montre yon pyès idantite.',
         generate: 'Jwenn kòd mwen',
         regenerate: 'Fè yon nouvo kòd',
         shown: 'Kòd ou (yo montre l yon sèl fwa)',

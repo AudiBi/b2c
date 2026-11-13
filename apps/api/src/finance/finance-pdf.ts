@@ -1,8 +1,11 @@
 import PDFDocument from 'pdfkit';
 import { drawLogo } from '../branding/pdf-logo';
+import { htgEquivalent } from './fx';
 
 interface InvoicePdf {
   company: string;
+  /** Taux gourdes/dollar pour un équivalent indicatif (absent : aucune ligne). */
+  htgPerUsd?: number | null;
   invoice: {
     number: string | null;
     status: string;
@@ -24,6 +27,7 @@ interface InvoicePdf {
 
 export interface ReceiptPdf {
   company: string;
+  htgPerUsd?: number | null;
   receiptNumber: string;
   issuedAt: Date;
   invoiceNumber: string;
@@ -50,7 +54,8 @@ function render(build: (doc: PDFKit.PDFDocument) => void, title: string): Promis
 const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : '—');
 
 /** Facture imprimable. Montants tels qu'enregistrés (décimal exact) ; aucune mention légale inventée. */
-export function invoicePdf({ company, invoice: inv }: InvoicePdf): Promise<Buffer> {
+export function invoicePdf(data: InvoicePdf): Promise<Buffer> {
+  const { company, invoice: inv } = data;
   return render((doc) => {
     const logo = drawLogo(doc);
     doc.font('Helvetica-Bold').fontSize(18).text(company, { width: doc.page.width - doc.page.margins.left - doc.page.margins.right - logo - 12 });
@@ -81,6 +86,8 @@ export function invoicePdf({ company, invoice: inv }: InvoicePdf): Promise<Buffe
     for (const credit of inv.credits) total(`Avoir ${credit.number}`, `-${credit.amount}`);
     total('Encaissé', inv.paidTotal);
     total('Reste à payer', inv.balance, true);
+    const htg = htgEquivalent(inv.balance, inv.currency, data.htgPerUsd ?? null);
+    if (htg) doc.font('Helvetica-Oblique').fontSize(9).text(`Équivalent indicatif : ${htg} HTG (taux ${data.htgPerUsd})`, left, doc.y, { width: right - left, align: 'right' });
   }, `Facture ${inv.number ?? ''}`);
 }
 
@@ -96,5 +103,7 @@ export function receiptPdf(r: ReceiptPdf): Promise<Buffer> {
     doc.text(`Mode de paiement : ${r.method}${r.reference ? ` (${r.reference})` : ''}`);
     doc.moveDown().font('Helvetica-Bold').fontSize(14).text(`Montant reçu : ${r.amount} ${r.currency}`);
     if (Number(r.refunded) > 0) doc.font('Helvetica').fontSize(10).text(`Dont remboursé : ${r.refunded} ${r.currency}`);
+    const htg = htgEquivalent(r.amount, r.currency, r.htgPerUsd ?? null);
+    if (htg) doc.font('Helvetica-Oblique').fontSize(9).text(`Équivalent indicatif : ${htg} HTG (taux ${r.htgPerUsd})`);
   }, `Reçu ${r.receiptNumber}`);
 }

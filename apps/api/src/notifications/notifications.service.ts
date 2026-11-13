@@ -4,6 +4,7 @@ import {
   EVENT_CODES,
   EVENT_VARIABLES,
   MANDATORY_EVENTS,
+  NO_ACCESS_EMAIL_DOMAIN,
   MAX_ATTEMPTS,
   RETRY_DELAYS_MINUTES,
   renderTemplate,
@@ -214,6 +215,12 @@ export class NotificationsService {
     const rows: Prisma.NotificationCreateManyInput[] = [];
     for (const channel of FANOUT_ORDER) {
       const base = { companyId, outboxEventId: event.id, customerId: customer.id, userId: customer.userId, eventCode: code, channel, locale, dedupeKey: `${event.id}:${channel}` };
+      // Client créé au comptoir sans adresse e-mail : jamais d'envoi vers l'adresse factice, même pour un événement obligatoire
+      if (channel === 'EMAIL' && customer.user.email.endsWith(`@${NO_ACCESS_EMAIL_DOMAIN}`)) {
+        rows.push({ ...base, body: '', status: 'SKIPPED', skipReason: 'NO_EMAIL' });
+        skipped += 1;
+        continue;
+      }
       if (!enabled[channel] && !mandatory) {
         if (channel === 'IN_APP' || channel === 'EMAIL') {
           rows.push({ ...base, body: '', status: 'SKIPPED', skipReason: 'PREFERENCE_OFF' });

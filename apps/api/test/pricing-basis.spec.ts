@@ -54,6 +54,26 @@ describe('Tarification au volume et à l’unité (grille maritime)', () => {
     expect(Number(pkg.pricing.freight)).toBe(440);
   });
 
+  it('facturation de 2 barils avec un rabais de 20 $ par baril : 440 − 40 = 400 $, ligne de rabais séparée', async () => {
+    const w = await world();
+    const pkg = await weigh(w, { weight: { value: 50, unit: 'LB' }, dimensions: { length: 23, width: 23, height: 35, unit: 'IN' }, categoryCode: 'DRUM', quantity: 2 });
+    const invoice = await post(w.token, '/v1/admin/invoices', { customerId: w.customerId, packageIds: [pkg.id], unitDiscounts: [{ packageId: pkg.id, perUnit: 20 }] });
+    expect(invoice.status).toBe(201);
+    expect(Number(invoice.body.total)).toBe(400);
+    expect((invoice.body.lines as any[]).filter((l) => l.kind === 'DISCOUNT')).toHaveLength(1);
+
+    const other = await weigh(w, { weight: { value: 50, unit: 'LB' }, dimensions: { length: 23, width: 23, height: 35, unit: 'IN' }, categoryCode: 'DRUM', quantity: 2 });
+    const tooHigh = await post(w.token, '/v1/admin/invoices', { customerId: w.customerId, packageIds: [other.id], unitDiscounts: [{ packageId: other.id, perUnit: 100 }] });
+    expect(tooHigh.status).toBe(422);
+  });
+
+  it("le rabais par unité est refusé sur un colis au volume", async () => {
+    const w = await world();
+    const pkg = await weigh(w, { weight: { value: 10, unit: 'LB' }, dimensions: { length: 24, width: 18, height: 16, unit: 'IN' } });
+    const res = await post(w.token, '/v1/admin/invoices', { customerId: w.customerId, packageIds: [pkg.id], unitDiscounts: [{ packageId: pkg.id, perUnit: 1 }] });
+    expect(res.body.error.code).toBe('UNIT_DISCOUNT_NOT_APPLICABLE');
+  });
+
   it('le calculateur de devis accepte la quantité', async () => {
     const w = await world();
     const res = await post(w.token, '/v1/admin/quotes', { transportMode: 'SEA', originCountry: 'US', destinationCountry: 'HT', weight: { value: 1, unit: 'LB' }, dimensions: { length: 18, width: 18, height: 18, unit: 'IN' }, quantity: 10 });

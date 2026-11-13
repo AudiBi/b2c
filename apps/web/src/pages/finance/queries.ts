@@ -140,6 +140,8 @@ export const useMyInvoices = (enabled = true) =>
   });
 
 export const useMyInvoice = (id: string) => useQuery({ queryKey: [...financeKeys.myInvoices, 'one', id] as const, queryFn: () => api<InvoiceDetail>(`/v1/me/invoices/${id}`) });
+/** Taux gourdes/dollar (affichage indicatif d'un équivalent) ; absent si l'entreprise n'en a pas fixé. */
+export const useFxRate = () => useQuery({ queryKey: ['fx-rate'] as const, queryFn: () => api<{ htgPerUsd: number | null }>('/v1/me/fx-rate'), staleTime: 300_000, retry: false });
 export const usePaymentOptions = () => useQuery({ queryKey: financeKeys.paymentOptions, queryFn: () => api<PaymentOptions>('/v1/me/payment-options') });
 
 export const useMyNotifications = (unreadOnly = false) =>

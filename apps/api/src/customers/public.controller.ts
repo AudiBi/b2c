@@ -7,12 +7,12 @@ import { AuditService } from '../audit/audit.service';
 import { AppException } from '../common/errors';
 import { Validate, VBody, VParams } from '../common/validation';
 import { DbService } from '../database/db.service';
+import { FX_KEY, readFxRate } from '../finance/fx';
 import { CompanyDirectory } from '../platform/company-directory.service';
 import type { AuthContext } from '../security/auth.types';
-import { CurrentAuth, Public, RateLimit, RequirePermission } from '../security/decorators';
+import { AnyAuthenticated, CurrentAuth, Public, RateLimit, RequirePermission } from '../security/decorators';
 
 const CONTACT_KEY = 'public.contact';
-const FX_KEY = 'fx.htg_per_usd';
 interface FxEntry {
   htgPerUsd: number;
   note: string | null;
@@ -63,6 +63,18 @@ export class PublicController {
       defaultCurrency: row.details.defaultCurrency,
       contact: contact.success ? contact.data : NO_CONTACT,
     };
+  }
+
+  @Get(':slug/fx-rate')
+  @Public()
+  @RateLimit({ name: 'public-fx-rate', limit: 120, windowSeconds: 60 })
+  @Validate({ params: publicCompanySlugParamSchema })
+  @Header('Cache-Control', 'public, max-age=60')
+  @ApiOperation({ summary: 'Taux gourdes/dollar pour afficher un équivalent indicatif (null si non réglé)' })
+  async fxRate(@VParams() params: Params) {
+    const company = await this.resolve(params.slug);
+    const htgPerUsd = await this.db.run({ companyId: company.id }, (tx) => readFxRate(tx, company.id));
+    return { htgPerUsd };
   }
 
   @Get(':slug/warehouses')
@@ -169,5 +181,24 @@ export class SettingsController {
       });
       return value;
     });
+  }
+}
+
+/** Taux gourdes/dollar pour l'affichage d'un équivalent (personnel et clients connectés) : aucune conversion comptable. */
+@ApiTags('Compte : taux de change')
+@ApiBearerAuth()
+@Controller('me/fx-rate')
+export class FxRateController {
+  constructor(private readonly db: DbService) {}
+
+  @Get()
+  @AnyAuthenticated()
+  @ApiOperation({ summary: 'Taux gourdes/dollar en vigueur, ou null (équivalent affiché à titre indicatif seulement)' })
+  async get(@CurrentAuth() auth: AuthContext) {
+    const setting = await this.db.run({ companyId: auth.companyId }, (tx) =>
+      tx.companySetting.findUnique({ where: { companyId_key: { companyId: auth.companyId, key: FX_KEY } } }),
+    );
+    const current = (setting?.value as FxSetting | undefined)?.current ?? null;
+    return { htgPerUsd: current?.htgPerUsd ?? null, setAt: current?.setAt ?? null };
   }
 }

@@ -145,6 +145,11 @@ export const listExpectedQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
+export const legacyTrackingParamSchema = z.strictObject({
+  slug: z.string().trim().min(2).max(40),
+  code: z.string().trim().min(6).max(40).regex(/^[A-Za-z0-9-]+$/, 'legacy_code_format'),
+});
+
 export const trackingParamSchema = z.strictObject({ trackingNumber: z.string().trim().min(8).max(40) });
 
 // ---------------------------------------------------------------------------------------------

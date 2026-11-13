@@ -1,3 +1,4 @@
+import { config } from '../../config';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -42,7 +43,7 @@ export function RoleScopePicker({
   const roles = useRoles();
   const customRoles = (roles.data ?? []).filter((r) => r.custom);
   const options = [
-    ...ROLE_DEFINITIONS.filter((r) => r.audience === audience).map((r) => ({ code: r.code as string, name: roleName.get(r.code) ?? r.name })),
+    ...ROLE_DEFINITIONS.filter((r) => r.audience === audience && (config.features.delivery || r.code !== 'DRIVER')).map((r) => ({ code: r.code as string, name: roleName.get(r.code) ?? r.name })),
     ...(audience === 'STAFF' ? customRoles.map((r) => ({ code: r.code, name: `${r.name} (${m.admin.roles.custom.toLowerCase()})` })) : []),
   ];
   const customScopes = new Map(customRoles.map((r) => [r.code, (r.allowedScopes ?? ['COMPANY']) as readonly ScopeType[]]));

@@ -6,6 +6,8 @@ import {
   createPrealertSchema,
   formatTrackingNumber,
   groupPackagesSchema,
+  legacyTrackingParamSchema,
+  PLATFORM_COMPANY_ID,
   identifyPackageSchema,
   idParamSchema,
   listExpectedQuerySchema,
@@ -20,9 +22,11 @@ import {
 import type { z } from 'zod';
 import { AppException } from '../common/errors';
 import { Validate, VBody, VParams, VQuery } from '../common/validation';
-import { DbService } from '../database/db.service';
+import { DbService, type Tx } from '../database/db.service';
+import { CompanyDirectory } from '../platform/company-directory.service';
 import type { AuthContext } from '../security/auth.types';
 import { AnyAuthenticated, CurrentAuth, Public, RateLimit, RequirePermission } from '../security/decorators';
+import type { Agency, Package } from '@prisma/client';
 import { PackagesService, pickupPoint, publicEventDto } from './packages.service';
 import { PortalPackagesService, PrealertsService } from './prealerts.service';
 
@@ -230,7 +234,50 @@ export class PortalPackagesController {
 @ApiTags('Public')
 @Controller('public/tracking')
 export class PublicTrackingController {
-  constructor(private readonly db: DbService) {}
+  constructor(
+    private readonly db: DbService,
+    private readonly companies: CompanyDirectory,
+  ) {}
+
+  /** Statut et événements PUBLICS d'un colis (aucune donnée personnelle). */
+  private async view(tx: Tx, pkg: Package & { agency: Agency | null }) {
+    const events = await tx.packageEvent.findMany({
+      where: { packageId: pkg.id, visibility: 'PUBLIC', toStatus: { not: null } },
+      orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }],
+    });
+    const last = events[events.length - 1];
+    return {
+      trackingNumber: formatTrackingNumber(pkg.trackingNumber),
+      status: pkg.status,
+      lastUpdate: last?.occurredAt ?? pkg.updatedAt,
+      transportMode: pkg.transportMode,
+      origin: { country: pkg.originCountry, city: pkg.originCity },
+      destination: { country: pkg.destinationCountry, city: pkg.destinationCity },
+      estimatedDelivery: null,
+      pickup: pickupPoint(pkg.agency, pkg.status, true),
+      events: events.map((event) => publicEventDto(event, 'PUBLIC')),
+    };
+  }
+
+  @Get('legacy/:slug/:code')
+  @Public()
+  @RateLimit({ name: 'public-tracking-legacy', limit: 10, windowSeconds: 60 })
+  @Validate({ params: legacyTrackingParamSchema })
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: "Suivi public par l'ancien code de l'outil de gestion (colis importés)",
+    description: "L'ancien code est propre à l'entreprise (désignée par son identifiant public) et plus facile à deviner : limite de débit plus stricte, même contenu que le suivi public, même réponse 404 pour tout échec.",
+  })
+  async trackLegacy(@VParams() params: z.infer<typeof legacyTrackingParamSchema>) {
+    const notFound = () => AppException.notFound('TRACKING_NOT_FOUND', 'Aucun colis ne correspond à ce numéro');
+    const company = await this.companies.findBySlug(params.slug);
+    if (!company || company.status !== 'ACTIVE' || company.id === PLATFORM_COMPANY_ID) throw notFound();
+    return this.db.run({ companyId: company.id }, async (tx) => {
+      const pkg = await tx.package.findFirst({ where: { legacyTrackingNumber: params.code.toUpperCase() }, include: { warehouse: true, agency: true } });
+      if (!pkg) throw notFound();
+      return this.view(tx, pkg);
+    });
+  }
 
   @Get(':trackingNumber')
   @Public()
@@ -257,22 +304,7 @@ export class PublicTrackingController {
     return this.db.run({ companyId }, async (tx) => {
       const pkg = await tx.package.findUnique({ where: { trackingNumber: canonical }, include: { warehouse: true, agency: true } });
       if (!pkg) throw notFound();
-      const events = await tx.packageEvent.findMany({
-        where: { packageId: pkg.id, visibility: 'PUBLIC', toStatus: { not: null } },
-        orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }],
-      });
-      const last = events[events.length - 1];
-      return {
-        trackingNumber: formatTrackingNumber(pkg.trackingNumber),
-        status: pkg.status,
-        lastUpdate: last?.occurredAt ?? pkg.updatedAt,
-        transportMode: pkg.transportMode,
-        origin: { country: pkg.originCountry, city: pkg.originCity },
-        destination: { country: pkg.destinationCountry, city: pkg.destinationCity },
-        estimatedDelivery: null,
-        pickup: pickupPoint(pkg.agency, pkg.status, true),
-        events: events.map((event) => publicEventDto(event, 'PUBLIC')),
-      };
+      return this.view(tx, pkg);
     });
   }
 }

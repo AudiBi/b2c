@@ -1134,7 +1134,7 @@
                   },
                   "permissions": {
                     "minItems": 1,
-                    "maxItems": 58,
+                    "maxItems": 59,
                     "type": "array",
                     "items": {
                       "type": "string"
@@ -1192,7 +1192,7 @@
                   },
                   "permissions": {
                     "minItems": 1,
-                    "maxItems": 58,
+                    "maxItems": 59,
                     "type": "array",
                     "items": {
                       "type": "string"
@@ -2030,6 +2030,83 @@
         "x-permissions": [
           "customer:read"
         ]
+      },
+      "post": {
+        "operationId": "AdminCustomersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "customerType": {
+                    "default": "INDIVIDUAL",
+                    "type": "string",
+                    "enum": [
+                      "INDIVIDUAL",
+                      "BUSINESS"
+                    ]
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "businessName": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+[1-9]\\d{7,14}$"
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "locale": {
+                    "default": "fr",
+                    "type": "string",
+                    "enum": [
+                      "fr",
+                      "ht",
+                      "en"
+                    ]
+                  }
+                },
+                "required": [
+                  "firstName",
+                  "lastName"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crée un client ; sans e-mail, il n'a pas d'accès au site",
+        "tags": [
+          "Administration : clients"
+        ],
+        "x-permissions": [
+          "customer:create"
+        ]
       }
     },
     "/v1/admin/customers/{id}": {
@@ -2052,6 +2129,110 @@
         ],
         "x-permissions": [
           "customer:read"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminCustomersController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "businessName": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+[1-9]\\d{7,14}$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifie le nom ou le téléphone d'un client",
+        "tags": [
+          "Administration : clients"
+        ],
+        "x-permissions": [
+          "customer:update"
+        ]
+      }
+    },
+    "/v1/admin/customers/{id}/invite": {
+      "post": {
+        "operationId": "AdminCustomersController_invite",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "locale": {
+                    "default": "fr",
+                    "type": "string",
+                    "enum": [
+                      "fr",
+                      "ht",
+                      "en"
+                    ]
+                  }
+                },
+                "required": [
+                  "email"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Envoie l'invitation d'activation du compte (ajoute l'e-mail si le client n'en avait pas)",
+        "tags": [
+          "Administration : clients"
+        ],
+        "x-permissions": [
+          "customer:update"
         ]
       }
     },
@@ -2264,6 +2445,21 @@
         ]
       }
     },
+    "/v1/public/companies/{slug}/fx-rate": {
+      "get": {
+        "operationId": "PublicController_fxRate",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Taux gourdes/dollar pour afficher un équivalent indicatif (null si non réglé)",
+        "tags": [
+          "Public"
+        ]
+      }
+    },
     "/v1/public/companies/{slug}/warehouses": {
       "get": {
         "description": "Le modèle d'adresse personnalisé des clients n'est jamais exposé.",
@@ -2375,6 +2571,96 @@
         ],
         "x-permissions": [
           "settings:update"
+        ]
+      }
+    },
+    "/v1/admin/settings/fx-rate": {
+      "get": {
+        "operationId": "SettingsController_fx",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Taux gourdes/dollar (affichage seulement) et son historique",
+        "tags": [
+          "Administration : paramètres"
+        ],
+        "x-permissions": [
+          "settings:read"
+        ]
+      },
+      "put": {
+        "operationId": "SettingsController_setFx",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "htgPerUsd": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 10000
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "htgPerUsd"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Fixe le taux gourdes/dollar ; l’ancien taux reste dans l’historique (50 derniers)",
+        "tags": [
+          "Administration : paramètres"
+        ],
+        "x-permissions": [
+          "settings:update"
+        ]
+      }
+    },
+    "/v1/me/fx-rate": {
+      "get": {
+        "operationId": "FxRateController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Taux gourdes/dollar en vigueur, ou null (équivalent affiché à titre indicatif seulement)",
+        "tags": [
+          "Compte : taux de change"
         ]
       }
     },
@@ -2553,6 +2839,21 @@
                           "type": "number",
                           "minimum": 0,
                           "maximum": 10000000
+                        },
+                        "basis": {
+                          "default": "WEIGHT",
+                          "type": "string",
+                          "enum": [
+                            "WEIGHT",
+                            "VOLUME",
+                            "UNIT"
+                          ]
+                        },
+                        "volumetricDivisor": {
+                          "type": "number",
+                          "minimum": 0,
+                          "exclusiveMinimum": true,
+                          "maximum": 1000000
                         }
                       },
                       "required": [
@@ -2821,6 +3122,21 @@
                           "type": "number",
                           "minimum": 0,
                           "maximum": 10000000
+                        },
+                        "basis": {
+                          "default": "WEIGHT",
+                          "type": "string",
+                          "enum": [
+                            "WEIGHT",
+                            "VOLUME",
+                            "UNIT"
+                          ]
+                        },
+                        "volumetricDivisor": {
+                          "type": "number",
+                          "minimum": 0,
+                          "exclusiveMinimum": true,
+                          "maximum": 1000000
                         }
                       },
                       "required": [
@@ -3324,6 +3640,12 @@
                       "type": "string",
                       "maxLength": 30
                     }
+                  },
+                  "quantity": {
+                    "default": 1,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
                   }
                 },
                 "required": [
@@ -3460,6 +3782,12 @@
                       "type": "string",
                       "maxLength": 30
                     }
+                  },
+                  "quantity": {
+                    "default": 1,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
                   }
                 },
                 "required": [
@@ -3510,6 +3838,310 @@
         ],
         "x-permissions": [
           "quote:create"
+        ]
+      }
+    },
+    "/v1/admin/customs-items": {
+      "get": {
+        "operationId": "CustomsItemsController_list",
+        "parameters": [
+          {
+            "name": "all",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Table des articles CONATEL (?all=true pour inclure les articles retirés)",
+        "tags": [
+          "Administration : frais CONATEL"
+        ],
+        "x-permissions": [
+          "rate:read"
+        ]
+      },
+      "post": {
+        "operationId": "CustomsItemsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "size": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "FIXED",
+                      "PERCENT_OF_VALUE",
+                      "PER_WATT",
+                      "TO_CONFIRM"
+                    ]
+                  },
+                  "normalPrice": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "vipPrice": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 1000
+                  },
+                  "requiresAuthorization": {
+                    "default": false,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ajoute un article à la table",
+        "tags": [
+          "Administration : frais CONATEL"
+        ],
+        "x-permissions": [
+          "rate:manage"
+        ]
+      }
+    },
+    "/v1/admin/customs-items/defaults": {
+      "post": {
+        "operationId": "CustomsItemsController_defaults",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Charge la table de départ (les articles existants ne sont pas modifiés)",
+        "tags": [
+          "Administration : frais CONATEL"
+        ],
+        "x-permissions": [
+          "rate:manage"
+        ]
+      }
+    },
+    "/v1/admin/customs-items/{id}": {
+      "patch": {
+        "operationId": "CustomsItemsController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "normalPrice": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "vipPrice": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 1000
+                  },
+                  "requiresAuthorization": {
+                    "type": "boolean"
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifie les prix d'un article ou le retire de la table",
+        "tags": [
+          "Administration : frais CONATEL"
+        ],
+        "x-permissions": [
+          "rate:manage"
+        ]
+      }
+    },
+    "/v1/admin/packages/{id}/customs-lines": {
+      "get": {
+        "operationId": "PackageCustomsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Frais CONATEL d'un colis",
+        "tags": [
+          "Administration : frais CONATEL"
+        ],
+        "x-permissions": [
+          "package:read"
+        ]
+      },
+      "post": {
+        "operationId": "PackageCustomsController_add",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "itemId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "quantity": {
+                    "default": 1,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000
+                  },
+                  "vip": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "declaredValue": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 10000000
+                  },
+                  "watts": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 100000000
+                  }
+                },
+                "required": [
+                  "itemId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ajoute un article au colis ; les frais sont calculés et figés (reversés, hors marge)",
+        "tags": [
+          "Administration : frais CONATEL"
+        ],
+        "x-permissions": [
+          "package:update"
+        ]
+      }
+    },
+    "/v1/admin/packages/{id}/customs-lines/{lineId}": {
+      "delete": {
+        "operationId": "PackageCustomsController_remove",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retire une ligne tant que le colis n'est pas facturé",
+        "tags": [
+          "Administration : frais CONATEL"
+        ],
+        "x-permissions": [
+          "package:update"
         ]
       }
     },
@@ -3757,6 +4389,96 @@
         ]
       }
     },
+    "/v1/admin/packages/counter": {
+      "post": {
+        "description": "Le colis naît « reçu en entrepôt » ; la pesée et la facturation suivent le parcours habituel.",
+        "operationId": "AdminPackagesController_createAtCounter",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "warehouseId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "transportMode": {
+                    "type": "string",
+                    "enum": [
+                      "AIR",
+                      "SEA"
+                    ]
+                  },
+                  "recipientName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "recipientPhone": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "recipientCity": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "destinationAgencyId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "contentDescription": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "legacyTrackingNumber": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "warehouseId",
+                  "customerId",
+                  "transportMode",
+                  "recipientName"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crée un colis au comptoir pour un client (avec ou sans compte) et un destinataire",
+        "tags": [
+          "Colis (personnel)"
+        ],
+        "x-permissions": [
+          "package:receive"
+        ]
+      }
+    },
     "/v1/admin/packages/{id}": {
       "get": {
         "operationId": "AdminPackagesController_get",
@@ -3877,6 +4599,12 @@
                   "insured": {
                     "default": false,
                     "type": "boolean"
+                  },
+                  "quantity": {
+                    "default": 1,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
                   },
                   "transportMode": {
                     "type": "string",
@@ -4537,6 +5265,22 @@
         ],
         "x-permissions": [
           "package:read_own"
+        ]
+      }
+    },
+    "/v1/public/tracking/legacy/{slug}/{code}": {
+      "get": {
+        "description": "L'ancien code est propre à l'entreprise (désignée par son identifiant public) et plus facile à deviner : limite de débit plus stricte, même contenu que le suivi public, même réponse 404 pour tout échec.",
+        "operationId": "PublicTrackingController_trackLegacy",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Suivi public par l'ancien code de l'outil de gestion (colis importés)",
+        "tags": [
+          "Public"
         ]
       }
     },
@@ -6574,6 +7318,64 @@
                       "additionalProperties": false
                     }
                   },
+                  "unitDiscounts": {
+                    "default": [],
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "packageId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "perUnit": {
+                          "type": "number",
+                          "minimum": 0,
+                          "exclusiveMinimum": true,
+                          "maximum": 10000000
+                        }
+                      },
+                      "required": [
+                        "packageId",
+                        "perUnit"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "priceOverrides": {
+                    "default": [],
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "packageId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "amount": {
+                          "type": "number",
+                          "minimum": 0,
+                          "exclusiveMinimum": true,
+                          "maximum": 10000000
+                        },
+                        "reason": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 300
+                        }
+                      },
+                      "required": [
+                        "packageId",
+                        "amount",
+                        "reason"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
                   "discountPercent": {
                     "type": "number",
                     "minimum": 0,
@@ -6924,7 +7726,8 @@
                     "type": "string",
                     "enum": [
                       "BANK_TRANSFER",
-                      "ZELLE"
+                      "ZELLE",
+                      "MOBILE_MONEY"
                     ]
                   },
                   "amount": {
@@ -7112,7 +7915,8 @@
               "enum": [
                 "CASH",
                 "BANK_TRANSFER",
-                "ZELLE"
+                "ZELLE",
+                "MOBILE_MONEY"
               ]
             }
           },
@@ -7983,7 +8787,8 @@
                     "type": "string",
                     "enum": [
                       "CUSTOMER",
-                      "BENEFICIARY"
+                      "BENEFICIARY",
+                      "RECIPIENT"
                     ]
                   },
                   "beneficiaryId": {
@@ -8306,7 +9111,8 @@
                     "type": "string",
                     "enum": [
                       "CUSTOMER",
-                      "BENEFICIARY"
+                      "BENEFICIARY",
+                      "RECIPIENT"
                     ]
                   },
                   "beneficiaryId": {

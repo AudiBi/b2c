@@ -8,6 +8,7 @@ export const fr = {
   lang: { fr: 'Français', ht: 'Kreyòl ayisyen', en: 'English' },
 
   common: {
+    indicative: 'indicatif',
     loading: 'Chargement…',
     retry: 'Réessayer',
     save: 'Enregistrer',
@@ -73,7 +74,7 @@ export const fr = {
     air: 'Expédition aérienne',
     sea: 'Expédition maritime',
     international: 'Transport international',
-    local: 'Livraison locale en Haïti',
+    local: 'Retrait en agence en Haïti',
     calculator: 'Calculateur de frais',
     tracking: 'Suivi de colis',
     locations: 'Entrepôts et agences',
@@ -87,7 +88,7 @@ export const fr = {
   },
 
   footer: {
-    tagline: 'Achetez à l’étranger, recevez en Haïti : réception, expédition et livraison suivies de bout en bout.',
+    tagline: 'Achetez à l’étranger, recevez en Haïti : réception, expédition et retrait en agence suivis de bout en bout.',
     explore: 'Explorer',
     help: 'Aide',
     legal: 'Informations légales',
@@ -99,13 +100,13 @@ export const fr = {
   related: { title: 'Pour aller plus loin' },
 
   seo: {
-    home: { title: 'Expédition de colis vers Haïti : avion, bateau et suivi', description: 'Achetez à l’étranger, recevez en Haïti : adresse de réception, expédition aérienne ou maritime, suivi de chaque étape et retrait en agence ou livraison.' },
+    home: { title: 'Expédition de colis vers Haïti : avion, bateau et suivi', description: 'Achetez à l’étranger, recevez en Haïti : adresse de réception, expédition aérienne ou maritime, suivi de chaque étape et retrait en agence.' },
     about: { title: 'Qui sommes-nous ? Votre service d’expédition vers Haïti', description: 'Notre mission : rendre l’envoi de colis vers Haïti clair, suivi à chaque étape et accessible, de la réception en entrepôt jusqu’à la remise.' },
-    services: { title: 'Nos services d’expédition et de livraison vers Haïti', description: 'Expédition aérienne ou maritime, transport international en lots, retrait en agence et livraison locale : tous nos services pour envoyer un colis en Haïti.' },
+    services: { title: 'Nos services d’expédition vers Haïti', description: 'Expédition aérienne ou maritime, transport international en lots, retrait en agence : tous nos services pour envoyer un colis en Haïti.' },
     air: { title: 'Expédition aérienne vers Haïti : colis rapides', description: 'Envoyez vos colis urgents, légers ou de valeur par avion vers Haïti : étapes, calcul au poids facturable, frais détaillés et précautions à connaître.' },
     sea: { title: 'Expédition maritime vers Haïti : colis volumineux', description: 'Une option économique pour les colis lourds ou volumineux vers Haïti : fonctionnement du transport par bateau, délais indicatifs et points d’attention.' },
     international: { title: 'Transport international de colis vers Haïti', description: 'Vos colis regroupés en lots avec manifeste et suivi des événements de transport, de l’entrepôt à l’étranger jusqu’à l’agence de destination en Haïti.' },
-    local: { title: 'Retrait en agence et livraison de colis en Haïti', description: 'Retirez votre colis en agence ou faites-vous livrer en Haïti : bénéficiaires autorisés, tournées de livraison et remise sécurisée avec code.' },
+    local: { title: 'Retrait de colis en agence en Haïti', description: 'Retirez votre colis en agence en Haïti : bénéficiaires autorisés, pièce d’identité et remise sécurisée avec code.' },
     calculator: { title: 'Calculateur de frais d’expédition vers Haïti', description: 'Estimez les frais d’envoi de votre colis : poids réel, poids volumétrique, poids facturable et options. Une estimation claire, distincte du montant final.' },
     tracking: { title: 'Suivi de colis vers Haïti par numéro de suivi', description: 'Entrez votre numéro de suivi pour connaître le statut de votre colis, les dates et l’historique des étapes, de l’entrepôt jusqu’à la remise.' },
     locations: { title: 'Entrepôts à l’étranger et agences de retrait en Haïti', description: 'Trouvez nos entrepôts de réception à l’étranger et nos agences de retrait en Haïti : adresses, villes et informations pratiques pour vos colis.' },
@@ -126,7 +127,7 @@ export const fr = {
 
   home: {
     hero: {
-      title: 'Vos achats à l’étranger, livrés en Haïti',
+      title: 'Vos achats à l’étranger, reçus en Haïti',
       subtitle: 'Recevez vos colis dans nos entrepôts, choisissez l’avion ou le bateau, suivez chaque étape et retirez votre colis près de chez vous.',
       primary: 'Créer un compte gratuit',
       secondary: 'Estimer mes frais',
@@ -143,7 +144,7 @@ export const fr = {
       { key: 'air', title: 'Expédition aérienne', text: 'Pour les colis urgents ou de valeur : le mode le plus rapide.' },
       { key: 'sea', title: 'Expédition maritime', text: 'Pour les colis lourds ou volumineux : une option plus économique, plus lente.' },
       { key: 'international', title: 'Transport international', text: 'Vos colis regroupés en lots, avec manifeste et suivi du transport.' },
-      { key: 'local', title: 'Livraison locale en Haïti', text: 'Retrait en agence ou livraison, avec preuve de remise.' },
+      { key: 'local', title: 'Retrait en agence en Haïti', text: 'Retrait en agence, avec preuve de remise.' },
     ],
     stepsTitle: 'Comment ça marche',
     stepsLead: 'Quatre étapes, sans surprise.',
@@ -159,7 +160,7 @@ export const fr = {
       { title: 'Un suivi étape par étape', text: 'Chaque changement de statut est daté et enregistré. Rien n’est affiché sans événement réel.' },
       { title: 'Des frais compréhensibles', text: 'Le prix vient d’une grille tarifaire publiée. L’estimation est toujours distinguée du montant final.' },
       { title: 'Avion ou bateau', text: 'Vous choisissez entre rapidité et économie selon votre colis.' },
-      { title: 'Retrait ou livraison', text: 'Retirez votre colis en agence, ou faites-vous livrer, avec un code de remise si nécessaire.' },
+      { title: 'Retrait en agence', text: 'Retirez votre colis en agence, avec un code de remise si nécessaire.' },
       { title: 'Des paiements tracés', text: 'Chaque paiement donne lieu à un reçu et reste consultable dans votre espace.' },
     ],
     locationsTitle: 'Où nous trouver',
@@ -269,25 +270,25 @@ export const fr = {
       ],
     },
     local: {
-      lead: 'Retirez votre colis en agence ou faites-vous livrer, avec une remise sécurisée.',
+      lead: 'Retirez votre colis en agence, avec une remise sécurisée.',
       highlightsTitle: 'À retenir',
       highlights: [
         { title: 'Retrait en agence', text: 'Vous êtes prévenu dès que votre colis est prêt. Vous pouvez désigner des bénéficiaires autorisés à le retirer.' },
-        { title: 'Livraison', text: 'Pour la livraison, vous indiquez l’adresse et les instructions utiles. Un livreur est affecté et la tournée planifiée.' },
+        { title: 'Remise en agence', text: 'Vous récupérez votre colis à l’agence avec une pièce d’identité et, si besoin, votre code de remise. Il n’y a pas de livraison à domicile.' },
         { title: 'Remise sécurisée', text: 'Un code de remise, une signature ou une photo peuvent être demandés ; le nom de la personne qui récupère est enregistré.' },
       ],
       howTitle: 'Comment ça se passe',
       how: [
         'Le colis arrive à l’agence de destination et est enregistré par scan.',
-        'Vous recevez une notification : prêt pour retrait ou livraison programmée.',
+        'Vous recevez une notification : prêt pour retrait.',
         'À la remise, l’identité du récupérateur et la preuve exigée sont enregistrées.',
-        'En cas d’échec de livraison, le motif est noté et une nouvelle tentative est proposée.',
+        'Si la remise est refusée (pièce d’identité manquante, solde impayé), le motif est noté.',
       ],
       knowTitle: 'Bon à savoir',
       know: [
         'Une pièce d’identité peut être demandée à la remise.',
         'Un solde impayé peut retarder la remise, sauf dérogation autorisée.',
-        'La liste des agences et des zones de livraison est publiée sur la page « Entrepôts et agences ».',
+        'La liste des agences est publiée sur la page « Entrepôts et agences ».',
       ],
     },
     ctaTitle: 'Envie d’essayer ?',
@@ -453,7 +454,7 @@ export const fr = {
       { title: 'Achetez et déclarez votre achat', text: 'Commandez chez le marchand avec cette adresse. Puis indiquez le vendeur, le numéro de commande, le suivi du marchand et joignez la facture : c’est la préalerte. Nous ne sommes reliés à aucun marchand ; la déclaration se fait par vous.' },
       { title: 'Réception, vérification, pesée', text: 'À l’arrivée en entrepôt, le colis est rapproché de votre préalerte ou de votre code client, vérifié, pesé et mesuré. Vous êtes prévenu.' },
       { title: 'Paiement et expédition', text: 'Vous consultez les frais détaillés et réglez. Le colis est ensuite préparé et expédié par avion ou par bateau.' },
-      { title: 'Arrivée, retrait ou livraison', text: 'À l’arrivée, le colis passe par la douane, puis rejoint l’agence. Vous le retirez ou vous êtes livré, avec preuve de remise.' },
+      { title: 'Arrivée et retrait', text: 'À l’arrivée, le colis passe par la douane, puis rejoint l’agence. Vous le retirez à l’agence, avec preuve de remise.' },
     ],
     ctaTitle: 'Commencer maintenant',
     cta: 'Créer un compte',
@@ -511,7 +512,7 @@ export const fr = {
     terms: {
       title: 'Conditions générales',
       sections: [
-        { title: '1. Objet', paragraphs: ['Ces conditions régissent l’utilisation des services de réception, d’expédition et de livraison de colis proposés par [nom de l’entreprise] (« l’entreprise »), ainsi que l’utilisation de ce site.'] },
+        { title: '1. Objet', paragraphs: ['Ces conditions régissent l’utilisation des services de réception et d’expédition de colis proposés par [nom de l’entreprise] (« l’entreprise »), ainsi que l’utilisation de ce site.'] },
         { title: '2. Compte', paragraphs: ['Le compte est personnel. Vous êtes responsable de l’exactitude de vos informations et de la confidentialité de votre mot de passe. Vous devez nous signaler sans délai toute utilisation non autorisée.', 'Un compte peut être suspendu en cas de fausse déclaration, d’impayé ou de non-respect de ces conditions.'] },
         { title: '3. Adresses de réception et préalertes', paragraphs: ['L’adresse de réception personnalisée sert uniquement à identifier vos colis. Il vous appartient de déclarer vos achats (préalerte) avec des informations exactes. Un colis dont le destinataire ne peut pas être identifié est conservé en attente d’identification.'] },
         { title: '4. Marchandises interdites ou réglementées', paragraphs: ['Il est interdit d’expédier les articles prohibés par la loi ou par l’entreprise. La liste est disponible auprès de l’entreprise : [lien ou liste à renseigner]. L’entreprise peut retenir, refuser ou signaler tout colis non conforme.'] },
@@ -520,7 +521,7 @@ export const fr = {
         { title: '7. Délais', paragraphs: ['Les délais communiqués sont indicatifs et non garantis. Ils dépendent notamment des transporteurs, de la météo et des formalités douanières.'] },
         { title: '8. Stockage', paragraphs: ['Les colis sont conservés gratuitement pendant [durée à définir]. Au-delà, des frais de stockage de [montant à définir] peuvent s’appliquer. Un colis non réclamé après [durée à définir] pourra être [traité selon la procédure à définir].'] },
         { title: '9. Assurance et responsabilité', paragraphs: ['Les conditions de l’assurance (couverture incluse, assurance complémentaire, plafonds) sont : [à renseigner]. La responsabilité de l’entreprise est limitée dans les conditions prévues par la loi et ne couvre pas les cas de force majeure ni les dommages indirects.'] },
-        { title: '10. Retrait et livraison', paragraphs: ['Le colis est remis au titulaire du compte ou à un bénéficiaire autorisé, après vérification de son identité et de la preuve de remise exigée. L’entreprise peut refuser la remise en cas de doute ou de solde impayé.'] },
+        { title: '10. Retrait', paragraphs: ['Le colis est remis au titulaire du compte ou à un bénéficiaire autorisé, après vérification de son identité et de la preuve de remise exigée. L’entreprise peut refuser la remise en cas de doute ou de solde impayé.'] },
         { title: '11. Réclamations', paragraphs: ['Toute réclamation doit être adressée à l’assistance dans un délai de [délai à définir] à compter de la remise ou de la date prévue, avec le numéro de suivi et les justificatifs.'] },
         { title: '12. Données personnelles', paragraphs: ['Le traitement de vos données est décrit dans la politique de confidentialité.'] },
         { title: '13. Modification des conditions', paragraphs: ['L’entreprise peut modifier ces conditions. La version en vigueur est celle publiée sur le site à la date de la prestation.'] },
@@ -532,7 +533,7 @@ export const fr = {
       sections: [
         { title: '1. Qui est responsable de vos données ?', paragraphs: ['[Nom de l’entreprise], [adresse], est responsable du traitement de vos données personnelles. Contact : voir la page « Contact et assistance ».'] },
         { title: '2. Données que nous collectons', paragraphs: ['Compte : nom, adresse e-mail, téléphone, langue, mot de passe (conservé uniquement sous forme chiffrée irréversible).', 'Services : adresses, bénéficiaires autorisés (nom, téléphone, 4 derniers caractères de la pièce d’identité), colis, factures, paiements, échanges avec l’assistance.', 'Sécurité : adresse IP, appareil et date des connexions et des opérations sensibles.'] },
-        { title: '3. Pourquoi nous les utilisons', paragraphs: ['Fournir le service (réception, expédition, livraison, facturation), vous informer de l’avancement de vos colis, sécuriser votre compte, respecter nos obligations légales et comptables, et traiter vos demandes.'] },
+        { title: '3. Pourquoi nous les utilisons', paragraphs: ['Fournir le service (réception, expédition, remise, facturation), vous informer de l’avancement de vos colis, sécuriser votre compte, respecter nos obligations légales et comptables, et traiter vos demandes.'] },
         { title: '4. Avec qui nous les partageons', paragraphs: ['Uniquement avec les prestataires nécessaires au service : hébergement, envoi de courriels et de messages, paiement, transport et douane. Nous ne vendons pas vos données.'] },
         { title: '5. Cookies', paragraphs: ['Ce site n’utilise pas de cookies publicitaires ni de mesure d’audience. Un seul cookie technique, nécessaire et sécurisé, maintient votre session connectée.'] },
         { title: '6. Durée de conservation', paragraphs: ['Les données sont conservées le temps nécessaire au service puis selon les durées légales : [durées à définir : compte, factures, journaux, photos de colis].'] },
@@ -1043,7 +1044,7 @@ export const fr = {
       'claim.updated': 'Réclamation mise à jour',
     },
     channels: { IN_APP: 'Portail', EMAIL: 'E-mail', WHATSAPP: 'WhatsApp' },
-    totals: { subtotal: 'Sous-total', discount: 'Remise', tax: 'Taxes', total: 'Total', credited: 'Avoirs', paid: 'Payé', pending: 'En attente de validation', balance: 'Reste à payer' },
+    totals: { subtotal: 'Sous-total', discount: 'Remise', tax: 'Taxes', total: 'Total', credited: 'Avoirs', paid: 'Payé', pending: 'En attente de validation', balance: 'Reste à payer', htgEquivalent: 'Reste en gourdes (indicatif, taux {rate})' },
     common: { loadMore: 'Voir plus', open: 'Ouvrir', back: 'Retour', packages: 'Colis facturés', payments: 'Paiements', credits: 'Avoirs', lines: 'Détail', issuedOn: 'Émise le', dueOn: 'Échéance', noPayments: 'Aucun paiement.', downloadPdf: 'Facture (PDF)', receipt: 'Reçu (PDF)', amount: 'Montant', reference: 'Référence', reason: 'Motif', all: 'Tous', draftNumber: 'Brouillon', downloadFailed: 'Le téléchargement a échoué.' },
     customer: {
       invoices: {
@@ -1200,7 +1201,7 @@ export const fr = {
         status: 'Statut',
         channel: 'Canal',
         statuses: { QUEUED: 'En attente', SENT: 'Envoyée', FAILED: 'En échec', SKIPPED: 'Ignorée' },
-        skipReasons: { PREFERENCE_OFF: 'Désactivée par le client', CHANNEL_NOT_CONFIGURED: 'Canal non configuré', TEMPLATE_DISABLED: 'Modèle désactivé' } as Record<string, string>,
+        skipReasons: { NO_EMAIL: 'Pas d’adresse e-mail', PREFERENCE_OFF: 'Désactivée par le client', CHANNEL_NOT_CONFIGURED: 'Canal non configuré', TEMPLATE_DISABLED: 'Modèle désactivé' } as Record<string, string>,
         attempts: 'tentative(s)',
         nextAttempt: 'Prochaine tentative',
         retry: 'Relancer',

@@ -37,6 +37,9 @@ function NewInvoiceForm({ onDone }: { onDone(): void }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const canDiscount = useCan('discount:apply');
+  const canOverride = useCan('price:override');
+  const [adjust, setAdjust] = useState<Record<string, { unit: string; price: string; reason: string }>>({});
+  const setAdj = (id: string, patch: Partial<{ unit: string; price: string; reason: string }>) => setAdjust((a) => ({ ...a, [id]: { ...(a[id] ?? { unit: '', price: '', reason: '' }), ...patch } }));
 
   const [search, setSearch] = useState('');
   const [hits, setHits] = useState<CustomerHit[] | null>(null);
@@ -99,9 +102,29 @@ function NewInvoiceForm({ onDone }: { onDone(): void }) {
     });
     const percent = discount.trim() === '' ? undefined : parseDecimal(discount);
     if (discount.trim() !== '' && percent === null) manual.discountPercent = m.validation.number;
+    // Ajustements par colis : rabais par unité (baril) et prix convenu avec motif
+    const unitDiscounts: { packageId: string; perUnit: number }[] = [];
+    const priceOverrides: { packageId: string; amount: number; reason: string }[] = [];
+    for (const id of selected) {
+      const a = adjust[id];
+      if (!a) continue;
+      if (canDiscount && a.unit.trim() !== '') {
+        const perUnit = parseDecimal(a.unit);
+        if (perUnit === null) manual[`adjust.${id}.unit`] = m.validation.number;
+        else unitDiscounts.push({ packageId: id, perUnit });
+      }
+      if (canOverride && a.price.trim() !== '') {
+        const amount = parseDecimal(a.price);
+        if (amount === null) manual[`adjust.${id}.price`] = m.validation.number;
+        else if (a.reason.trim() === '') manual[`adjust.${id}.reason`] = m.validation.required;
+        else priceOverrides.push({ packageId: id, amount, reason: a.reason.trim() });
+      }
+    }
     const parsed = createInvoiceSchema.safeParse({
       customerId,
       packageIds: [...selected],
+      unitDiscounts,
+      priceOverrides,
       extraLines,
       discountPercent: percent ?? undefined,
       dueDate: dueDate.trim() === '' ? undefined : dueDate.trim(),
@@ -163,6 +186,28 @@ function NewInvoiceForm({ onDone }: { onDone(): void }) {
               {p.measures.billableWeight ? `· ${p.measures.billableWeight} ${p.measures.weightUnit === 'LB' ? 'lb' : 'kg'}` : ''}
             </CheckField>
           ))}
+        </fieldset>
+      ) : null}
+
+      {customerId && selected.size > 0 && (canDiscount || canOverride) ? (
+        <fieldset>
+          <legend>{f.adjustTitle}</legend>
+          {[...selected].map((id) => {
+            const p = billable.data?.find((x) => x.id === id);
+            const a = adjust[id] ?? { unit: '', price: '', reason: '' };
+            return (
+              <div key={id} className="form-grid form-grid-2" data-testid="adjust-row">
+                <p className="mono">{p?.trackingNumberDisplay ?? id}</p>
+                {canDiscount ? <TextField name={`unit-${id}`} label={f.unitDiscount} hint={f.unitDiscountHint} inputMode="decimal" optional value={a.unit} onChange={(v) => setAdj(id, { unit: v })} error={errors[`adjust.${id}.unit`]} /> : null}
+                {canOverride ? (
+                  <>
+                    <TextField name={`price-${id}`} label={f.agreedPrice} hint={f.agreedPriceHint} inputMode="decimal" optional value={a.price} onChange={(v) => setAdj(id, { price: v })} error={errors[`adjust.${id}.price`]} />
+                    <TextField name={`reason-${id}`} label={f.agreedReason} optional value={a.reason} onChange={(v) => setAdj(id, { reason: v })} error={errors[`adjust.${id}.reason`]} />
+                  </>
+                ) : null}
+              </div>
+            );
+          })}
         </fieldset>
       ) : null}
 

@@ -5,6 +5,7 @@ export const en: Messages = {
   lang: { fr: 'Français', ht: 'Kreyòl ayisyen', en: 'English' },
 
   common: {
+    indicative: 'indicative',
     loading: 'Loading…',
     retry: 'Try again',
     save: 'Save',
@@ -70,7 +71,7 @@ export const en: Messages = {
     air: 'Air freight',
     sea: 'Sea freight',
     international: 'International transport',
-    local: 'Local delivery in Haiti',
+    local: 'Agency pickup in Haiti',
     calculator: 'Shipping calculator',
     tracking: 'Package tracking',
     locations: 'Warehouses and agencies',
@@ -84,7 +85,7 @@ export const en: Messages = {
   },
 
   footer: {
-    tagline: 'Shop abroad, receive in Haiti: reception, shipping and delivery tracked from start to finish.',
+    tagline: 'Shop abroad, receive in Haiti: reception, shipping and agency pickup tracked from start to finish.',
     explore: 'Explore',
     help: 'Help',
     legal: 'Legal',
@@ -96,13 +97,13 @@ export const en: Messages = {
   related: { title: 'Keep exploring' },
 
   seo: {
-    home: { title: 'Package shipping to Haiti: air, sea and tracking', description: 'Shop abroad, receive in Haiti: personal receiving address, air or sea shipping, step-by-step package tracking and pickup at an agency or delivery.' },
+    home: { title: 'Package shipping to Haiti: air, sea and tracking', description: 'Shop abroad, receive in Haiti: personal receiving address, air or sea shipping, step-by-step package tracking and pickup at an agency.' },
     about: { title: 'About us: your package shipping service to Haiti', description: 'Our mission: make shipping packages to Haiti clear, tracked at every step and accessible, from warehouse receipt to handover.' },
-    services: { title: 'Our shipping and delivery services to Haiti', description: 'Air or sea shipping, international transport in batches, agency pickup and local delivery: every service you need to send a package to Haiti.' },
+    services: { title: 'Our shipping services to Haiti', description: 'Air or sea shipping, international transport in batches, agency pickup: every service you need to send a package to Haiti.' },
     air: { title: 'Air freight to Haiti: fast package shipping', description: 'Send urgent, light or valuable packages to Haiti by air: steps, chargeable weight pricing, itemised fees and what to know before you ship.' },
     sea: { title: 'Sea freight to Haiti: heavy and bulky packages', description: 'An economical option for heavy or bulky packages to Haiti: how ocean shipping works, indicative transit times and points to watch.' },
     international: { title: 'International package transport to Haiti', description: 'Your packages grouped in batches with a manifest and tracked transport events, from the overseas warehouse to the destination agency in Haiti.' },
-    local: { title: 'Agency pickup and package delivery in Haiti', description: 'Collect your package at an agency or have it delivered in Haiti: authorised beneficiaries, delivery rounds and secure handover with a code.' },
+    local: { title: 'Package pickup at an agency in Haiti', description: 'Collect your package at an agency in Haiti: authorised beneficiaries, ID check and secure handover with a code.' },
     calculator: { title: 'Shipping cost calculator for Haiti', description: 'Estimate the cost of shipping your package: actual weight, volumetric weight, chargeable weight and options. A clear estimate, distinct from the final amount.' },
     tracking: { title: 'Track your package to Haiti by tracking number', description: 'Enter your tracking number to see your package status, dates and step-by-step history, from the warehouse to handover.' },
     locations: { title: 'Overseas warehouses and pickup agencies in Haiti', description: 'Find our overseas receiving warehouses and our pickup agencies in Haiti: addresses, cities and practical information for your packages.' },
@@ -115,7 +116,7 @@ export const en: Messages = {
     resetPassword: { title: 'New password', description: 'Choose a new password.' },
     verifyEmail: { title: 'Email address confirmation', description: 'Confirm your email address.' },
     acceptInvite: { title: 'Activate my account', description: 'Choose your password to activate your account.' },
-    terms: { title: 'Terms of use of our shipping services', description: 'Terms of use of our shipping services: account, packages, price and payment, customs, delivery times, pickup and claims.' },
+    terms: { title: 'Terms of use of our shipping services', description: 'Terms of use of our shipping services: account, packages, price and payment, customs, transit times, pickup and claims.' },
     privacy: { title: 'Privacy policy and personal data', description: 'How we collect, use and protect your personal data when you use our shipping services, and the rights you have over it.' },
     account: { title: 'My account', description: 'Your personal area.' },
     notFound: { title: 'Page not found', description: 'This page does not exist.' },
@@ -123,7 +124,7 @@ export const en: Messages = {
 
   home: {
     hero: {
-      title: 'Your purchases abroad, delivered in Haiti',
+      title: 'Your purchases abroad, received in Haiti',
       subtitle: 'Receive your packages in our warehouses, choose air or sea, follow every step and pick up your package close to home.',
       primary: 'Create a free account',
       secondary: 'Estimate my costs',
@@ -140,7 +141,7 @@ export const en: Messages = {
       { key: 'air', title: 'Air freight', text: 'For urgent or valuable packages: the fastest option.' },
       { key: 'sea', title: 'Sea freight', text: 'For heavy or bulky packages: more economical, but slower.' },
       { key: 'international', title: 'International transport', text: 'Your packages grouped into shipments, with a manifest and transport tracking.' },
-      { key: 'local', title: 'Local delivery in Haiti', text: 'Agency pickup or delivery, with proof of handover.' },
+      { key: 'local', title: 'Agency pickup in Haiti', text: 'Agency pickup, with proof of handover.' },
     ],
     stepsTitle: 'How it works',
     stepsLead: 'Four steps, no surprises.',
@@ -148,7 +149,7 @@ export const en: Messages = {
       { title: 'Create your account', text: 'Sign-up is free. You get your customer code and your receiving addresses.' },
       { title: 'Shop and declare', text: 'Order from the merchant of your choice using your address, then declare your purchase (pre-alert).' },
       { title: 'We receive and weigh', text: 'Your package is received, checked and weighed, then you see the detailed costs.' },
-      { title: 'Pick up or get delivered', text: 'Your package travels, arrives in Haiti, then you pick it up at an agency or have it delivered.' },
+      { title: 'Pick up at an agency', text: 'Your package travels, arrives in Haiti, then you pick it up at an agency.' },
     ],
     benefitsTitle: 'Why choose us',
     benefits: [
@@ -156,7 +157,7 @@ export const en: Messages = {
       { title: 'Step-by-step tracking', text: 'Every status change is dated and recorded. Nothing is shown without a real event.' },
       { title: 'Clear costs', text: 'The price comes from a published rate grid. An estimate is always distinguished from the final amount.' },
       { title: 'Air or sea', text: 'You choose between speed and savings depending on your package.' },
-      { title: 'Pickup or delivery', text: 'Pick up your package at an agency, or get it delivered, with a handover code when needed.' },
+      { title: 'Agency pickup', text: 'Pick up your package at an agency, with a handover code when needed.' },
       { title: 'Traced payments', text: 'Every payment produces a receipt and stays available in your account.' },
     ],
     locationsTitle: 'Where to find us',
@@ -266,25 +267,25 @@ export const en: Messages = {
       ],
     },
     local: {
-      lead: 'Pick up your package at an agency or have it delivered, with a secure handover.',
+      lead: 'Pick up your package at an agency, with a secure handover.',
       highlightsTitle: 'Key points',
       highlights: [
         { title: 'Agency pickup', text: 'You are notified as soon as your package is ready. You can name beneficiaries authorized to pick it up.' },
-        { title: 'Delivery', text: 'For delivery, you provide the address and useful instructions. A driver is assigned and the route planned.' },
+        { title: 'Agency handover', text: 'You collect your package at the agency with an ID and, if needed, your handover code. There is no home delivery.' },
         { title: 'Secure handover', text: 'A handover code, signature or photo may be required; the name of the person collecting is recorded.' },
       ],
       howTitle: 'How it works',
       how: [
         'The package arrives at the destination agency and is recorded by scan.',
-        'You receive a notification: ready for pickup or delivery scheduled.',
+        'You receive a notification: ready for pickup.',
         'At handover, the collector’s identity and the required proof are recorded.',
-        'If a delivery fails, the reason is noted and a new attempt is offered.',
+        'If a handover is refused (missing ID, unpaid balance), the reason is noted.',
       ],
       knowTitle: 'Good to know',
       know: [
         'An ID document may be requested at handover.',
         'An unpaid balance may delay handover, unless an authorized exception applies.',
-        'The list of agencies and delivery zones is published on the "Warehouses and agencies" page.',
+        'The list of agencies is published on the "Warehouses and agencies" page.',
       ],
     },
     ctaTitle: 'Want to try?',
@@ -450,7 +451,7 @@ export const en: Messages = {
       { title: 'Shop and declare your purchase', text: 'Order from the merchant using this address. Then enter the seller, order number, the merchant’s tracking number and attach the invoice: this is the pre-alert. We are not connected to any merchant; you make the declaration.' },
       { title: 'Receipt, inspection, weighing', text: 'When it reaches the warehouse, the package is matched with your pre-alert or your customer code, checked, weighed and measured. You are notified.' },
       { title: 'Payment and shipping', text: 'You review the itemized costs and pay. The package is then prepared and shipped by air or sea.' },
-      { title: 'Arrival, pickup or delivery', text: 'On arrival, the package goes through customs, then reaches the agency. You pick it up or have it delivered, with proof of handover.' },
+      { title: 'Arrival and pickup', text: 'On arrival, the package goes through customs, then reaches the agency. You pick it up at the agency, with proof of handover.' },
     ],
     ctaTitle: 'Get started now',
     cta: 'Create an account',
@@ -508,7 +509,7 @@ export const en: Messages = {
     terms: {
       title: 'Terms and conditions',
       sections: [
-        { title: '1. Purpose', paragraphs: ['These terms govern the use of the package reception, shipping and delivery services offered by [company name] (the "company"), and the use of this website.'] },
+        { title: '1. Purpose', paragraphs: ['These terms govern the use of the package reception and shipping services offered by [company name] (the "company"), and the use of this website.'] },
         { title: '2. Account', paragraphs: ['The account is personal. You are responsible for the accuracy of your information and the confidentiality of your password. You must report any unauthorized use to us without delay.', 'An account may be suspended in case of false declaration, unpaid balance or breach of these terms.'] },
         { title: '3. Receiving addresses and pre-alerts', paragraphs: ['The personalized receiving address is used only to identify your packages. It is your responsibility to declare your purchases (pre-alert) with accurate information. A package whose recipient cannot be identified is kept pending identification.'] },
         { title: '4. Prohibited or regulated goods', paragraphs: ['It is forbidden to ship items prohibited by law or by the company. The list is available from the company: [link or list to be provided]. The company may hold, refuse or report any non-compliant package.'] },
@@ -517,7 +518,7 @@ export const en: Messages = {
         { title: '7. Lead times', paragraphs: ['Lead times given are indicative and not guaranteed. They depend in particular on carriers, weather and customs formalities.'] },
         { title: '8. Storage', paragraphs: ['Packages are kept free of charge for [duration to be defined]. Beyond that, storage fees of [amount to be defined] may apply. A package not collected after [duration to be defined] may be [handled according to the procedure to be defined].'] },
         { title: '9. Insurance and liability', paragraphs: ['The insurance terms (included cover, additional insurance, limits) are: [to be provided]. The company’s liability is limited as provided by law and does not cover force majeure or indirect damage.'] },
-        { title: '10. Pickup and delivery', paragraphs: ['The package is handed to the account holder or to an authorized beneficiary, after checking their identity and the required proof of handover. The company may refuse handover in case of doubt or unpaid balance.'] },
+        { title: '10. Pickup', paragraphs: ['The package is handed to the account holder or to an authorized beneficiary, after checking their identity and the required proof of handover. The company may refuse handover in case of doubt or unpaid balance.'] },
         { title: '11. Claims', paragraphs: ['Any claim must be sent to support within [period to be defined] of handover or of the expected date, with the tracking number and supporting documents.'] },
         { title: '12. Personal data', paragraphs: ['The processing of your data is described in the privacy policy.'] },
         { title: '13. Changes to the terms', paragraphs: ['The company may change these terms. The version in force is the one published on the site on the date of service.'] },
@@ -529,7 +530,7 @@ export const en: Messages = {
       sections: [
         { title: '1. Who is responsible for your data?', paragraphs: ['[Company name], [address], is the controller of your personal data. Contact: see the "Contact and support" page.'] },
         { title: '2. Data we collect', paragraphs: ['Account: name, email address, phone, language, password (kept only in irreversibly encrypted form).', 'Services: addresses, authorized beneficiaries (name, phone, last 4 characters of the ID document), packages, invoices, payments, exchanges with support.', 'Security: IP address, device and date of logins and sensitive operations.'] },
-        { title: '3. Why we use it', paragraphs: ['To provide the service (reception, shipping, delivery, invoicing), inform you of your packages’ progress, secure your account, meet our legal and accounting obligations, and handle your requests.'] },
+        { title: '3. Why we use it', paragraphs: ['To provide the service (reception, shipping, handover, invoicing), inform you of your packages’ progress, secure your account, meet our legal and accounting obligations, and handle your requests.'] },
         { title: '4. Who we share it with', paragraphs: ['Only with the providers needed for the service: hosting, sending emails and messages, payment, transport and customs. We do not sell your data.'] },
         { title: '5. Cookies', paragraphs: ['This site uses no advertising cookies or audience measurement. A single, necessary and secure technical cookie keeps your session signed in.'] },
         { title: '6. Retention', paragraphs: ['Data is kept for as long as needed for the service, then according to legal periods: [periods to be defined: account, invoices, logs, package photos].'] },
@@ -1040,7 +1041,7 @@ export const en: Messages = {
       'claim.updated': 'Claim updated',
     },
     channels: { IN_APP: 'Portal', EMAIL: 'Email', WHATSAPP: 'WhatsApp' },
-    totals: { subtotal: 'Subtotal', discount: 'Discount', tax: 'Taxes', total: 'Total', credited: 'Credit notes', paid: 'Paid', pending: 'Awaiting validation', balance: 'Balance due' },
+    totals: { subtotal: 'Subtotal', discount: 'Discount', tax: 'Taxes', total: 'Total', credited: 'Credit notes', paid: 'Paid', pending: 'Awaiting validation', balance: 'Balance due', htgEquivalent: 'Balance in gourdes (indicative, rate {rate})' },
     common: { loadMore: 'Show more', open: 'Open', back: 'Back', packages: 'Invoiced packages', payments: 'Payments', credits: 'Credit notes', lines: 'Details', issuedOn: 'Issued on', dueOn: 'Due date', noPayments: 'No payments.', downloadPdf: 'Invoice (PDF)', receipt: 'Receipt (PDF)', amount: 'Amount', reference: 'Reference', reason: 'Reason', all: 'All', draftNumber: 'Draft', downloadFailed: 'The download failed.' },
     customer: {
       invoices: {
@@ -1197,7 +1198,7 @@ export const en: Messages = {
         status: 'Status',
         channel: 'Channel',
         statuses: { QUEUED: 'Queued', SENT: 'Sent', FAILED: 'Failed', SKIPPED: 'Skipped' },
-        skipReasons: { PREFERENCE_OFF: 'Turned off by the customer', CHANNEL_NOT_CONFIGURED: 'Channel not configured', TEMPLATE_DISABLED: 'Template disabled' } as Record<string, string>,
+        skipReasons: { NO_EMAIL: 'No email address', PREFERENCE_OFF: 'Turned off by the customer', CHANNEL_NOT_CONFIGURED: 'Channel not configured', TEMPLATE_DISABLED: 'Template disabled' } as Record<string, string>,
         attempts: 'attempt(s)',
         nextAttempt: 'Next attempt',
         retry: 'Retry',

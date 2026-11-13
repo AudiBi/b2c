@@ -13,6 +13,7 @@ import { displayName, OutboxService } from '../notifications/outbox.service';
 import { CompanyDirectory } from '../platform/company-directory.service';
 import type { AuthContext } from '../security/auth.types';
 import { paymentDto } from './invoices.service';
+import { readFxRate } from './fx';
 import { D, LedgerService, money, type Decimal } from './ledger.service';
 
 const dec = (v: Decimal | null | undefined) => (v === null || v === undefined ? null : new D(v).toFixed(2));
@@ -237,6 +238,7 @@ export class PaymentsService {
       if (!payment?.receipt) throw AppException.notFound('RECEIPT_NOT_FOUND', 'Reçu introuvable');
       const company = await tx.company.findUniqueOrThrow({ where: { id: auth.companyId }, select: { name: true } });
       return {
+        htgPerUsd: await readFxRate(tx, auth.companyId),
         company: company.name,
         receiptNumber: payment.receipt.number,
         issuedAt: payment.receipt.issuedAt,

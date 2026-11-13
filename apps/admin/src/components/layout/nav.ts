@@ -1,3 +1,4 @@
+import { config } from '../../config';
 import type { IconName } from '../ui/Icon';
 import type { PageKey } from '../../routes';
 import type { Messages } from '../../i18n/fr';
@@ -29,12 +30,14 @@ export function buildNav(user: SessionUser, m: Messages): NavGroup[] {
   const operations: NavItem[] = [];
   if (staff && can('package:receive') && can('customer:read')) operations.push({ page: 'accountStaffCounter', label: s.counter, icon: 'box' });
   if (staff && can('package:receive')) operations.push({ page: 'accountStaffReception', label: s.reception, icon: 'scan' });
+  if (staff && can('rate:read')) operations.push({ page: 'accountStaffRates', label: s.rates, icon: 'wallet' });
+  if (staff && can('rate:read')) operations.push({ page: 'accountStaffCustoms', label: s.customs, icon: 'receipt' });
   if (staff && can('package:read')) operations.push({ page: 'accountStaffPackages', label: s.packages, icon: 'box' });
   if (staff && can('warehouse:read')) operations.push({ page: 'accountStaffWarehouse', label: s.warehouse, icon: 'warehouse' });
   if (staff && can('shipment:read')) operations.push({ page: 'accountStaffShipments', label: s.shipments, icon: 'layers' });
   if (staff && can('agency:receive')) operations.push({ page: 'accountStaffAgency', label: s.agency, icon: 'building' });
-  if (staff && can('delivery:read')) operations.push({ page: 'accountStaffRoutes', label: s.routes, icon: 'route' });
-  if (staff && can('delivery:read_assigned')) operations.push({ page: 'accountStaffMyRoutes', label: s.myRoutes, icon: 'truck' });
+  if (config.features.delivery && staff && can('delivery:read')) operations.push({ page: 'accountStaffRoutes', label: s.routes, icon: 'route' });
+  if (config.features.delivery && staff && can('delivery:read_assigned')) operations.push({ page: 'accountStaffMyRoutes', label: s.myRoutes, icon: 'truck' });
   if (staff && can('claim:read')) operations.push({ page: 'accountStaffClaims', label: s.claims, icon: 'message' });
   if (operations.length) groups.push({ id: 'operations', label: n.operations, items: operations });
 

@@ -6,12 +6,12 @@ import { PortalController } from './portal.controller';
 import { StaffCustomersService } from './staff-customers.service';
 import { TeamController } from './team.controller';
 import { TeamService } from './team.service';
-import { PublicController, SettingsController } from './public.controller';
+import { FxRateController, PublicController, SettingsController } from './public.controller';
 import { WarehousesController } from './warehouses.controller';
 
 @Module({
   imports: [PlatformSharedModule],
-  controllers: [PortalController, TeamController, AdminCustomersController, WarehousesController, PublicController, SettingsController],
+  controllers: [PortalController, TeamController, AdminCustomersController, WarehousesController, PublicController, SettingsController, FxRateController],
   providers: [CustomersService, TeamService, StaffCustomersService],
   exports: [CustomersService],
 })
