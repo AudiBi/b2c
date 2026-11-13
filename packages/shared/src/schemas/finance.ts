@@ -20,7 +20,7 @@ export type InvoiceLineKind = (typeof INVOICE_LINE_KINDS)[number];
 /** Lignes que le personnel peut ajouter à la main (le fret calculé et la remise ont leurs propres chemins). */
 export const MANUAL_LINE_KINDS = ['FREIGHT', 'STORAGE', 'HANDLING', 'INSURANCE', 'CUSTOMS', 'OTHER'] as const;
 
-export const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'ZELLE'] as const;
+export const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'ZELLE', 'MOBILE_MONEY'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const PAYMENT_STATUSES = ['PENDING', 'CONFIRMED', 'FAILED', 'CANCELLED', 'REFUNDED_PARTIAL', 'REFUNDED'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
@@ -54,6 +54,11 @@ export const createInvoiceSchema = z
     customerId: z.uuid(),
     packageIds: z.array(z.uuid()).max(50).default([]),
     extraLines: z.array(extraLineSchema).max(20).default([]),
+    /** Prix convenu d'un colis à la place du tarif calculé : permission `price:override`, motif obligatoire, écart journalisé. */
+    priceOverrides: z
+      .array(z.strictObject({ packageId: z.uuid(), amount: moneySchema, reason: text(300) }))
+      .max(50)
+      .default([]),
     /** Remise en pourcentage du sous-total, soumise à la permission et au plafond de l'entreprise. */
     discountPercent: z.number().min(0).max(100).refine((v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6, 'percent_decimals').optional(),
     dueDate: isoDateSchema.optional(),
@@ -93,7 +98,7 @@ export const recordCashPaymentSchema = z.strictObject({
 });
 
 export const declarePaymentSchema = z.strictObject({
-  method: z.enum(['BANK_TRANSFER', 'ZELLE']),
+  method: z.enum(['BANK_TRANSFER', 'ZELLE', 'MOBILE_MONEY']),
   amount: moneySchema,
   reference: paymentReference,
 });
@@ -138,3 +143,14 @@ export const webhookEventSchema = z.strictObject({
   currency: z.enum(CURRENCIES),
 });
 export type WebhookEvent = z.infer<typeof webhookEventSchema>;
+
+// ---------------------------------------------------------------------------------------------
+// Taux de change HTG (affichage seulement : aucune conversion comptable, une facture reste dans UNE devise)
+// ---------------------------------------------------------------------------------------------
+
+export const setFxRateSchema = z.strictObject({
+  /** Gourdes pour 1 dollar US. */
+  htgPerUsd: z.number().positive().max(10_000),
+  note: z.string().trim().max(200).optional(),
+});
+export type SetFxRateInput = z.infer<typeof setFxRateSchema>;

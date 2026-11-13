@@ -6,6 +6,7 @@ import {
   isTerminal,
   type HoldReasonCode,
   type PackageStatus,
+  type CreateCounterPackageInput,
   type ReceivePackageInput,
   type RegisterPackageInput,
   type TransitionOwner,
@@ -362,6 +363,53 @@ export class PackagesService {
     });
   }
 
+  /** Colis créé au comptoir : le client (avec ou sans accès au site) dépose un colis pour un destinataire. Aboutit à « reçu en entrepôt ». */
+  async createAtCounter(auth: AuthContext, input: CreateCounterPackageInput) {
+    this.assertWarehouseScope(auth, 'package:receive', input.warehouseId);
+    return this.db.run({ companyId: auth.companyId }, async (tx) => {
+      const warehouse = await tx.warehouse.findFirst({ where: { id: input.warehouseId, status: 'ACTIVE' } });
+      if (!warehouse) throw AppException.notFound('WAREHOUSE_NOT_FOUND', 'Entrepôt introuvable ou inactif');
+      const customer = await tx.customer.findUnique({ where: { id: input.customerId } });
+      if (!customer) throw AppException.notFound('CUSTOMER_NOT_FOUND', 'Client introuvable');
+      if (input.destinationAgencyId && !(await tx.agency.findUnique({ where: { id: input.destinationAgencyId }, select: { id: true } }))) {
+        throw AppException.notFound('AGENCY_NOT_FOUND', 'Agence introuvable');
+      }
+      if (input.legacyTrackingNumber && (await tx.package.findFirst({ where: { legacyTrackingNumber: input.legacyTrackingNumber }, select: { id: true } }))) {
+        throw AppException.conflict('LEGACY_TRACKING_EXISTS', 'Cet ancien numéro de suivi existe déjà');
+      }
+      const created = await this.createReceived(
+        tx,
+        auth,
+        warehouse,
+        customer,
+        { warehouseId: input.warehouseId, transportMode: input.transportMode, notes: input.notes } as ReceivePackageInput,
+        null,
+      );
+      const updated = await tx.package.update({
+        where: { id: created.id },
+        data: {
+          recipientName: input.recipientName,
+          recipientPhone: input.recipientPhone,
+          recipientCity: input.recipientCity,
+          destinationCity: input.recipientCity ?? created.destinationCity,
+          destinationAgencyId: input.destinationAgencyId,
+          contentDescription: input.contentDescription,
+          legacyTrackingNumber: input.legacyTrackingNumber,
+          createdAtCounter: true,
+        },
+        include: staffInclude,
+      });
+      await this.audit.record(tx, {
+        companyId: auth.companyId,
+        action: 'package.created_at_counter',
+        entityType: 'package',
+        entityId: created.id,
+        after: { customerCode: customer.customerCode, recipientName: input.recipientName, legacyTrackingNumber: input.legacyTrackingNumber ?? null },
+      });
+      return staffPackageDto(updated);
+    });
+  }
+
   ambiguous(candidates: PackageWithRelations[]): AppException {
     return new AppException(409, 'AMBIGUOUS_MATCH', 'Plusieurs colis attendus correspondent : choisissez-en un (expectedPackageId)', {
       candidates: candidates.map((c) => ({ id: c.id, trackingNumber: c.trackingNumber, supplierTracking: c.supplierTracking, customerCode: c.customer?.customerCode ?? null, description: c.contentDescription })),
@@ -557,13 +605,15 @@ export class PackagesService {
             categoryCode: input.categoryCode,
             declaredValue: input.declaredValue,
             optionalSurcharges: input.insured ? ['INSURANCE'] : [],
+            quantity: input.quantity,
           });
           const freight = new D(result.freight);
           snapshot = { kind: 'COMPUTED_AT_WEIGHING', card: { id: card.id, name: card.name, version: card.version }, result } as unknown as Prisma.InputJsonValue;
           pricingData = {
             volumetricWeight: result.volumetricWeight ? new D(result.volumetricWeight) : null,
-            billableWeight: new D(result.billableWeight),
-            weightUnit: result.weightUnit,
+            // Volume et unités ne sont pas des poids : le détail est dans l'instantané du calcul
+            billableWeight: result.basis === 'WEIGHT' ? new D(result.billableWeight) : null,
+            weightUnit: result.basis === 'WEIGHT' ? result.weightUnit : null,
             shippingFee: freight,
             extraFees: new D(result.total).sub(freight),
             feeCurrency: result.currency,
@@ -588,6 +638,7 @@ export class PackagesService {
           declaredValue: input.declaredValue !== undefined ? new D(String(input.declaredValue)) : pkg.declaredValue,
           declaredCurrency: input.declaredCurrency ?? pkg.declaredCurrency,
           insured: input.insured,
+          quantity: input.quantity,
           categoryId,
           registeredAt: new Date(),
           transportMode: mode,

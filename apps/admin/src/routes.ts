@@ -10,6 +10,7 @@ export const paths = {
   acceptInvite: '/accept-invite',
   accountSecurity: '/security',
   accountStaffReception: '/reception',
+  accountStaffCounter: '/counter',
   accountStaffPackages: '/packages',
   accountStaffWarehouse: '/warehouse',
   accountStaffShipments: '/shipments',

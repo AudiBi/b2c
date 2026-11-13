@@ -10,6 +10,7 @@ const CM_PER_IN = new D('2.54');
 export type WeightUnit = 'KG' | 'LB';
 export type DimensionUnit = 'CM' | 'IN';
 export type RoundingMode = 'NONE' | 'UP' | 'NEAREST';
+export type PricingBasis = 'WEIGHT' | 'VOLUME' | 'UNIT';
 export type SurchargeKind = 'SURCHARGE' | 'TAX' | 'INSURANCE';
 export type SurchargeMethod = 'FLAT' | 'PERCENT_OF_FREIGHT' | 'PERCENT_OF_DECLARED_VALUE' | 'PERCENT_OF_SUBTOTAL';
 
@@ -20,6 +21,10 @@ export interface RuleData {
   pricePerUnit: Decimal;
   flatFee: Decimal;
   minCharge: Decimal;
+  /** Absent : poids. VOLUME : pieds cubes ; UNIT : nombre d'unités. */
+  basis?: PricingBasis;
+  /** Diviseur volumétrique propre à la tranche (ex. e-conteneur) ; sinon celui de la grille. */
+  volumetricDivisor?: Decimal | null;
 }
 
 export interface SurchargeData {
@@ -53,11 +58,15 @@ export interface CalcInput {
   /** Dans la devise de la grille. */
   declaredValue?: number | string;
   optionalSurcharges?: string[];
+  /** Nombre de colis identiques (multiplie le volume ou le prix à l'unité). Défaut 1. */
+  quantity?: number;
+  /** Rabais par unité (barils), dans la devise de la grille : ligne négative, plafonnée au prix unitaire. */
+  unitDiscount?: number | string;
 }
 
 export interface CalcLine {
   code: string;
-  kind: 'FREIGHT' | SurchargeKind;
+  kind: 'FREIGHT' | 'DISCOUNT' | SurchargeKind;
   label: Record<string, string> | null;
   amount: string;
 }
@@ -65,6 +74,10 @@ export interface CalcLine {
 export interface CalcResult {
   currency: string;
   weightUnit: WeightUnit;
+  basis: PricingBasis;
+  quantity: number;
+  /** Unité de la quantité facturable : KG ou LB (poids), FT3 (volume) ou UNIT. */
+  billableUnit: WeightUnit | 'FT3' | 'UNIT';
   /** Poids réel converti dans l'unité de la grille. */
   actualWeight: string;
   /** Poids volumétrique, ou null si les dimensions ne sont pas fournies. */
@@ -81,7 +94,7 @@ export interface CalcResult {
   total: string;
 }
 
-export type PricingErrorCode = 'NO_RULE_FOR_WEIGHT' | 'MISSING_DECLARED_VALUE' | 'UNKNOWN_SURCHARGE';
+export type PricingErrorCode = 'NO_RULE_FOR_WEIGHT' | 'MISSING_DECLARED_VALUE' | 'UNKNOWN_SURCHARGE' | 'MISSING_DIMENSIONS' | 'INVALID_DISCOUNT';
 
 export class PricingError extends Error {
   constructor(
@@ -124,30 +137,62 @@ export function roundWeight(value: Decimal, mode: RoundingMode, step: Decimal): 
 export function calculate(card: CardData, input: CalcInput): CalcResult {
   const actual = toWeightUnit(new D(String(input.weight.value)), input.weight.unit, card.weightUnit);
 
-  let volumetric: Decimal | null = null;
-  if (input.dimensions) {
-    const convert = (v: number | string) => toDimensionUnit(new D(String(v)), input.dimensions!.unit, card.dimensionUnit);
-    volumetric = convert(input.dimensions.length)
-      .mul(convert(input.dimensions.width))
-      .mul(convert(input.dimensions.height))
-      .div(card.volumetricDivisor);
-  }
-
-  const chargeable = volumetric && volumetric.gt(actual) ? volumetric : actual;
-  const rounded = roundWeight(chargeable, card.roundingMode, card.roundingStep);
-  const billable = D.max(card.minBillableWeight, rounded);
-
-  const covers = (rule: RuleData) => billable.gte(rule.weightFrom) && (rule.weightTo === null || billable.lt(rule.weightTo));
+  const quantity = new D(String(input.quantity ?? 1));
+  const convertDim = (v: number | string, to: DimensionUnit) => toDimensionUnit(new D(String(v)), input.dimensions!.unit, to);
   const category = input.categoryCode?.toUpperCase();
-  const rule =
-    (category ? card.rules.find((r) => r.categoryCode === category && covers(r)) : undefined) ??
-    card.rules.find((r) => r.categoryCode === null && covers(r));
+  const general = card.rules.filter((r) => r.categoryCode === null);
+  const specific = category ? card.rules.filter((r) => r.categoryCode === category) : [];
+
+  let volumetric: Decimal | null = null;
+  let chargeable = actual;
+  let rounded = actual;
+  let billable = actual;
+  let basis: PricingBasis = 'WEIGHT';
+  let rule: RuleData | undefined;
+
+  // Les tranches d'une catégorie sont essayées d'abord, puis les générales ; la base (poids, volume, unité) est celle du groupe
+  for (const group of [specific, general]) {
+    if (group.length === 0) continue;
+    basis = group[0].basis ?? 'WEIGHT';
+    if (basis === 'WEIGHT') {
+      const divisor = group[0].volumetricDivisor ?? card.volumetricDivisor;
+      volumetric = input.dimensions
+        ? convertDim(input.dimensions.length, card.dimensionUnit).mul(convertDim(input.dimensions.width, card.dimensionUnit)).mul(convertDim(input.dimensions.height, card.dimensionUnit)).div(divisor)
+        : null;
+      chargeable = volumetric && volumetric.gt(actual) ? volumetric : actual;
+      rounded = roundWeight(chargeable, card.roundingMode, card.roundingStep);
+      billable = D.max(card.minBillableWeight, rounded);
+    } else if (basis === 'VOLUME') {
+      if (!input.dimensions) throw new PricingError('MISSING_DIMENSIONS', 'Les dimensions sont nécessaires pour un tarif au volume');
+      // Pieds cubes : 1 pi³ = 1 728 po³
+      const cubicInches = convertDim(input.dimensions.length, 'IN').mul(convertDim(input.dimensions.width, 'IN')).mul(convertDim(input.dimensions.height, 'IN'));
+      volumetric = null;
+      chargeable = cubicInches.div(1728).mul(quantity);
+      rounded = weight3(chargeable);
+      billable = rounded;
+    } else {
+      volumetric = null;
+      chargeable = quantity;
+      rounded = quantity;
+      billable = quantity;
+    }
+    const covers = (r: RuleData) => billable.gte(r.weightFrom) && (r.weightTo === null || billable.lt(r.weightTo));
+    rule = group.find(covers);
+    if (rule) break;
+  }
   if (!rule) {
-    throw new PricingError('NO_RULE_FOR_WEIGHT', `Aucune tranche de la grille ne couvre ${billable.toString()} ${card.weightUnit}`);
+    throw new PricingError('NO_RULE_FOR_WEIGHT', `Aucune tranche de la grille ne couvre ${billable.toString()} ${basis === 'WEIGHT' ? card.weightUnit : basis === 'VOLUME' ? 'pi³' : 'unité(s)'}`);
   }
 
   const freight = money(D.max(rule.flatFee.add(rule.pricePerUnit.mul(billable)), rule.minCharge));
   const lines: CalcLine[] = [{ code: 'FREIGHT', kind: 'FREIGHT', label: null, amount: freight.toFixed(2) }];
+  let discount = new D(0);
+  if (input.unitDiscount !== undefined && new D(String(input.unitDiscount)).gt(0)) {
+    const perUnit = new D(String(input.unitDiscount));
+    if (basis !== 'UNIT' || perUnit.gt(rule.pricePerUnit)) throw new PricingError('INVALID_DISCOUNT', "Le rabais par unité ne s'applique qu'à un tarif à l'unité et ne peut pas dépasser le prix unitaire");
+    discount = money(perUnit.mul(quantity));
+    lines.push({ code: 'DISCOUNT', kind: 'DISCOUNT', label: null, amount: discount.negated().toFixed(2) });
+  }
 
   const chosen = new Set((input.optionalSurcharges ?? []).map((c) => c.toUpperCase()));
   for (const code of chosen) {
@@ -158,7 +203,7 @@ export function calculate(card: CardData, input: CalcInput): CalcResult {
   const applicable = card.surcharges.filter((s) => !s.optional || chosen.has(s.code));
 
   const declared = input.declaredValue !== undefined ? new D(String(input.declaredValue)) : null;
-  let subtotal = freight;
+  let subtotal = freight.sub(discount);
   const amountOf = (s: SurchargeData, base: Decimal): Decimal => {
     switch (s.method) {
       case 'FLAT':
@@ -189,6 +234,9 @@ export function calculate(card: CardData, input: CalcInput): CalcResult {
   return {
     currency: card.currency,
     weightUnit: card.weightUnit,
+    basis,
+    quantity: quantity.toNumber(),
+    billableUnit: basis === 'WEIGHT' ? card.weightUnit : basis === 'VOLUME' ? 'FT3' : 'UNIT',
     actualWeight: weight3(actual).toFixed(3),
     volumetricWeight: volumetric ? weight3(volumetric).toFixed(3) : null,
     chargeableBeforeRounding: weight3(chargeable).toFixed(3),

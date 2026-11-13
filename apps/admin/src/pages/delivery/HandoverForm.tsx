@@ -29,7 +29,7 @@ export function HandoverForm({ packageId, settings, beneficiaries, balance, canO
   const files = useFiles('PACKAGE', packageId);
   const photos = (files.data?.items ?? []).filter((f) => f.kind === 'PHOTO');
 
-  const [kind, setKind] = useState<'CUSTOMER' | 'BENEFICIARY'>('CUSTOMER');
+  const [kind, setKind] = useState<'CUSTOMER' | 'BENEFICIARY' | 'RECIPIENT'>('CUSTOMER');
   const [beneficiaryId, setBeneficiaryId] = useState('');
   const [name, setName] = useState('');
   const [idType, setIdType] = useState<string>(ID_TYPES[0]);
@@ -57,7 +57,8 @@ export function HandoverForm({ packageId, settings, beneficiaries, balance, canO
     };
     const parsed = handoverSchema.safeParse(body);
     const manual: FieldErrors = {};
-    if (settings.requireOtp && !body.otp) manual.otp = m.validation.required;
+    if (kind === 'RECIPIENT' && !body.recipientName) manual.recipientName = m.validation.required;
+    if (settings.requireOtp && kind !== 'RECIPIENT' && !body.otp) manual.otp = m.validation.required;
     if (settings.requireIdDocument && !body.idDocumentLast4) manual.idDocumentLast4 = m.validation.required;
     if (settings.requirePhoto && !body.proofFileId) manual.proofFileId = m.validation.required;
     const all = { ...(parsed.success ? {} : issuesToErrors(parsed.error, m)), ...manual };
@@ -91,10 +92,11 @@ export function HandoverForm({ packageId, settings, beneficiaries, balance, canO
         legend={h.recipient}
         name={`recipient-${packageId}`}
         value={kind}
-        onChange={(v) => setKind(v as 'CUSTOMER' | 'BENEFICIARY')}
+        onChange={(v) => setKind(v as 'CUSTOMER' | 'BENEFICIARY' | 'RECIPIENT')}
         options={[
           { value: 'CUSTOMER', label: h.recipientCustomer },
           { value: 'BENEFICIARY', label: h.recipientBeneficiary },
+          { value: 'RECIPIENT', label: h.recipientCounter },
         ]}
       />
       {kind === 'BENEFICIARY' ? (
@@ -111,7 +113,7 @@ export function HandoverForm({ packageId, settings, beneficiaries, balance, canO
           />
         )
       ) : null}
-      <TextField name={`name-${packageId}`} label={h.recipientName} optional value={name} onChange={setName} error={errors.recipientName} />
+      <TextField name={`name-${packageId}`} label={h.recipientName} optional={kind !== 'RECIPIENT'} hint={kind === 'RECIPIENT' ? h.recipientCounterHint : undefined} value={name} onChange={setName} error={errors.recipientName} />
 
       <div className="form-grid form-grid-2">
         <SelectField name={`idtype-${packageId}`} label={h.idType} value={idType} onChange={setIdType} options={ID_TYPES.map((x) => ({ value: x, label: h.idTypes[x] }))} />
@@ -131,7 +133,7 @@ export function HandoverForm({ packageId, settings, beneficiaries, balance, canO
         name={`otp-${packageId}`}
         label={h.otp}
         hint={h.otpHint}
-        optional={!settings.requireOtp}
+        optional={!settings.requireOtp || kind === 'RECIPIENT'}
         inputMode="numeric"
         maxLength={6}
         autoComplete="off"

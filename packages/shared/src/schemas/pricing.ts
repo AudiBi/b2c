@@ -5,6 +5,8 @@ import { currencySchema, dimensionsSchema, DIMENSION_UNITS, moneySchema, weightS
 const text = (max: number) => z.string().trim().min(1).max(max);
 const nonNegative = z.number().min(0).max(10_000_000);
 
+export const PRICING_BASES = ['WEIGHT', 'VOLUME', 'UNIT'] as const;
+export type PricingBasisCode = (typeof PRICING_BASES)[number];
 export const ROUNDING_MODES = ['NONE', 'UP', 'NEAREST'] as const;
 export const SURCHARGE_KINDS = ['SURCHARGE', 'TAX', 'INSURANCE'] as const;
 export const SURCHARGE_METHODS = ['FLAT', 'PERCENT_OF_FREIGHT', 'PERCENT_OF_DECLARED_VALUE', 'PERCENT_OF_SUBTOTAL'] as const;
@@ -21,6 +23,10 @@ export const rateRuleSchema = z
     pricePerUnit: nonNegative,
     flatFee: nonNegative.default(0),
     minCharge: nonNegative.default(0),
+    /** Poids (défaut), volume en pieds cubes ou à l'unité (baril, valise…). */
+    basis: z.enum(PRICING_BASES).default('WEIGHT'),
+    /** Diviseur volumétrique propre à cette tranche (ex. e-conteneur) ; sinon celui de la grille. */
+    volumetricDivisor: z.number().positive().max(1_000_000).optional(),
   })
   .superRefine((rule, ctx) => {
     if (rule.weightTo !== undefined && rule.weightTo <= rule.weightFrom) {
@@ -63,6 +69,14 @@ export const createRateCardSchema = z
     if (card.validTo && card.validTo <= card.validFrom) {
       ctx.addIssue({ code: 'custom', path: ['validTo'], message: 'date_order' });
     }
+    // Une même catégorie ne mélange pas les bases : le calcul choisit la base avant la tranche
+    const bases = new Map<string, string>();
+    for (const r of card.rules) {
+      const key = r.categoryCode?.toUpperCase() ?? '';
+      const known = bases.get(key);
+      if (known && known !== r.basis) ctx.addIssue({ code: 'custom', path: ['rules'], message: 'mixed_basis' });
+      bases.set(key, r.basis);
+    }
     const codes = card.surcharges.map((s) => s.code);
     if (new Set(codes).size !== codes.length) {
       ctx.addIssue({ code: 'custom', path: ['surcharges'], message: 'duplicate_codes' });
@@ -97,6 +111,8 @@ export const quoteInputSchema = z.strictObject({
   declaredValue: moneySchema.optional(),
   /** Codes des services optionnels choisis (ex. INSURANCE). */
   optionalSurcharges: z.array(z.string().trim().toUpperCase().max(30)).max(10).default([]),
+  /** Nombre de colis identiques (boîtes, barils) : multiplie le volume ou le prix à l'unité. */
+  quantity: z.number().int().min(1).max(10000).default(1),
 });
 export type QuoteInput = z.infer<typeof quoteInputSchema>;
 

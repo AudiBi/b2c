@@ -128,7 +128,7 @@ export class PaymentsService {
   // Virement ou mobile : déclaré par le client, validé par le personnel (ou confirmé par le prestataire)
   // ---------------------------------------------------------------------------------------------
 
-  async declare(auth: AuthContext, invoiceId: string, input: { method: 'BANK_TRANSFER' | 'ZELLE'; amount: number; reference: string }) {
+  async declare(auth: AuthContext, invoiceId: string, input: { method: 'BANK_TRANSFER' | 'ZELLE' | 'MOBILE_MONEY'; amount: number; reference: string }) {
     try {
       return await this.db.run({ companyId: auth.companyId }, async (tx) => {
         const customer = auth.kind === 'CUSTOMER' ? await tx.customer.findUnique({ where: { userId: auth.userId } }) : null;
@@ -416,7 +416,7 @@ export class PaymentsService {
       if (seen) return { status: 'DUPLICATE' as const };
 
       const record = (status: string) => tx.providerWebhookEvent.create({ data: { companyId: company.id, provider, eventId: event.eventId, payloadHash, status } });
-      const payment = await tx.payment.findFirst({ where: { reference: event.providerRef, status: 'PENDING', method: { in: ['BANK_TRANSFER', 'ZELLE'] } } });
+      const payment = await tx.payment.findFirst({ where: { reference: event.providerRef, status: 'PENDING', method: { in: ['BANK_TRANSFER', 'ZELLE', 'MOBILE_MONEY'] } } });
       if (!payment) {
         await record('UNMATCHED');
         return { status: 'UNMATCHED' as const };

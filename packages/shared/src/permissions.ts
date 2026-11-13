@@ -69,6 +69,7 @@ export const PERMISSIONS = {
   'invoice:create': 'Créer une facture',
   'invoice:void': 'Annuler une facture',
   'discount:apply': 'Appliquer une remise',
+  'price:override': 'Fixer à la main le prix d’un colis (motif obligatoire, tracé)',
   'payment:read': 'Lire tous les paiements',
   'payment:read_own': 'Lire ses paiements',
   'payment:declare_own': 'Déclarer un paiement par virement ou mobile',

@@ -40,6 +40,8 @@ export function toCardData(card: CardWithChildren): CardData {
       pricePerUnit: rule.pricePerUnit,
       flatFee: rule.flatFee,
       minCharge: rule.minCharge,
+      basis: rule.basis,
+      volumetricDivisor: rule.volumetricDivisor,
     })),
     surcharges: card.surcharges.map((s) => ({
       code: s.code,
@@ -80,6 +82,8 @@ export function cardDto(card: CardWithChildren) {
         pricePerUnit: rule.pricePerUnit.toString(),
         flatFee: rule.flatFee.toString(),
         minCharge: rule.minCharge.toString(),
+        basis: rule.basis,
+        volumetricDivisor: rule.volumetricDivisor?.toString() ?? null,
       })),
     surcharges: card.surcharges.map((s) => ({
       code: s.code,
@@ -151,6 +155,7 @@ export class PricingService {
         categoryCode: input.categoryCode,
         declaredValue: input.declaredValue,
         optionalSurcharges: input.optionalSurcharges,
+        quantity: input.quantity,
       });
       return { isEstimate: true, card: { id: card.id, name: card.name, version: card.version }, result };
     } catch (error) {
@@ -216,6 +221,8 @@ export class PricingService {
           pricePerUnit: new D(String(rule.pricePerUnit)),
           flatFee: new D(String(rule.flatFee)),
           minCharge: new D(String(rule.minCharge)),
+          basis: rule.basis,
+          volumetricDivisor: rule.volumetricDivisor !== undefined ? new D(String(rule.volumetricDivisor)) : null,
         })),
       });
     } catch (error) {
@@ -387,6 +394,8 @@ export class PricingService {
           pricePerUnit: r.pricePerUnit,
           flatFee: r.flatFee,
           minCharge: r.minCharge,
+          basis: r.basis,
+          volumetricDivisor: r.volumetricDivisor,
         })),
       });
       if (source.surcharges.length > 0) {

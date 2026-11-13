@@ -194,3 +194,36 @@ export const listCustomersQuerySchema = z.strictObject({
   q: z.string().trim().min(1).max(100).optional(),
   type: z.enum(['INDIVIDUAL', 'BUSINESS']).optional(),
 });
+
+// ---------------------------------------------------------------------------------------------
+// Clients créés par le personnel (comptoir) : avec ou sans accès au site
+// ---------------------------------------------------------------------------------------------
+
+export const createCustomerByStaffSchema = z.strictObject({
+  customerType: z.enum(['INDIVIDUAL', 'BUSINESS']).default('INDIVIDUAL'),
+  firstName: text(80),
+  lastName: text(80),
+  businessName: optionalText(120),
+  phone: phoneSchema.optional(),
+  /** Sans adresse e-mail, le client n'a pas d'accès au site (colis suivis au comptoir). */
+  email: emailSchema.optional(),
+  locale: z.enum(LOCALES).default('fr'),
+});
+export type CreateCustomerByStaffInput = z.infer<typeof createCustomerByStaffSchema>;
+
+export const updateCustomerByStaffSchema = z.strictObject({
+  firstName: text(80).optional(),
+  lastName: text(80).optional(),
+  businessName: optionalText(120),
+  phone: phoneSchema.optional(),
+});
+export type UpdateCustomerByStaffInput = z.infer<typeof updateCustomerByStaffSchema>;
+
+export const inviteCustomerSchema = z.strictObject({
+  email: emailSchema,
+  locale: z.enum(LOCALES).default('fr'),
+});
+export type InviteCustomerInput = z.infer<typeof inviteCustomerSchema>;
+
+/** Domaine réservé (RFC 2606) des adresses factices des clients sans accès. */
+export const NO_ACCESS_EMAIL_DOMAIN = 'no-access.invalid';

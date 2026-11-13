@@ -1,0 +1,18 @@
+{
+  "clients": [
+    { "id": 1, "nom": "Jean Baptiste", "tel": "+1 (305) 555-0101", "telht": "+50934100001", "email": "jean.baptiste@example.com", "adr": "Miami, FL", "pays": "USA", "cree": "2026-03-02" },
+    { "id": 2, "nom": "Marie O'Brien", "tel": "305 555 0102", "telht": "", "email": "", "adr": "Fort Lauderdale, FL", "pays": "USA", "cree": "2026-04-10" },
+    { "id": 3, "nom": "Paul Henry", "tel": "+1 305 555 0101", "email": "pas-un-email", "pays": "USA", "cree": "2026-05-01" },
+    { "id": 4, "nom": "", "tel": "+13055550104" }
+  ],
+  "colis": [
+    { "id": 1, "code": "B2C-261001-0001", "client": 1, "mode": "Aérien", "date": "2026-10-01", "dest": "Marie Baptiste", "tel": "+50934111111", "adr": "Pétion-Ville", "desc": "Vêtements", "poids": 40, "longueur": 24, "largeur": 18, "hauteur": 16, "montant": 200, "paye": 200, "statut": "Livré", "hist": [["2026-10-01 09:10", "Reçu aux USA"], ["13/10/2026 10:05:00", "Livré"]] },
+    { "id": 2, "code": "B2C-261002-0001", "client": 2, "mode": "Maritime", "date": "2026-10-20", "dest": "Anne Pierre", "tel": "+50934222222", "adr": "Delmas", "desc": "Boîte", "poids": 30, "longueur": 20, "largeur": 20, "hauteur": 20, "montant": 144, "paye": 72, "statut": "En transit" },
+    { "id": 3, "code": "B2C-261003-0001", "client": 3, "mode": "Aérien", "date": "2026-11-05", "dest": "Joseph Henry", "tel": "34-33-33-33", "statut": "Reçu aux USA", "montant": 50, "paye": 0 },
+    { "id": 4, "code": "B2C-250101-0001", "client": 1, "mode": "Aérien", "date": "2025-01-01", "dest": "Ancien Colis", "statut": "Livré" },
+    { "id": 5, "code": "B2C-261002-0001", "client": 2, "mode": "Maritime", "date": "2026-10-21", "dest": "Doublon", "statut": "En transit" },
+    { "id": 6, "code": "B2C-261004-0001", "client": 9, "mode": "Aérien", "date": "2026-11-01", "dest": "Sans client", "statut": "En transit" },
+    { "id": 8, "code": "B2C-261006-0001", "client": 2, "mode": "Maritime", "date": "2026-11-02", "dest": "Baril Sans Mesure", "desc": "Baril", "statut": "Prêt pour livraison", "montant": 220, "paye": 0 },
+    { "id": 7, "code": "B2C-261005-0001", "client": 1, "mode": "Aérien", "date": "2026-11-01", "dest": "Statut Bizarre", "statut": "Perdu" }
+  ]
+}

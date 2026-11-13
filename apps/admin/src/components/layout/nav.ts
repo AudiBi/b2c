@@ -27,6 +27,7 @@ export function buildNav(user: SessionUser, m: Messages): NavGroup[] {
   if (staff && can('report:read')) groups[0].items.push({ page: 'accountStaffDashboard', label: s.dashboard, icon: 'chart' });
 
   const operations: NavItem[] = [];
+  if (staff && can('package:receive') && can('customer:read')) operations.push({ page: 'accountStaffCounter', label: s.counter, icon: 'box' });
   if (staff && can('package:receive')) operations.push({ page: 'accountStaffReception', label: s.reception, icon: 'scan' });
   if (staff && can('package:read')) operations.push({ page: 'accountStaffPackages', label: s.packages, icon: 'box' });
   if (staff && can('warehouse:read')) operations.push({ page: 'accountStaffWarehouse', label: s.warehouse, icon: 'warehouse' });

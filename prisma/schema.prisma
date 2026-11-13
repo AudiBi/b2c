@@ -573,6 +573,13 @@ enum HoldReasonCode {
   OTHER
 }
 
+// Ce sur quoi une tranche de grille est calculée
+enum PricingBasis {
+  WEIGHT
+  VOLUME
+  UNIT
+}
+
 enum RoundingMode {
   NONE
   UP
@@ -664,6 +671,12 @@ model Package {
   customerId          String?        @map("customer_id") @db.Uuid
   senderName          String?        @map("sender_name")
   recipientName       String?        @map("recipient_name")
+  quantity            Int            @default(1)
+  recipientPhone      String?        @map("recipient_phone")
+  recipientCity       String?        @map("recipient_city")
+  // Ancien numéro de suivi (import de l'outil de gestion)
+  legacyTrackingNumber String?       @map("legacy_tracking_number")
+  createdAtCounter    Boolean        @default(false) @map("created_at_counter")
   originWarehouseId   String         @map("origin_warehouse_id") @db.Uuid
   originCountry       String         @map("origin_country") @db.Char(2)
   originCity          String         @map("origin_city")
@@ -852,6 +865,9 @@ model RateRule {
   pricePerUnit Decimal  @map("price_per_unit") @db.Decimal(14, 4)
   flatFee      Decimal  @default(0) @map("flat_fee") @db.Decimal(14, 2)
   minCharge    Decimal  @default(0) @map("min_charge") @db.Decimal(14, 2)
+  // WEIGHT : poids facturable ; VOLUME : pieds cubes (ou m³) ; UNIT : nombre d'unités (barils)
+  basis             PricingBasis @default(WEIGHT)
+  volumetricDivisor Decimal?     @map("volumetric_divisor") @db.Decimal(12, 4)
 
   company  Company          @relation(fields: [companyId], references: [id])
   rateCard RateCard         @relation(fields: [rateCardId, companyId], references: [id, companyId])
@@ -1453,6 +1469,8 @@ enum AttemptOutcome {
 enum RecipientKind {
   CUSTOMER
   BENEFICIARY
+  // Destinataire d'un colis de comptoir, sans compte ni bénéficiaire enregistré
+  RECIPIENT
 }
 
 enum ClaimStatus {

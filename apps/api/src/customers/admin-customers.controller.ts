@@ -1,10 +1,18 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { idParamSchema, listCustomersQuerySchema } from '@b2c/shared';
+import {
+  NO_ACCESS_EMAIL_DOMAIN,
+  createCustomerByStaffSchema,
+  idParamSchema,
+  inviteCustomerSchema,
+  listCustomersQuerySchema,
+  updateCustomerByStaffSchema,
+} from '@b2c/shared';
 import type { Prisma } from '@prisma/client';
 import type { z } from 'zod';
 import { AppException } from '../common/errors';
-import { Validate, VParams, VQuery } from '../common/validation';
+import { StaffCustomersService } from './staff-customers.service';
+import { Validate, VBody, VParams, VQuery } from '../common/validation';
 import { DbService } from '../database/db.service';
 import type { AuthContext } from '../security/auth.types';
 import { CurrentAuth, RequirePermission } from '../security/decorators';
@@ -19,7 +27,8 @@ function toDto(row: Prisma.CustomerGetPayload<{ include: typeof include }>) {
     firstName: row.user.firstName,
     lastName: row.user.lastName,
     businessName: row.user.businessName,
-    email: row.user.email,
+    email: row.user.email.endsWith(`@${NO_ACCESS_EMAIL_DOMAIN}`) ? null : row.user.email,
+    hasAccess: !row.user.email.endsWith(`@${NO_ACCESS_EMAIL_DOMAIN}`),
     phone: row.user.phone,
     status: row.user.status,
     createdAt: row.createdAt,
@@ -31,7 +40,10 @@ function toDto(row: Prisma.CustomerGetPayload<{ include: typeof include }>) {
 @ApiBearerAuth()
 @Controller('admin/customers')
 export class AdminCustomersController {
-  constructor(private readonly db: DbService) {}
+  constructor(
+    private readonly db: DbService,
+    private readonly staff: StaffCustomersService,
+  ) {}
 
   @Get()
   @RequirePermission('customer:read')
@@ -75,5 +87,29 @@ export class AdminCustomersController {
     );
     if (!row) throw AppException.notFound('CUSTOMER_NOT_FOUND', 'Client introuvable');
     return toDto(row);
+  }
+
+  @Post()
+  @RequirePermission('customer:create')
+  @Validate({ body: createCustomerByStaffSchema })
+  @ApiOperation({ summary: "Crée un client ; sans e-mail, il n'a pas d'accès au site" })
+  create(@CurrentAuth() auth: AuthContext, @VBody() body: z.infer<typeof createCustomerByStaffSchema>) {
+    return this.staff.create(auth, body);
+  }
+
+  @Patch(':id')
+  @RequirePermission('customer:update')
+  @Validate({ params: idParamSchema, body: updateCustomerByStaffSchema })
+  @ApiOperation({ summary: "Modifie le nom ou le téléphone d'un client" })
+  update(@CurrentAuth() auth: AuthContext, @VParams() params: z.infer<typeof idParamSchema>, @VBody() body: z.infer<typeof updateCustomerByStaffSchema>) {
+    return this.staff.update(auth, params.id, body);
+  }
+
+  @Post(':id/invite')
+  @RequirePermission('customer:update')
+  @Validate({ params: idParamSchema, body: inviteCustomerSchema })
+  @ApiOperation({ summary: "Envoie l'invitation d'activation du compte (ajoute l'e-mail si le client n'en avait pas)" })
+  invite(@CurrentAuth() auth: AuthContext, @VParams() params: z.infer<typeof idParamSchema>, @VBody() body: z.infer<typeof inviteCustomerSchema>) {
+    return this.staff.invite(auth, params.id, body);
   }
 }

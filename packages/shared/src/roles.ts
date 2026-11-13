@@ -98,7 +98,7 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
     audience: 'STAFF',
     allowedScopes: ['WAREHOUSE'],
     permissions: [
-      'customer:read', 'prealert:read', 'prealert:match',
+      'customer:read', 'customer:create', 'customer:update', 'prealert:read', 'prealert:match',
       'package:read', 'package:update', 'package:receive', 'package:inspect', 'package:register',
       'package:hold', 'package:release_hold',
       'warehouse:read', 'warehouse:manage', 'warehouse:move',
@@ -112,7 +112,7 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
     audience: 'STAFF',
     allowedScopes: ['WAREHOUSE'],
     permissions: [
-      'customer:read', 'prealert:read', 'prealert:match',
+      'customer:read', 'customer:create', 'customer:update', 'prealert:read', 'prealert:match',
       'package:read', 'package:receive', 'package:inspect', 'package:register', 'package:hold',
       'warehouse:read', 'warehouse:move',
     ],
@@ -149,7 +149,7 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
     audience: 'STAFF',
     allowedScopes: ['COMPANY'],
     permissions: [
-      'customer:read', 'customer:update', 'prealert:read', 'package:read',
+      'customer:read', 'customer:create', 'customer:update', 'prealert:read', 'package:read',
       'invoice:read', 'payment:read', 'notification:read',
       'claim:read', 'claim:manage', 'quote:create',
     ],

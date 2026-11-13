@@ -1024,7 +1024,7 @@ export const ht: Messages = {
   finance: {
     invoiceStatuses: { DRAFT: 'Bouyon', ISSUED: 'Pou peye', PARTIALLY_PAID: 'Peye yon pati', PAID: 'Peye', VOID: 'Anile', CREDITED: 'Kredite' },
     paymentStatuses: { PENDING: 'Ap tann validasyon', CONFIRMED: 'Konfime', FAILED: 'Refize', CANCELLED: 'Anile', REFUNDED_PARTIAL: 'Ranbouse yon pati', REFUNDED: 'Ranbouse' },
-    methods: { CASH: 'Lajan kach', BANK_TRANSFER: 'Virman labank', ZELLE: 'Zelle' },
+    methods: { CASH: 'Lajan kach', BANK_TRANSFER: 'Virman labank', ZELLE: 'Zelle', MOBILE_MONEY: 'MonCash' },
     lineKinds: { FREIGHT: 'Frè transpò', STORAGE: 'Depo', HANDLING: 'Manipilasyon', INSURANCE: 'Asirans', TAX: 'Taks', CUSTOMS: 'Ladwann', DISCOUNT: 'Rabè', OTHER: 'Lòt' },
     events: {
       'prealert.created': 'Acha deklare',
@@ -1059,7 +1059,7 @@ export const ht: Messages = {
         cash: 'Ou ka peye lajan kach tou nan men ajan nou yo : yo ap ba ou yon resi.',
         noOnline: 'Peman ak kat sou entènèt pa disponib.',
         instructions: 'Konsiy pou peman',
-        howTo: 'Fè virman labank ou oswa peman Zelle ou a, epi deklare l isit la ak referans li. Li konte lè ekip nou an verifye l ; fakti a pa make peye anvan sa.',
+        howTo: 'Fè virman labank ou, peman Zelle ou oswa peman MonCash ou a, epi deklare l isit la ak referans li. Li konte lè ekip nou an verifye l ; fakti a pa make peye anvan sa.',
         method: 'Mòd peman',
         amount: 'Montan ou peye',
         reference: 'Referans peman an',

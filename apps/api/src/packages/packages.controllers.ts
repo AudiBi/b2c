@@ -2,6 +2,7 @@ import { Controller, Delete, Get, Header, HttpCode, Patch, Post } from '@nestjs/
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   addNoteSchema,
+  createCounterPackageSchema,
   createPrealertSchema,
   formatTrackingNumber,
   groupPackagesSchema,
@@ -60,6 +61,17 @@ export class AdminPackagesController {
   })
   receive(@CurrentAuth() auth: AuthContext, @VBody() body: z.infer<typeof receivePackageSchema>) {
     return this.packages.receive(auth, body);
+  }
+
+  @Post('counter')
+  @RequirePermission('package:receive')
+  @Validate({ body: createCounterPackageSchema })
+  @ApiOperation({
+    summary: 'Crée un colis au comptoir pour un client (avec ou sans compte) et un destinataire',
+    description: 'Le colis naît « reçu en entrepôt » ; la pesée et la facturation suivent le parcours habituel.',
+  })
+  createAtCounter(@CurrentAuth() auth: AuthContext, @VBody() body: z.infer<typeof createCounterPackageSchema>) {
+    return this.packages.createAtCounter(auth, body);
   }
 
   @Get(':id')

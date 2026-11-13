@@ -211,7 +211,7 @@ export class PortalFinanceController {
   @ApiOperation({ summary: 'Moyens de paiement réellement disponibles', description: 'Le paiement en ligne par carte n’existe pas (aucun prestataire) : online vaut toujours false.' })
   async options(@CurrentAuth() auth: AuthContext) {
     const settings = await this.db.run({ companyId: auth.companyId }, (tx) => this.ledger.settings(tx));
-    return { cash: true, declare: ['BANK_TRANSFER', 'ZELLE'], online: false, instructions: settings.paymentInstructions };
+    return { cash: true, declare: ['BANK_TRANSFER', 'ZELLE', 'MOBILE_MONEY'], online: false, instructions: settings.paymentInstructions };
   }
 }
 

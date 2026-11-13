@@ -71,7 +71,7 @@ export interface DeliveryAttemptItem {
   note: string | null;
   rescheduleFor: string | null;
   recipientName: string | null;
-  recipientKind: 'CUSTOMER' | 'BENEFICIARY' | null;
+  recipientKind: 'CUSTOMER' | 'BENEFICIARY' | 'RECIPIENT' | null;
   idDocumentType: string | null;
   idDocumentLast4: string | null;
   otpVerified: boolean;

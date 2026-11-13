@@ -1024,7 +1024,7 @@ export const fr = {
   finance: {
     invoiceStatuses: { DRAFT: 'Brouillon', ISSUED: 'À payer', PARTIALLY_PAID: 'Partiellement payée', PAID: 'Payée', VOID: 'Annulée', CREDITED: 'Créditée' },
     paymentStatuses: { PENDING: 'En attente de validation', CONFIRMED: 'Confirmé', FAILED: 'Refusé', CANCELLED: 'Annulé', REFUNDED_PARTIAL: 'Remboursé en partie', REFUNDED: 'Remboursé' },
-    methods: { CASH: 'Espèces', BANK_TRANSFER: 'Virement bancaire', ZELLE: 'Zelle' },
+    methods: { CASH: 'Espèces', BANK_TRANSFER: 'Virement bancaire', ZELLE: 'Zelle', MOBILE_MONEY: 'MonCash' },
     lineKinds: { FREIGHT: 'Fret', STORAGE: 'Stockage', HANDLING: 'Manutention', INSURANCE: 'Assurance', TAX: 'Taxe', CUSTOMS: 'Douane', DISCOUNT: 'Remise', OTHER: 'Autre' },
     events: {
       'prealert.created': 'Achat déclaré',
@@ -1059,7 +1059,7 @@ export const fr = {
         cash: 'Vous pouvez aussi payer en espèces auprès de nos agents : un reçu vous sera remis.',
         noOnline: 'Le paiement par carte en ligne n’est pas disponible.',
         instructions: 'Consignes de paiement',
-        howTo: 'Faites votre virement bancaire ou votre paiement Zelle, puis déclarez-le ici avec sa référence. Il sera pris en compte après vérification par notre équipe ; la facture ne passe pas « payée » avant.',
+        howTo: 'Faites votre virement bancaire, votre paiement Zelle ou MonCash, puis déclarez-le ici avec sa référence. Il sera pris en compte après vérification par notre équipe ; la facture ne passe pas « payée » avant.',
         method: 'Mode de paiement',
         amount: 'Montant payé',
         reference: 'Référence du paiement',

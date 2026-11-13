@@ -110,6 +110,7 @@ describe('calculateur de frais', () => {
       destinationCountry: 'HT',
       weight: { value: 2.3, unit: 'KG' },
       optionalSurcharges: [],
+      quantity: 1,
     });
     // aucun appel authentifié pour un visiteur
     expect(calls('POST /v1/me/quotes')).toHaveLength(0);
@@ -132,6 +133,7 @@ describe('calculateur de frais', () => {
       dimensions: { length: 40, width: 30, height: 20, unit: 'CM' },
       declaredValue: 100,
       optionalSurcharges: ['INSURANCE'],
+      quantity: 1,
     });
   });
 

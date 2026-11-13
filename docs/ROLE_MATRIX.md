@@ -36,11 +36,16 @@ Les 13 routes ouvertes à tout utilisateur connecté (profil, session, double au
 | `DELETE /v1/me/team/:userId` | team:manage_own | · | · | · | · | · | · | · | · | · | · | ✔ | · | · | · |
 | `GET /v1/admin/customers` | customer:read | · | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | · | · | · | · | · | ✔ |
 | `GET /v1/admin/customers/:id` | customer:read | · | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | · | · | · | · | · | ✔ |
+| `POST /v1/admin/customers` | customer:create | · | ✔ | · | ✔ | ✔ | · | · | ✔ | · | · | · | · | · | · |
+| `PATCH /v1/admin/customers/:id` | customer:update | · | ✔ | · | ✔ | ✔ | · | · | ✔ | · | · | · | · | · | · |
+| `POST /v1/admin/customers/:id/invite` | customer:update | · | ✔ | · | ✔ | ✔ | · | · | ✔ | · | · | · | · | · | · |
 | `GET /v1/admin/warehouses` | warehouse:read | · | ✔ | ✔ | ✔ | ✔ | · | · | · | · | · | · | · | · | ✔ |
 | `POST /v1/admin/warehouses` | warehouse:manage | · | ✔ | · | ✔ | · | · | · | · | · | · | · | · | · | · |
 | `PATCH /v1/admin/warehouses/:id` | warehouse:manage | · | ✔ | · | ✔ | · | · | · | · | · | · | · | · | · | · |
 | `GET /v1/admin/settings/public-contact` | settings:read | · | ✔ | · | · | · | · | · | · | · | · | · | · | · | ✔ |
 | `PUT /v1/admin/settings/public-contact` | settings:update | · | ✔ | · | · | · | · | · | · | · | · | · | · | · | · |
+| `GET /v1/admin/settings/fx-rate` | settings:read | · | ✔ | · | · | · | · | · | · | · | · | · | · | · | ✔ |
+| `PUT /v1/admin/settings/fx-rate` | settings:update | · | ✔ | · | · | · | · | · | · | · | · | · | · | · | · |
 | `GET /v1/admin/rate-cards` | rate:read | · | ✔ | ✔ | · | · | ✔ | · | · | · | · | · | · | · | ✔ |
 | `GET /v1/admin/rate-cards/:id` | rate:read | · | ✔ | ✔ | · | · | ✔ | · | · | · | · | · | · | · | ✔ |
 | `POST /v1/admin/rate-cards` | rate:manage | · | ✔ | · | · | · | · | · | · | · | · | · | · | · | · |
@@ -57,6 +62,7 @@ Les 13 routes ouvertes à tout utilisateur connecté (profil, session, double au
 | `GET /v1/admin/packages` | package:read | · | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | · | · | · | · | · | ✔ |
 | `GET /v1/admin/packages/expected` | package:receive | · | ✔ | · | ✔ | ✔ | · | · | · | · | · | · | · | · | · |
 | `POST /v1/admin/packages/receive` | package:receive | · | ✔ | · | ✔ | ✔ | · | · | · | · | · | · | · | · | · |
+| `POST /v1/admin/packages/counter` | package:receive | · | ✔ | · | ✔ | ✔ | · | · | · | · | · | · | · | · | · |
 | `GET /v1/admin/packages/:id` | package:read | · | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | · | · | · | · | · | ✔ |
 | `POST /v1/admin/packages/:id/register` | package:register | · | ✔ | · | ✔ | ✔ | · | · | · | · | · | · | · | · | · |
 | `POST /v1/admin/packages/:id/identify` | package:update | · | ✔ | · | ✔ | · | · | · | · | · | · | · | · | · | · |

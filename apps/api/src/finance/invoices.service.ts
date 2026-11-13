@@ -108,6 +108,16 @@ export class InvoicesService {
           if (percent > maxDiscountPercent) throw new AppException(422, 'DISCOUNT_ABOVE_CAP', `La remise dépasse le plafond de l'entreprise (${maxDiscountPercent} %)`, { max: maxDiscountPercent });
         }
 
+        if (input.priceOverrides.length > 0 && !auth.permissions.can('price:override')) {
+          throw AppException.forbidden('PRICE_OVERRIDE_NOT_ALLOWED', "Vous n'avez pas le droit de fixer un prix à la main");
+        }
+        const overrides = new Map(input.priceOverrides.map((o) => [o.packageId, o]));
+        if (overrides.size !== input.priceOverrides.length) throw AppException.badRequest('PRICE_OVERRIDE_DUPLICATE', 'Un colis a deux prix convenus');
+        for (const id of overrides.keys()) {
+          if (!input.packageIds.includes(id)) throw AppException.badRequest('PRICE_OVERRIDE_PACKAGE_UNKNOWN', "Un prix convenu désigne un colis qui n'est pas sur la facture");
+        }
+        const overrideAudit: { packageId: string; computed: string | null; agreed: string; reason: string }[] = [];
+
         const packages = await tx.package.findMany({ where: { id: { in: input.packageIds } }, include: { invoicePackage: true } });
         if (packages.length !== input.packageIds.length) throw AppException.notFound('PACKAGE_NOT_FOUND', 'Un des colis est introuvable');
         for (const pkg of packages) {
@@ -123,6 +133,16 @@ export class InvoicesService {
           const display = formatTrackingNumber(pkg.trackingNumber);
           const snapshot = pkg.pricingSnapshot as { kind?: string; result?: { currency: string; lines: { code: string; kind: string; label: Record<string, string> | null; amount: string }[] } } | null;
           const extraFreight = input.extraLines.filter((l) => l.packageId === pkg.id && l.kind === 'FREIGHT');
+          const agreed = overrides.get(pkg.id);
+          if (agreed) {
+            if (extraFreight.length > 0) throw new AppException(409, 'PACKAGE_ALREADY_PRICED', 'Un prix convenu remplace le fret : pas de fret saisi en plus', { trackingNumber: pkg.trackingNumber });
+            const computed = snapshot?.kind === 'COMPUTED_AT_WEIGHING' ? (snapshot.result ?? null) : null;
+            if (computed) currencies.add(computed.currency);
+            const computedTotal = computed ? computed.lines.reduce((acc, l) => acc.add(new D(l.amount)), new D(0)) : null;
+            overrideAudit.push({ packageId: pkg.id, computed: computedTotal ? computedTotal.toFixed(2) : null, agreed: money(agreed.amount).toFixed(2), reason: agreed.reason });
+            lines.push({ kind: 'FREIGHT', description: `Prix convenu — ${display}`.slice(0, 200), amount: money(agreed.amount), packageId: pkg.id });
+            continue;
+          }
           if (snapshot?.kind === 'COMPUTED_AT_WEIGHING' && snapshot.result) {
             if (extraFreight.length > 0) throw new AppException(409, 'PACKAGE_ALREADY_PRICED', 'Ce colis a déjà un tarif calculé : pas de fret saisi à la main', { trackingNumber: pkg.trackingNumber });
             currencies.add(snapshot.result.currency);
@@ -167,7 +187,7 @@ export class InvoicesService {
         });
         await tx.invoiceLine.createMany({ data: lines.map((l, i) => ({ companyId: auth.companyId, invoiceId: invoice.id, kind: l.kind, description: l.description, quantity: new D(1), unitPrice: l.amount, amount: l.amount, packageId: l.packageId, position: i + 1 })) });
         if (packages.length > 0) await tx.invoicePackage.createMany({ data: packages.map((p) => ({ companyId: auth.companyId, invoiceId: invoice.id, packageId: p.id })) });
-        await this.audit.record(tx, { companyId: auth.companyId, action: 'invoice.drafted', entityType: 'invoice', entityId: invoice.id, after: { customerId: input.customerId, total: total.toFixed(2), currency } });
+        await this.audit.record(tx, { companyId: auth.companyId, action: 'invoice.drafted', entityType: 'invoice', entityId: invoice.id, after: { customerId: input.customerId, total: total.toFixed(2), currency, ...(overrideAudit.length > 0 ? { priceOverrides: overrideAudit } : {}) } });
         return this.read(tx, invoice.id);
       });
     } catch (error) {

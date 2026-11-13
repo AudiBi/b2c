@@ -484,7 +484,7 @@ export class DeliveryService {
 
     // Code de remise : les essais erronés sont comptés même si l'opération échoue (la transaction est validée)
     let otpVerified = false;
-    if (settings.requireOtp && !input.otp) return { fail: AppException.unprocessable('OTP_REQUIRED', 'Le code de remise du client est obligatoire') };
+    if (settings.requireOtp && !input.otp && input.recipientKind !== 'RECIPIENT') return { fail: AppException.unprocessable('OTP_REQUIRED', 'Le code de remise du client est obligatoire') };
     if (input.otp) {
       const active = await tx.handoverCode.findFirst({ where: { packageId: pkg.id, usedAt: null, revokedAt: null }, orderBy: { createdAt: 'desc' } });
       if (!active || active.expiresAt < new Date()) {

@@ -27,6 +27,7 @@ const SecurityPage = lazy(() => import('./pages/security/SecurityPage').then((m)
 const UsersPage = lazy(() => import('./pages/admin/UsersPage').then((m) => ({ default: m.UsersPage })));
 const UserDetailPage = lazy(() => import('./pages/admin/UserDetailPage').then((m) => ({ default: m.UserDetailPage })));
 const RolesPage = lazy(() => import('./pages/admin/RolesPage').then((m) => ({ default: m.RolesPage })));
+const StaffCounterPage = lazy(() => import('./pages/staff/StaffCounterPage').then((m) => ({ default: m.StaffCounterPage })));
 const CompaniesPage = lazy(() => import('./pages/admin/CompaniesPage').then((m) => ({ default: m.CompaniesPage })));
 
 export function AppRoutes() {
@@ -40,6 +41,7 @@ export function AppRoutes() {
         <Route index element={<HomePage />} />
         <Route path="dashboard" element={<StaffDashboardPage />} />
         <Route path="reception" element={<StaffReceptionPage />} />
+        <Route path="counter" element={<StaffCounterPage />} />
         <Route path="packages" element={<StaffPackagesPage />} />
         <Route path="packages/:id" element={<StaffPackageDetailPage />} />
         <Route path="warehouse" element={<StaffWarehousePage />} />

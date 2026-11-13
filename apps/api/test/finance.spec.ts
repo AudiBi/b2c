@@ -552,7 +552,7 @@ describe('Finance : factures, paiements, caisse, remboursements, export', () => 
       const w = await setup();
       await api(t).put('/v1/admin/settings/finance').set(bearer(w.token)).send({ paymentInstructions: 'Virement : compte 123' });
       const res = await api(t).get('/v1/me/payment-options').set(bearer(w.customer1.token));
-      expect(res.body).toEqual({ cash: true, declare: ['BANK_TRANSFER', 'ZELLE'], online: false, instructions: 'Virement : compte 123' });
+      expect(res.body).toEqual({ cash: true, declare: ['BANK_TRANSFER', 'ZELLE', 'MOBILE_MONEY'], online: false, instructions: 'Virement : compte 123' });
     });
 
     it('mes paiements et mon reçu en PDF ; le reçu d’un autre est introuvable', async () => {

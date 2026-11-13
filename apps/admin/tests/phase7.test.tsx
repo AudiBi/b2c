@@ -195,7 +195,7 @@ describe('factures (personnel)', () => {
     await u.type(screen.getByLabelText(/^Remise/), '5');
     await u.click(screen.getByRole('button', { name: fr.finance.staff.billing.form.submit }));
     await waitFor(() => expect(calls('POST /v1/admin/invoices')).toHaveLength(1));
-    expect(bodyOf(calls('POST /v1/admin/invoices')[0])).toEqual({ customerId: CUS, packageIds: [PKG], extraLines: [], discountPercent: 5 });
+    expect(bodyOf(calls('POST /v1/admin/invoices')[0])).toEqual({ customerId: CUS, packageIds: [PKG], extraLines: [], priceOverrides: [], discountPercent: 5 });
   });
 });
 

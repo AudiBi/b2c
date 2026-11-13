@@ -1021,7 +1021,7 @@ export const en: Messages = {
   finance: {
     invoiceStatuses: { DRAFT: 'Draft', ISSUED: 'To pay', PARTIALLY_PAID: 'Partially paid', PAID: 'Paid', VOID: 'Void', CREDITED: 'Credited' },
     paymentStatuses: { PENDING: 'Awaiting validation', CONFIRMED: 'Confirmed', FAILED: 'Rejected', CANCELLED: 'Cancelled', REFUNDED_PARTIAL: 'Partly refunded', REFUNDED: 'Refunded' },
-    methods: { CASH: 'Cash', BANK_TRANSFER: 'Bank transfer', ZELLE: 'Zelle' },
+    methods: { CASH: 'Cash', BANK_TRANSFER: 'Bank transfer', ZELLE: 'Zelle', MOBILE_MONEY: 'MonCash' },
     lineKinds: { FREIGHT: 'Freight', STORAGE: 'Storage', HANDLING: 'Handling', INSURANCE: 'Insurance', TAX: 'Tax', CUSTOMS: 'Customs', DISCOUNT: 'Discount', OTHER: 'Other' },
     events: {
       'prealert.created': 'Purchase declared',
@@ -1056,7 +1056,7 @@ export const en: Messages = {
         cash: 'You can also pay cash with our agents: you will be given a receipt.',
         noOnline: 'Online card payment is not available.',
         instructions: 'Payment instructions',
-        howTo: 'Make your bank transfer or Zelle payment, then declare it here with its reference. It counts once our team has checked it; the invoice is not marked paid before that.',
+        howTo: 'Make your bank transfer, Zelle or MonCash payment, then declare it here with its reference. It counts once our team has checked it; the invoice is not marked paid before that.',
         method: 'Payment method',
         amount: 'Amount paid',
         reference: 'Payment reference',

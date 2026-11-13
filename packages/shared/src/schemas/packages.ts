@@ -102,6 +102,8 @@ export const registerPackageSchema = z.strictObject({
   declaredValue: moneySchema.optional(),
   declaredCurrency: currencySchema.optional(),
   insured: z.boolean().default(false),
+  /** Nombre de colis identiques (boîtes, barils) : sert aux tarifs au volume et à l'unité. */
+  quantity: z.number().int().min(1).max(10000).default(1),
   /** Seulement si le mode n'est pas encore connu (colis reçu sans préalerte). */
   transportMode: z.enum(TRANSPORT_MODES).optional(),
 });
@@ -160,3 +162,18 @@ export const uploadFileQuerySchema = z.strictObject({
   kind: z.enum(FILE_KINDS),
   filename: z.string().trim().min(1).max(120),
 });
+
+/** Colis créé au comptoir : l'expéditeur est le client, le destinataire peut être une autre personne. */
+export const createCounterPackageSchema = z.strictObject({
+  warehouseId: z.uuid(),
+  customerId: z.uuid(),
+  transportMode: z.enum(TRANSPORT_MODES),
+  recipientName: z.string().trim().min(1).max(120),
+  recipientPhone: z.string().trim().max(30).optional(),
+  recipientCity: z.string().trim().max(80).optional(),
+  destinationAgencyId: z.uuid().optional(),
+  contentDescription: optionalText(500),
+  legacyTrackingNumber: z.string().trim().max(60).optional(),
+  notes: optionalText(500),
+});
+export type CreateCounterPackageInput = z.infer<typeof createCounterPackageSchema>;

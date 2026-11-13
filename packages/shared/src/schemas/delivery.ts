@@ -56,7 +56,7 @@ export const listRoutesQuerySchema = z.strictObject({
 /** Remise : sur place à l'agence ou par le livreur. Les preuves exigées dépendent de la règle de l'entreprise. */
 export const handoverSchema = z
   .strictObject({
-    recipientKind: z.enum(['CUSTOMER', 'BENEFICIARY']),
+    recipientKind: z.enum(['CUSTOMER', 'BENEFICIARY', 'RECIPIENT']),
     /** Bénéficiaire autorisé du client (obligatoire si ce n'est pas le client lui-même). */
     beneficiaryId: z.uuid().optional(),
     /** Nom de la personne qui reçoit (par défaut : le client, ou le bénéficiaire choisi). */
@@ -77,6 +77,10 @@ export const handoverSchema = z
   .superRefine((value, ctx) => {
     if (value.recipientKind === 'BENEFICIARY' && !value.beneficiaryId) {
       ctx.addIssue({ code: 'custom', path: ['beneficiaryId'], message: 'beneficiary_required' });
+    }
+    if (value.recipientKind === 'RECIPIENT') {
+      if (!value.recipientName) ctx.addIssue({ code: 'custom', path: ['recipientName'], message: 'recipient_name_required' });
+      if (value.beneficiaryId) ctx.addIssue({ code: 'custom', path: ['beneficiaryId'], message: 'beneficiary_not_expected' });
     }
     if (value.recipientKind === 'CUSTOMER' && value.beneficiaryId) {
       ctx.addIssue({ code: 'custom', path: ['beneficiaryId'], message: 'beneficiary_not_expected' });

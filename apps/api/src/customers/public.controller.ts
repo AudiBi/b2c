@@ -1,6 +1,7 @@
 import { Controller, Get, Header, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { publicCompanySlugParamSchema, publicContactSchema, PLATFORM_COMPANY_ID, type PublicContact } from '@b2c/shared';
+import { publicCompanySlugParamSchema, publicContactSchema, setFxRateSchema, PLATFORM_COMPANY_ID, type PublicContact, type SetFxRateInput } from '@b2c/shared';
+import type { Prisma } from '@prisma/client';
 import type { z } from 'zod';
 import { AuditService } from '../audit/audit.service';
 import { AppException } from '../common/errors';
@@ -11,6 +12,17 @@ import type { AuthContext } from '../security/auth.types';
 import { CurrentAuth, Public, RateLimit, RequirePermission } from '../security/decorators';
 
 const CONTACT_KEY = 'public.contact';
+const FX_KEY = 'fx.htg_per_usd';
+interface FxEntry {
+  htgPerUsd: number;
+  note: string | null;
+  setAt: string;
+  setBy: string;
+}
+interface FxSetting {
+  current: FxEntry | null;
+  history: FxEntry[];
+}
 const NO_CONTACT: PublicContact = { phones: [], address: undefined, hours: undefined };
 
 type Params = z.infer<typeof publicCompanySlugParamSchema>;
@@ -120,6 +132,42 @@ export class SettingsController {
         after: { fields: Object.keys(body) },
       });
       return body;
+    });
+  }
+
+  @Get('fx-rate')
+  @RequirePermission('settings:read')
+  @ApiOperation({ summary: 'Taux gourdes/dollar (affichage seulement) et son historique' })
+  async fx(@CurrentAuth() auth: AuthContext) {
+    const setting = await this.db.run({ companyId: auth.companyId }, (tx) =>
+      tx.companySetting.findUnique({ where: { companyId_key: { companyId: auth.companyId, key: FX_KEY } } }),
+    );
+    return (setting?.value as FxSetting | undefined) ?? { current: null, history: [] };
+  }
+
+  @Put('fx-rate')
+  @RequirePermission('settings:update')
+  @Validate({ body: setFxRateSchema })
+  @ApiOperation({ summary: 'Fixe le taux gourdes/dollar ; l’ancien taux reste dans l’historique (50 derniers)' })
+  async setFx(@CurrentAuth() auth: AuthContext, @VBody() body: SetFxRateInput) {
+    return this.db.run({ companyId: auth.companyId }, async (tx) => {
+      const existing = await tx.companySetting.findUnique({ where: { companyId_key: { companyId: auth.companyId, key: FX_KEY } } });
+      const before = (existing?.value as FxSetting | undefined) ?? { current: null, history: [] };
+      const entry = { htgPerUsd: body.htgPerUsd, note: body.note ?? null, setAt: new Date().toISOString(), setBy: auth.userId };
+      const value: FxSetting = { current: entry, history: [entry, ...before.history].slice(0, 50) };
+      await tx.companySetting.upsert({
+        where: { companyId_key: { companyId: auth.companyId, key: FX_KEY } },
+        update: { value: value as unknown as Prisma.InputJsonValue },
+        create: { companyId: auth.companyId, key: FX_KEY, value: value as unknown as Prisma.InputJsonValue },
+      });
+      await this.audit.record(tx, {
+        companyId: auth.companyId,
+        action: 'settings.fx_rate_updated',
+        entityType: 'company_setting',
+        before: before.current ? { htgPerUsd: before.current.htgPerUsd } : undefined,
+        after: { htgPerUsd: body.htgPerUsd },
+      });
+      return value;
     });
   }
 }
