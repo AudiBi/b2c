@@ -23,3 +23,6 @@ loadtest-results.json
 certs/
 .env.production
 backups/
+
+# Dossier de mise en ligne du prototype de gestion (contient son code et des tarifs internes)
+deploy/gestion/

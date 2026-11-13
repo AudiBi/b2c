@@ -78,6 +78,8 @@ DEMO_PASSWORD='<un mot de passe de votre choix>' npm run db:seed:demo
 
 Crée l'entreprise `demo` (nom préfixé « DEMO », préfixe de code client `DM`) avec un compte par rôle, tous en `@demo.invalid` et tous avec le mot de passe donné : `company-admin`, `logistics-manager`, `billing-agent`, `customer-service`, `driver`, `customer-individual`, `customer-business`, `auditor`. Le script ajoute aussi un entrepôt, une catégorie et une grille tarifaire aérienne **fictifs** (étiquetés DEMO) pour que le calculateur et les préalertes fonctionnent. Trois comptes à portée limitée sont aussi créés : `reception-agent` et `warehouse-manager` (entrepôt DEMO), `agency-manager` (agence DEMO fictive). Le script refuse de s'exécuter si `NODE_ENV=production`. Aucun mot de passe n'est enregistré dans le dépôt.
 
+**Scénario complet de démonstration** (pour comprendre le fonctionnement) : une fois l'API démarrée, `DEMO_PASSWORD='…' npm run db:seed:demo-data` joue une histoire de bout en bout via l'API réelle : 11 colis à des étapes différentes (préalerte, pesée, facture, paiement, lots, arrivée, retrait, livraison), une réclamation, un remboursement, une caisse, des notifications. Le guide [docs/DEMO.md](docs/DEMO.md) indique quoi regarder avec quel compte. Le script est rejouable sans danger.
+
 ## Tests
 
 ```bash
@@ -131,7 +133,7 @@ Aucun secret n'est dans le dépôt : `.env` est ignoré par Git et `.env.example
 apps/api/           API NestJS (modules : security, auth, iam, audit, platform, customers, infra, health…)
 apps/web/           Site public et espace client (React, pré-rendu), tests Vitest et Playwright
 packages/shared/    catalogue des permissions et rôles, PermissionSet, schémas zod partagés
-prisma/             schema.prisma, migrations/ (0001 à 0003), seed.ts, seed-demo.ts
+prisma/             schema.prisma, migrations/, seed.ts, seed-demo.ts (comptes), seed-demo-scenario.ts (scénario complet)
 docker/             compose.dev.yml, initialisation des rôles PostgreSQL
 docs/               audit, spécifications, architecture, schéma, API (+ openapi.json), sécurité, tests
 ```

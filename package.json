@@ -20,6 +20,8 @@
     "db:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
+    "db:seed:demo-data": "tsx prisma/seed-demo-scenario.ts",
+    "import:gestion": "tsx scripts/import-gestion/run.ts",
     "build": "npm run build:shared && npm run prisma:generate && npm -w @b2c/api run build",
     "start": "node --env-file=.env apps/api/dist/main.js",
     "docs:openapi": "npm -w @b2c/api run docs:openapi",
