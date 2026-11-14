@@ -87,6 +87,18 @@ export const PERMISSIONS = {
   'claim:manage': 'Traiter les réclamations',
   'report:read': 'Consulter les tableaux de bord',
   'report:export': 'Exporter des rapports',
+  'cost:read': 'Voir les coûts d’achat et les marges (jamais les clients)',
+  'cost:manage': 'Fixer les coûts d’achat des grilles',
+  'report:profit': 'Consulter le profit mensuel',
+  'expense:read': 'Lire les dépenses',
+  'expense:manage': 'Saisir et corriger les dépenses',
+  'deposit:read': 'Lire les dépôts bancaires',
+  'deposit:manage': 'Enregistrer un dépôt bancaire',
+  'petty_cash:read': 'Lire la petite caisse',
+  'petty_cash:manage': 'Saisir une écriture de petite caisse',
+  'referrer:read': 'Lire les référents et leurs relevés',
+  'referrer:manage': 'Gérer les référents et payer les commissions',
+  'claim:compensate': 'Enregistrer l’indemnité d’un incident et le remboursement du transporteur',
 } as const;
 
 export type PermissionCode = keyof typeof PERMISSIONS;

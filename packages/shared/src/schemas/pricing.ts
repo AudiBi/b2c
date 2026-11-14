@@ -27,6 +27,8 @@ export const rateRuleSchema = z
     basis: z.enum(PRICING_BASES).default('WEIGHT'),
     /** Diviseur volumétrique propre à cette tranche (ex. e-conteneur) ; sinon celui de la grille. */
     volumetricDivisor: z.number().positive().max(1_000_000).optional(),
+    /** Coût d'achat par unité de base (lb, pi³ ou baril) : réservé à ceux qui ont `cost:manage`, jamais exposé aux autres. */
+    unitCost: z.number().min(0).max(1_000_000).optional(),
   })
   .superRefine((rule, ctx) => {
     if (rule.weightTo !== undefined && rule.weightTo <= rule.weightFrom) {

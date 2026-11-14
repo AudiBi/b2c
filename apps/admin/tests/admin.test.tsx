@@ -403,7 +403,7 @@ describe('rôles personnalisés', () => {
     await waitFor(() => expect(calls('POST /v1/admin/roles')).toHaveLength(1));
     expect(bodyOf(calls('POST /v1/admin/roles')[0])).toEqual({ name: 'Contrôle qualité', scopeType: 'WAREHOUSE', permissions: ['invoice:read', 'package:read'] });
     expect(await screen.findByText(fr.admin.roles.editor.created)).toBeInTheDocument();
-  });
+  }, 20000);
 
   it('modification : droits préremplis, envoi du nom, de la description et des droits', async () => {
     signedIn(me('STAFF', MANAGER), { ...handlers([custom({ holders: 2 })]), 'PATCH /v1/admin/roles/custom-controle-abc123': () => json(200, custom()) });

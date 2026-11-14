@@ -149,7 +149,7 @@ describe('Rôles, permissions et administration des utilisateurs', () => {
       expect((await t.admin.user.findUniqueOrThrow({ where: { id: target.id } })).status).toBe('ACTIVE');
     });
 
-    it("les droits d'un rôle sont ceux du catalogue (les 14 rôles existent en base avec leurs permissions)", async () => {
+    it("les droits d'un rôle sont ceux du catalogue (les 16 rôles existent en base avec leurs permissions)", async () => {
       const roles = await t.admin.role.findMany({ where: { companyId: PLATFORM_COMPANY_ID }, include: { permissions: true } });
       expect(roles.map((r) => r.code).sort()).toEqual([...ROLE_CODES].sort());
       for (const role of roles) {

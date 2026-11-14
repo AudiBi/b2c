@@ -42,9 +42,10 @@ interface RuleForm {
   flat: string;
   min: string;
   divisor: string;
+  cost: string;
 }
 
-const emptyRule = (): RuleForm => ({ category: '', basis: 'WEIGHT', from: '0', to: '', price: '', flat: '', min: '', divisor: '' });
+const emptyRule = (): RuleForm => ({ category: '', basis: 'WEIGHT', from: '0', to: '', price: '', flat: '', min: '', divisor: '', cost: '' });
 const num = (v: string) => (v.trim() === '' ? undefined : Number(v.replace(',', '.')));
 
 const cardsKey = ['rate-cards'] as const;
@@ -55,6 +56,7 @@ export function StaffRateCardsPage() {
   const r = m.staff.rates;
   const queryClient = useQueryClient();
   const canManage = useCan('rate:manage');
+  const canCost = useCan('cost:manage');
   const cards = useQuery({ queryKey: cardsKey, queryFn: () => api<{ items: Card[] }>('/v1/admin/rate-cards') });
   const categories = useQuery({ queryKey: ['categories'], queryFn: () => api<{ items: { code: string; name: { fr: string } }[] }>('/v1/admin/categories') });
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +111,7 @@ export function StaffRateCardsPage() {
         ...(num(x.flat) !== undefined ? { flatFee: num(x.flat) } : {}),
         ...(num(x.min) !== undefined ? { minCharge: num(x.min) } : {}),
         ...(num(x.divisor) !== undefined ? { volumetricDivisor: num(x.divisor) } : {}),
+        ...(canCost && num(x.cost) !== undefined ? { unitCost: num(x.cost) } : {}),
       })),
       surcharges: [],
     };
@@ -202,6 +205,7 @@ export function StaffRateCardsPage() {
               <TextField name={`ruleFrom-${i}`} label={r.from} type="number" value={x.from} onChange={(v) => setRule(i, { from: v })} />
               <TextField name={`ruleTo-${i}`} label={r.to} optional type="number" value={x.to} onChange={(v) => setRule(i, { to: v })} />
               {x.basis === 'WEIGHT' ? <TextField name={`ruleDivisor-${i}`} label={r.ruleDivisor} optional type="number" value={x.divisor} onChange={(v) => setRule(i, { divisor: v })} hint={r.ruleDivisorHint} /> : null}
+              {canCost ? <TextField name={`ruleCost-${i}`} label={r.unitCost} hint={r.unitCostHint} optional type="number" value={x.cost} onChange={(v) => setRule(i, { cost: v })} /> : null}
               <TextField name={`ruleFlat-${i}`} label={r.flat} optional type="number" value={x.flat} onChange={(v) => setRule(i, { flat: v })} />
               <TextField name={`ruleMin-${i}`} label={r.min} optional type="number" value={x.min} onChange={(v) => setRule(i, { min: v })} />
               {rules.length > 1 ? (

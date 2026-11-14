@@ -18,6 +18,8 @@ export interface StaffPackage {
   destinationCity: string | null;
   transportMode: TransportMode | null;
   supplierTracking: string | null;
+  recipientName?: string | null;
+  recipientPhone?: string | null;
   contentDescription: string | null;
   declaredValue: string | null;
   declaredCurrency: string | null;

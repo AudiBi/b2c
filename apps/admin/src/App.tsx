@@ -31,6 +31,13 @@ const RolesPage = lazy(() => import('./pages/admin/RolesPage').then((m) => ({ de
 const StaffCounterPage = lazy(() => import('./pages/staff/StaffCounterPage').then((m) => ({ default: m.StaffCounterPage })));
 const StaffCustomsPage = lazy(() => import('./pages/staff/StaffCustomsPage').then((m) => ({ default: m.StaffCustomsPage })));
 const StaffRateCardsPage = lazy(() => import('./pages/staff/StaffRateCardsPage').then((m) => ({ default: m.StaffRateCardsPage })));
+const StaffProfitPage = lazy(() => import('./pages/staff/StaffProfitPage').then((m) => ({ default: m.StaffProfitPage })));
+const StaffExpensesPage = lazy(() => import('./pages/staff/StaffExpensesPage').then((m) => ({ default: m.StaffExpensesPage })));
+const StaffPettyCashPage = lazy(() => import('./pages/staff/StaffPettyCashPage').then((m) => ({ default: m.StaffPettyCashPage })));
+const StaffDepositsPage = lazy(() => import('./pages/staff/StaffDepositsPage').then((m) => ({ default: m.StaffDepositsPage })));
+const StaffReferrersPage = lazy(() => import('./pages/staff/StaffReferrersPage').then((m) => ({ default: m.StaffReferrersPage })));
+const StaffDelaysPage = lazy(() => import('./pages/staff/StaffDelaysPage').then((m) => ({ default: m.StaffDelaysPage })));
+const StaffProformasPage = lazy(() => import('./pages/staff/StaffProformasPage').then((m) => ({ default: m.StaffProformasPage })));
 const CompaniesPage = lazy(() => import('./pages/admin/CompaniesPage').then((m) => ({ default: m.CompaniesPage })));
 
 export function AppRoutes() {
@@ -47,6 +54,13 @@ export function AppRoutes() {
         <Route path="counter" element={<StaffCounterPage />} />
         <Route path="customs" element={<StaffCustomsPage />} />
         <Route path="rates" element={<StaffRateCardsPage />} />
+        <Route path="profit" element={<StaffProfitPage />} />
+        <Route path="expenses" element={<StaffExpensesPage />} />
+        <Route path="petty-cash" element={<StaffPettyCashPage />} />
+        <Route path="deposits" element={<StaffDepositsPage />} />
+        <Route path="referrers" element={<StaffReferrersPage />} />
+        <Route path="delays" element={<StaffDelaysPage />} />
+        <Route path="proformas" element={<StaffProformasPage />} />
         <Route path="packages" element={<StaffPackagesPage />} />
         <Route path="packages/:id" element={<StaffPackageDetailPage />} />
         <Route path="warehouse" element={<StaffWarehousePage />} />

@@ -45,6 +45,14 @@ export class RateCardsController {
     return this.pricing.getCard(auth, params.id);
   }
 
+  @Get(':id/costs')
+  @RequirePermission('cost:read')
+  @Validate({ params: idParamSchema })
+  @ApiOperation({ summary: "Coûts d'achat par tranche (réservé à l'administration et à la comptabilité)" })
+  costs(@CurrentAuth() auth: AuthContext, @VParams() params: Id) {
+    return this.pricing.listCosts(auth, params.id);
+  }
+
   @Post()
   @RequirePermission('rate:manage')
   @Validate({ body: createRateCardSchema })

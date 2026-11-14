@@ -17,7 +17,7 @@ import { AppException } from '../common/errors';
 import { DbService, type Tx } from '../database/db.service';
 import { CounterService } from '../infra/counter.service';
 import { displayName, OutboxService } from '../notifications/outbox.service';
-import { calculate, PricingError, toDimensionUnit, toWeightUnit } from '../pricing/calculator';
+import { calculate, calculateCost, PricingError, toDimensionUnit, toWeightUnit } from '../pricing/calculator';
 import { PricingService, toCardData } from '../pricing/pricing.service';
 import type { AuthContext } from '../security/auth.types';
 import { TrackingNumberService } from './tracking-number.service';
@@ -71,6 +71,7 @@ export function staffPackageDto(pkg: PackageWithRelations) {
     customer: pkg.customer ? { id: pkg.customer.id, customerCode: pkg.customer.customerCode, name: customerName } : null,
     senderName: pkg.senderName,
     recipientName: pkg.recipientName,
+    recipientPhone: pkg.recipientPhone,
     warehouse: { id: pkg.warehouse.id, reference: pkg.warehouse.reference, name: pkg.warehouse.name, city: pkg.warehouse.city },
     originCountry: pkg.originCountry,
     originCity: pkg.originCity,
@@ -392,6 +393,7 @@ export class PackagesService {
           recipientPhone: input.recipientPhone,
           recipientCity: input.recipientCity,
           destinationCity: input.recipientCity ?? created.destinationCity,
+          destinationCountry: input.destinationCountry ?? created.destinationCountry,
           destinationAgencyId: input.destinationAgencyId,
           contentDescription: input.contentDescription,
           legacyTrackingNumber: input.legacyTrackingNumber,
@@ -608,6 +610,7 @@ export class PackagesService {
             quantity: input.quantity,
           });
           const freight = new D(result.freight);
+          const cost = calculateCost(data, result);
           snapshot = { kind: 'COMPUTED_AT_WEIGHING', card: { id: card.id, name: card.name, version: card.version }, result } as unknown as Prisma.InputJsonValue;
           pricingData = {
             volumetricWeight: result.volumetricWeight ? new D(result.volumetricWeight) : null,
@@ -617,6 +620,9 @@ export class PackagesService {
             shippingFee: freight,
             extraFees: new D(result.total).sub(freight),
             feeCurrency: result.currency,
+            // Coût d'achat figé (jamais dans une réponse destinée à un client)
+            costAmount: cost ? new D(cost.amount) : null,
+            costCurrency: cost?.currency ?? null,
           };
         } catch (error) {
           if (!(error instanceof PricingError)) throw error;

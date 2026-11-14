@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { api, ApiError } from '../../api/client';
+import { api, ApiError, NetworkError } from '../../api/client';
+import { clearFailed, enqueueScan, failedScans, queuedScans, syncQueue, type FailedScan } from '../../lib/offline-scans';
 import { apiErrorMessage } from '../../forms/validation';
 import { format, useI18n } from '../../i18n';
 import { formatDateTime } from '../../lib/format';
@@ -18,6 +19,7 @@ interface Entry {
   at: string;
   code: string;
   outcome?: Outcome;
+  queued?: boolean;
   package?: StaffPackage;
   error?: string;
 }
@@ -32,6 +34,10 @@ export function StaffReceptionPage() {
   const [selected, setSelected] = useState('');
   const [mode, setMode] = useState<'' | TransportMode>('');
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [pending, setPending] = useState(queuedScans().length);
+  const [failed, setFailed] = useState<FailedScan[]>(failedScans());
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   const list = warehouses.data?.items ?? [];
   const warehouseId = selected || list[0]?.id || '';
@@ -47,16 +53,77 @@ export function StaffReceptionPage() {
       entry.package = res.package;
       void queryClient.invalidateQueries({ queryKey: staffKeys.packages });
     } catch (e) {
-      const message = e instanceof ApiError ? apiErrorMessage(e, m) : apiErrorMessage(e, m);
-      entry.error = format(r.failed, { message });
+      if (e instanceof NetworkError) {
+        // Pas de connexion : la lecture est gardée sur l'appareil et rejouée au retour d'internet (sans doublon)
+        enqueueScan({ warehouseId, code, ...(mode ? { transportMode: mode } : {}) });
+        setPending(queuedScans().length);
+        entry.queued = true;
+      } else {
+        const message = e instanceof ApiError ? apiErrorMessage(e, m) : apiErrorMessage(e, m);
+        entry.error = format(r.failed, { message });
+      }
     }
     setEntries((current) => [entry, ...current].slice(0, 50));
   }
+
+  const sync = useCallback(async () => {
+    if (queuedScans().length === 0) return;
+    setSyncing(true);
+    const result = await syncQueue(
+      async (q) => {
+        await api('/v1/admin/scan/receive', { method: 'POST', body: { warehouseId: q.warehouseId, code: q.code, ...(q.transportMode ? { transportMode: q.transportMode } : {}) } });
+      },
+      (error) => (error instanceof NetworkError ? 'network' : 'refused'),
+    );
+    setPending(result.remaining);
+    setFailed(failedScans());
+    setSyncing(false);
+    setSyncMessage(format(r.synced, { sent: String(result.sent), failed: String(result.failed) }));
+    if (result.sent > 0) void queryClient.invalidateQueries({ queryKey: staffKeys.packages });
+  }, [queryClient, r.synced]);
+
+  // Retour d'internet : la file est rejouée toute seule
+  useEffect(() => {
+    const onOnline = () => void sync();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [sync]);
 
   return (
     <>
       <h1 style={{ fontSize: '1.9rem' }}>{r.title}</h1>
       <p className="lead">{r.lead}</p>
+      {pending > 0 ? (
+        <Alert tone="warning">
+          <span data-testid="offline-pending">{format(r.pending, { n: String(pending) })}</span>{' '}
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => void sync()} disabled={syncing}>
+            {r.sync}
+          </button>
+        </Alert>
+      ) : null}
+      {syncMessage ? <Alert tone="info">{syncMessage}</Alert> : null}
+      {failed.length > 0 ? (
+        <Alert tone="danger">
+          {r.failedTitle}
+          <ul>
+            {failed.map((f) => (
+              <li key={f.id}>
+                <span className="mono">{f.code}</span> — {f.error}
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={() => {
+              clearFailed();
+              setFailed([]);
+            }}
+          >
+            {r.clearFailed}
+          </button>
+        </Alert>
+      ) : null}
       {warehouses.isPending ? <p role="status">{m.common.loading}</p> : null}
       {warehouses.isError ? <Alert tone="danger">{m.common.errorLoad}</Alert> : null}
       {warehouses.data && list.length === 0 ? <Alert tone="info">{s.common.noWarehouse}</Alert> : null}
@@ -94,6 +161,7 @@ export function StaffReceptionPage() {
                   <div className="row-card">
                     <div>
                       <strong className="mono">{entry.code}</strong>{' '}
+                      {entry.queued ? <span className="badge badge-warning">{r.queued}</span> : null}
                       {entry.outcome ? <span className={`badge${entry.outcome === 'RECEIVED' ? ' badge-success' : entry.outcome === 'UNIDENTIFIED' ? ' badge-warning' : ''}`}>{r.outcomes[entry.outcome]}</span> : null}
                       <p className="muted" style={{ margin: '4px 0 0' }}>
                         {formatDateTime(entry.at, lang)}

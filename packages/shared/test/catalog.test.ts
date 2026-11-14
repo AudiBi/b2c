@@ -12,9 +12,9 @@ import {
 } from '../src';
 
 describe('catalogue des rôles et permissions', () => {
-  it('définit les 12 rôles du cahier des charges et les 2 rôles de l’équipe d’un compte professionnel', () => {
-    expect(ROLE_DEFINITIONS).toHaveLength(14);
-    expect(new Set(ROLE_DEFINITIONS.map((r) => r.code)).size).toBe(14);
+  it('définit les 12 rôles du cahier des charges, le comptable, le partenaire et les 2 rôles de l’équipe d’un compte professionnel', () => {
+    expect(ROLE_DEFINITIONS).toHaveLength(16);
+    expect(new Set(ROLE_DEFINITIONS.map((r) => r.code)).size).toBe(16);
     expect(ROLE_DEFINITIONS.map((r) => r.code).sort()).toEqual([...ROLE_CODES].sort());
   });
 

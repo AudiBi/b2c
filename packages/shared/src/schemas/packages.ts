@@ -176,6 +176,8 @@ export const createCounterPackageSchema = z.strictObject({
   recipientName: z.string().trim().min(1).max(120),
   recipientPhone: z.string().trim().max(30).optional(),
   recipientCity: z.string().trim().max(80).optional(),
+  /** Pays de destination (défaut : Haïti) ; l'entrepôt d'origine peut être en Haïti pour un envoi vers l'étranger. */
+  destinationCountry: countryCodeSchema.optional(),
   destinationAgencyId: z.uuid().optional(),
   contentDescription: optionalText(500),
   legacyTrackingNumber: z.string().trim().max(60).optional(),

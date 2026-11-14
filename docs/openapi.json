@@ -1134,7 +1134,7 @@
                   },
                   "permissions": {
                     "minItems": 1,
-                    "maxItems": 59,
+                    "maxItems": 71,
                     "type": "array",
                     "items": {
                       "type": "string"
@@ -1192,7 +1192,7 @@
                   },
                   "permissions": {
                     "minItems": 1,
-                    "maxItems": 59,
+                    "maxItems": 71,
                     "type": "array",
                     "items": {
                       "type": "string"
@@ -2854,6 +2854,11 @@
                           "minimum": 0,
                           "exclusiveMinimum": true,
                           "maximum": 1000000
+                        },
+                        "unitCost": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1000000
                         }
                       },
                       "required": [
@@ -3137,6 +3142,11 @@
                           "minimum": 0,
                           "exclusiveMinimum": true,
                           "maximum": 1000000
+                        },
+                        "unitCost": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1000000
                         }
                       },
                       "required": [
@@ -3275,6 +3285,29 @@
         ],
         "x-permissions": [
           "rate:manage"
+        ]
+      }
+    },
+    "/v1/admin/rate-cards/{id}/costs": {
+      "get": {
+        "operationId": "RateCardsController_costs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Coûts d'achat par tranche (réservé à l'administration et à la comptabilité)",
+        "tags": [
+          "Administration : tarifs"
+        ],
+        "x-permissions": [
+          "cost:read"
         ]
       }
     },
@@ -4145,6 +4178,1395 @@
         ]
       }
     },
+    "/v1/admin/expenses": {
+      "get": {
+        "operationId": "ExpensesController_list",
+        "parameters": [
+          {
+            "name": "month",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "RENT",
+                "ELECTRICITY",
+                "TRANSPORT",
+                "FREIGHT_CUSTOMS",
+                "MARKETING",
+                "SALARIES",
+                "SUPPLIES",
+                "OTHER"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 100,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Dépenses (filtre par mois AAAA-MM et catégorie)",
+        "tags": [
+          "Administration : dépenses"
+        ],
+        "x-permissions": [
+          "expense:read"
+        ]
+      },
+      "post": {
+        "operationId": "ExpensesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "spentOn": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "RENT",
+                      "ELECTRICITY",
+                      "TRANSPORT",
+                      "FREIGHT_CUSTOMS",
+                      "MARKETING",
+                      "SALARIES",
+                      "SUPPLIES",
+                      "OTHER"
+                    ]
+                  },
+                  "agency": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 100000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  }
+                },
+                "required": [
+                  "spentOn",
+                  "category",
+                  "description",
+                  "amount",
+                  "currency"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Saisit une dépense",
+        "tags": [
+          "Administration : dépenses"
+        ],
+        "x-permissions": [
+          "expense:manage"
+        ]
+      }
+    },
+    "/v1/admin/expenses/{id}": {
+      "patch": {
+        "operationId": "ExpensesController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "spentOn": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "RENT",
+                      "ELECTRICITY",
+                      "TRANSPORT",
+                      "FREIGHT_CUSTOMS",
+                      "MARKETING",
+                      "SALARIES",
+                      "SUPPLIES",
+                      "OTHER"
+                    ]
+                  },
+                  "agency": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 100000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Corrige une dépense (ancien montant au journal)",
+        "tags": [
+          "Administration : dépenses"
+        ],
+        "x-permissions": [
+          "expense:manage"
+        ]
+      },
+      "delete": {
+        "operationId": "ExpensesController_remove",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Supprime une dépense (journalisée)",
+        "tags": [
+          "Administration : dépenses"
+        ],
+        "x-permissions": [
+          "expense:manage"
+        ]
+      }
+    },
+    "/v1/admin/reports/profit": {
+      "get": {
+        "description": "Réservé à l’administration et à la comptabilité. Formules de l’outil de gestion ; les frais CONATEL reversés sont hors marge.",
+        "operationId": "ProfitController_get",
+        "parameters": [
+          {
+            "name": "month",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Profit mensuel sur 12 mois (chiffre d’affaires, coût, marge, dépenses, net, par mode)",
+        "tags": [
+          "Administration : profit"
+        ],
+        "x-permissions": [
+          "report:profit",
+          "cost:read"
+        ]
+      }
+    },
+    "/v1/admin/referrers": {
+      "get": {
+        "operationId": "ReferrersController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Référents et nombre de clients amenés",
+        "tags": [
+          "Administration : référents"
+        ],
+        "x-permissions": [
+          "referrer:read"
+        ]
+      },
+      "post": {
+        "operationId": "ReferrersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+[1-9]\\d{7,14}$"
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  }
+                },
+                "required": [
+                  "name",
+                  "rate"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crée un référent (pourcentage du profit)",
+        "tags": [
+          "Administration : référents"
+        ],
+        "x-permissions": [
+          "referrer:manage"
+        ]
+      }
+    },
+    "/v1/admin/referrers/{id}": {
+      "patch": {
+        "operationId": "ReferrersController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+[1-9]\\d{7,14}$"
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifie le pourcentage, les coordonnées ou retire un référent",
+        "tags": [
+          "Administration : référents"
+        ],
+        "x-permissions": [
+          "referrer:manage"
+        ]
+      }
+    },
+    "/v1/admin/referrers/{id}/statement": {
+      "get": {
+        "operationId": "ReferrersController_statement",
+        "parameters": [
+          {
+            "name": "month",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Relevé mensuel : clients, colis, profit et commission (profit × pourcentage, jamais négatif)",
+        "tags": [
+          "Administration : référents"
+        ],
+        "x-permissions": [
+          "referrer:read"
+        ]
+      }
+    },
+    "/v1/admin/referrers/{id}/payouts": {
+      "post": {
+        "operationId": "ReferrersController_pay",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "month": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                  },
+                  "paidOn": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "month",
+                  "paidOn"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Paie la commission d’un mois (montant figé, une seule fois par mois)",
+        "tags": [
+          "Administration : référents"
+        ],
+        "x-permissions": [
+          "referrer:manage"
+        ]
+      }
+    },
+    "/v1/admin/customers/{id}/referrer": {
+      "put": {
+        "operationId": "CustomerReferrerController_assign",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "referrerId": {
+                    "nullable": true,
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "referrerId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rattache un client à un référent (null : détache)",
+        "tags": [
+          "Administration : référents"
+        ],
+        "x-permissions": [
+          "referrer:manage"
+        ]
+      }
+    },
+    "/v1/admin/claims/{id}/compensation": {
+      "get": {
+        "operationId": "ClaimCompensationController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Indemnité payée au client et remboursement du transporteur (jamais visibles du client)",
+        "tags": [
+          "Administration : incidents"
+        ],
+        "x-permissions": [
+          "claim:compensate"
+        ]
+      },
+      "put": {
+        "operationId": "ClaimCompensationController_set",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "indemnity": {
+                    "default": 0,
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100000000
+                  },
+                  "reimbursement": {
+                    "default": 0,
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "paidOn": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "currency"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enregistre l’indemnité et le remboursement ; le net alimente le profit du mois de paiement",
+        "tags": [
+          "Administration : incidents"
+        ],
+        "x-permissions": [
+          "claim:compensate"
+        ]
+      }
+    },
+    "/v1/admin/petty-cash": {
+      "get": {
+        "operationId": "PettyCashController_list",
+        "parameters": [
+          {
+            "name": "month",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          },
+          {
+            "name": "currency",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 100,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Écritures de petite caisse, soldes par devise et alerte de solde bas",
+        "tags": [
+          "Administration : petite caisse"
+        ],
+        "x-permissions": [
+          "petty_cash:read"
+        ]
+      },
+      "post": {
+        "operationId": "PettyCashController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "entryDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "EXPENSE",
+                      "FUNDING"
+                    ]
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "TRANSPORT",
+                      "FUEL",
+                      "CLEANING",
+                      "MEALS",
+                      "SUPPLIES",
+                      "REPAIRS",
+                      "OTHER"
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "counterparty": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "receiptRef": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 100000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  }
+                },
+                "required": [
+                  "entryDate",
+                  "kind",
+                  "description",
+                  "amount",
+                  "currency"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enregistre une dépense ou un approvisionnement (jamais modifiable : écriture inverse)",
+        "tags": [
+          "Administration : petite caisse"
+        ],
+        "x-permissions": [
+          "petty_cash:manage"
+        ]
+      }
+    },
+    "/v1/admin/petty-cash/daily": {
+      "get": {
+        "operationId": "PettyCashController_daily",
+        "parameters": [
+          {
+            "name": "date",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rapport du jour : entrées, sorties et solde par devise",
+        "tags": [
+          "Administration : petite caisse"
+        ],
+        "x-permissions": [
+          "petty_cash:read"
+        ]
+      }
+    },
+    "/v1/admin/petty-cash/thresholds": {
+      "put": {
+        "operationId": "PettyCashController_thresholds",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "thresholds": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100000000
+                    }
+                  }
+                },
+                "required": [
+                  "thresholds"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Seuils d’alerte de solde bas, par devise",
+        "tags": [
+          "Administration : petite caisse"
+        ],
+        "x-permissions": [
+          "petty_cash:manage"
+        ]
+      }
+    },
+    "/v1/admin/deposits": {
+      "get": {
+        "operationId": "DepositsController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Dépôts bancaires",
+        "tags": [
+          "Administration : dépôts bancaires"
+        ],
+        "x-permissions": [
+          "deposit:read"
+        ]
+      },
+      "post": {
+        "description": "Attendu = montant compté à la clôture moins le fonds de caisse d'ouverture. Numéro DEP-AAAA-NNNNNN. Un dépôt ne se modifie pas.",
+        "operationId": "DepositsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sessionIds": {
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "depositDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "bank": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "accountLast4": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9]{4}$"
+                  },
+                  "slipRef": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "depositedAmount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100000000
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "sessionIds",
+                  "depositDate",
+                  "bank",
+                  "slipRef",
+                  "depositedAmount"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enregistre un dépôt des caisses clôturées choisies (une devise) ; l’écart déposé − attendu est calculé et figé",
+        "tags": [
+          "Administration : dépôts bancaires"
+        ],
+        "x-permissions": [
+          "deposit:manage"
+        ]
+      }
+    },
+    "/v1/admin/deposits/to-deposit": {
+      "get": {
+        "operationId": "DepositsController_toDeposit",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reste à déposer : caisses clôturées pas encore déposées, par devise",
+        "tags": [
+          "Administration : dépôts bancaires"
+        ],
+        "x-permissions": [
+          "deposit:read"
+        ]
+      }
+    },
+    "/v1/admin/deposits/{id}/slip.pdf": {
+      "get": {
+        "operationId": "DepositsController_slip",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bordereau de dépôt imprimable (PDF)",
+        "tags": [
+          "Administration : dépôts bancaires"
+        ],
+        "x-permissions": [
+          "deposit:read"
+        ]
+      }
+    },
+    "/v1/admin/reports/delays": {
+      "get": {
+        "operationId": "OpsController_delays",
+        "parameters": [
+          {
+            "name": "days",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 14,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Alerte de retard : colis ouverts sans changement depuis N jours (14 par défaut)",
+        "tags": [
+          "Exploitation"
+        ],
+        "x-permissions": [
+          "package:read"
+        ]
+      }
+    },
+    "/v1/admin/customers/{id}/flow": {
+      "get": {
+        "operationId": "OpsController_flow",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Flot d’un client : colis par statut, ouverts, derniers colis",
+        "tags": [
+          "Exploitation"
+        ],
+        "x-permissions": [
+          "customer:read",
+          "package:read"
+        ]
+      }
+    },
+    "/v1/admin/proformas": {
+      "get": {
+        "operationId": "ProformaController_list",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Proformas (filtre par client)",
+        "tags": [
+          "Administration : proforma"
+        ],
+        "x-permissions": [
+          "quote:create",
+          "customer:read"
+        ]
+      },
+      "post": {
+        "description": "Même calcul que l'estimation : 422 TARIFF_UNAVAILABLE sans tarif applicable. Numéro PF-AAAA-NNNNNN.",
+        "operationId": "ProformaController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "customerId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "validDays": {
+                    "default": 30,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 180
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 300
+                  },
+                  "quote": {
+                    "type": "object",
+                    "properties": {
+                      "transportMode": {
+                        "type": "string",
+                        "enum": [
+                          "AIR",
+                          "SEA"
+                        ]
+                      },
+                      "originCountry": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{2}$"
+                      },
+                      "destinationCountry": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{2}$"
+                      },
+                      "originCity": {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      "destinationCity": {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      "weight": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "number",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 100000
+                          },
+                          "unit": {
+                            "type": "string",
+                            "enum": [
+                              "KG",
+                              "LB"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "unit"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "length": {
+                            "type": "number",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000
+                          },
+                          "width": {
+                            "type": "number",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000
+                          },
+                          "height": {
+                            "type": "number",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000
+                          },
+                          "unit": {
+                            "type": "string",
+                            "enum": [
+                              "CM",
+                              "IN"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "length",
+                          "width",
+                          "height",
+                          "unit"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "categoryCode": {
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      "declaredValue": {
+                        "type": "number",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 10000000
+                      },
+                      "optionalSurcharges": {
+                        "default": [],
+                        "maxItems": 10,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 30
+                        }
+                      },
+                      "quantity": {
+                        "default": 1,
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                      }
+                    },
+                    "required": [
+                      "transportMode",
+                      "originCountry",
+                      "destinationCountry",
+                      "weight"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "customerId",
+                  "quote"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crée une proforma pour un client à partir de la grille active (figée, valable N jours)",
+        "tags": [
+          "Administration : proforma"
+        ],
+        "x-permissions": [
+          "quote:create",
+          "customer:read"
+        ]
+      }
+    },
+    "/v1/admin/proformas/{id}": {
+      "get": {
+        "operationId": "ProformaController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Détail d'une proforma",
+        "tags": [
+          "Administration : proforma"
+        ],
+        "x-permissions": [
+          "quote:create",
+          "customer:read"
+        ]
+      }
+    },
+    "/v1/admin/proformas/{id}/pdf": {
+      "get": {
+        "operationId": "ProformaController_pdf",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Proforma imprimable (PDF)",
+        "tags": [
+          "Administration : proforma"
+        ],
+        "x-permissions": [
+          "quote:create",
+          "customer:read"
+        ]
+      }
+    },
+    "/v1/admin/proformas/{id}/convert": {
+      "post": {
+        "operationId": "ProformaController_convert",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "warehouseId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "recipientName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "recipientPhone": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "recipientCity": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "destinationAgencyId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "contentDescription": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "warehouseId",
+                  "recipientName"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Transforme la proforma en colis de comptoir (reçu en entrepôt)",
+        "tags": [
+          "Administration : proforma"
+        ],
+        "x-permissions": [
+          "quote:create",
+          "customer:read",
+          "package:receive"
+        ]
+      }
+    },
     "/v1/admin/packages": {
       "get": {
         "description": "Recherche par numéro de suivi, numéro du marchand ou code client.",
@@ -4430,6 +5852,10 @@
                   "recipientCity": {
                     "type": "string",
                     "maxLength": 80
+                  },
+                  "destinationCountry": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$"
                   },
                   "destinationAgencyId": {
                     "type": "string",

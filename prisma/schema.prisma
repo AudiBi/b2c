@@ -131,6 +131,15 @@ model Company {
   prealerts             Prealert[]
   rateCards             RateCard[]
   customsItems          CustomsItem[]
+  expenses              Expense[]
+  bankDeposits          BankDeposit[]
+  pettyCashEntries      PettyCashEntry[]
+  bankDepositSessions   BankDepositSession[]
+  referrers             Referrer[]
+  customerReferrers     CustomerReferrer[]
+  referrerPayouts       ReferrerPayout[]
+  claimCompensations    ClaimCompensation[]
+  proformas             Proforma[]
   packageCustomsLines   PackageCustomsLine[]
   rateRules             RateRule[]
   rateSurcharges        RateSurcharge[]
@@ -424,6 +433,8 @@ model Customer {
   handoverCodes      HandoverCode[]
   claims             Claim[]
   members            CustomerMember[]
+  proformas          Proforma[]
+  referral           CustomerReferrer?
 
   @@unique([companyId, customerCode])
   @@unique([id, companyId])
@@ -674,6 +685,9 @@ model Package {
   senderName           String?        @map("sender_name")
   recipientName        String?        @map("recipient_name")
   quantity             Int            @default(1)
+  // Coût d'achat figé à la pesée : jamais dans les réponses destinées aux clients
+  costAmount           Decimal?       @map("cost_amount") @db.Decimal(14, 2)
+  costCurrency         String?        @map("cost_currency") @db.Char(3)
   recipientPhone       String?        @map("recipient_phone")
   recipientCity        String?        @map("recipient_city")
   // Ancien numéro de suivi (import de l'outil de gestion)
@@ -734,6 +748,7 @@ model Package {
   invoicePackage   InvoicePackage?
   routeStops       RouteStop[]
   customsLines     PackageCustomsLine[]
+  proformas        Proforma[]
   deliveryAttempts DeliveryAttempt[]
   handoverCodes    HandoverCode[]
   claims           Claim[]
@@ -852,6 +867,7 @@ model RateCard {
   rules      RateRule[]
   surcharges RateSurcharge[]
   quotes     Quote[]
+  proformas  Proforma[]
 
   @@unique([id, companyId])
   @@index([companyId, status, transportMode, originCountry, destinationCountry])
@@ -871,6 +887,8 @@ model RateRule {
   // WEIGHT : poids facturable ; VOLUME : pieds cubes (ou m³) ; UNIT : nombre d'unités (barils)
   basis             PricingBasis @default(WEIGHT)
   volumetricDivisor Decimal?     @map("volumetric_divisor") @db.Decimal(12, 4)
+  // Coût d'achat par unité de base (réservé à cost:read)
+  unitCost          Decimal?     @map("unit_cost") @db.Decimal(14, 4)
 
   company  Company          @relation(fields: [companyId], references: [id])
   rateCard RateCard         @relation(fields: [rateCardId, companyId], references: [id, companyId])
@@ -1347,9 +1365,10 @@ model CashSession {
   expectedAmount Decimal?  @map("expected_amount") @db.Decimal(14, 2)
   difference     Decimal?  @db.Decimal(14, 2)
 
-  company  Company   @relation(fields: [companyId], references: [id])
-  agency   Agency?   @relation(fields: [agencyId, companyId], references: [id, companyId])
+  company  Company             @relation(fields: [companyId], references: [id])
+  agency   Agency?             @relation(fields: [agencyId, companyId], references: [id, companyId])
   payments Payment[]
+  deposit  BankDepositSession?
 
   @@unique([id, companyId])
   @@map("cash_sessions")
@@ -1618,11 +1637,12 @@ model Claim {
   resolvedAt DateTime?     @map("resolved_at") @db.Timestamptz(6)
   updatedAt  DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  company  Company        @relation(fields: [companyId], references: [id])
-  customer Customer       @relation(fields: [customerId, companyId], references: [id, companyId])
-  package  Package?       @relation(fields: [packageId, companyId], references: [id, companyId])
-  assignee User?          @relation(fields: [assignedTo, companyId], references: [id, companyId])
-  messages ClaimMessage[]
+  company      Company            @relation(fields: [companyId], references: [id])
+  customer     Customer           @relation(fields: [customerId, companyId], references: [id, companyId])
+  package      Package?           @relation(fields: [packageId, companyId], references: [id, companyId])
+  assignee     User?              @relation(fields: [assignedTo, companyId], references: [id, companyId])
+  messages     ClaimMessage[]
+  compensation ClaimCompensation?
 
   @@unique([companyId, number])
   @@unique([id, companyId])
@@ -1720,4 +1740,181 @@ model PackageCustomsLine {
 
   @@index([companyId, packageId])
   @@map("package_customs_lines")
+}
+
+model Expense {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  companyId   String   @map("company_id") @db.Uuid
+  spentOn     DateTime @map("spent_on") @db.Date
+  category    String
+  agency      String?
+  description String
+  amount      Decimal  @db.Decimal(14, 2)
+  currency    String   @db.Char(3)
+  createdBy   String?  @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([id, companyId])
+  @@index([companyId, spentOn])
+  @@map("expenses")
+}
+
+model BankDeposit {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  companyId       String   @map("company_id") @db.Uuid
+  number          String
+  depositDate     DateTime @map("deposit_date") @db.Date
+  bank            String
+  accountLast4    String?  @map("account_last4")
+  slipRef         String   @map("slip_ref")
+  currency        String   @db.Char(3)
+  expectedAmount  Decimal  @map("expected_amount") @db.Decimal(14, 2)
+  depositedAmount Decimal  @map("deposited_amount") @db.Decimal(14, 2)
+  difference      Decimal  @db.Decimal(14, 2)
+  note            String?
+  createdBy       String?  @map("created_by") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company  Company              @relation(fields: [companyId], references: [id])
+  sessions BankDepositSession[]
+
+  @@unique([companyId, number])
+  @@unique([id, companyId])
+  @@map("bank_deposits")
+}
+
+model PettyCashEntry {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  companyId    String   @map("company_id") @db.Uuid
+  number       String
+  entryDate    DateTime @map("entry_date") @db.Date
+  kind         String
+  category     String?
+  description  String
+  counterparty String?
+  receiptRef   String?  @map("receipt_ref")
+  amount       Decimal  @db.Decimal(14, 2)
+  currency     String   @db.Char(3)
+  createdBy    String?  @map("created_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, number])
+  @@index([companyId, entryDate])
+  @@map("petty_cash_entries")
+}
+
+model BankDepositSession {
+  companyId     String @map("company_id") @db.Uuid
+  depositId     String @map("deposit_id") @db.Uuid
+  cashSessionId String @unique @map("cash_session_id") @db.Uuid
+
+  company     Company     @relation(fields: [companyId], references: [id])
+  deposit     BankDeposit @relation(fields: [depositId, companyId], references: [id, companyId])
+  cashSession CashSession @relation(fields: [cashSessionId, companyId], references: [id, companyId])
+
+  @@id([depositId, cashSessionId])
+  @@unique([cashSessionId, companyId])
+  @@map("bank_deposit_sessions")
+}
+
+model Referrer {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  name      String
+  phone     String?
+  email     String?
+  rate      Decimal  @db.Decimal(5, 2)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company   Company            @relation(fields: [companyId], references: [id])
+  customers CustomerReferrer[]
+  payouts   ReferrerPayout[]
+
+  @@unique([companyId, name])
+  @@unique([id, companyId])
+  @@map("referrers")
+}
+
+model CustomerReferrer {
+  companyId  String   @map("company_id") @db.Uuid
+  customerId String   @id @map("customer_id") @db.Uuid
+  referrerId String   @map("referrer_id") @db.Uuid
+  since      DateTime @default(now()) @db.Date
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  customer Customer @relation(fields: [customerId, companyId], references: [id, companyId])
+  referrer Referrer @relation(fields: [referrerId, companyId], references: [id, companyId])
+
+  @@unique([customerId, companyId])
+  @@map("customer_referrers")
+}
+
+model ReferrerPayout {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  companyId  String   @map("company_id") @db.Uuid
+  referrerId String   @map("referrer_id") @db.Uuid
+  month      String
+  amount     Decimal  @db.Decimal(14, 2)
+  currency   String   @db.Char(3)
+  paidOn     DateTime @map("paid_on") @db.Date
+  note       String?
+  createdBy  String?  @map("created_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  referrer Referrer @relation(fields: [referrerId, companyId], references: [id, companyId])
+
+  @@unique([referrerId, month])
+  @@map("referrer_payouts")
+}
+
+model ClaimCompensation {
+  claimId       String    @id @map("claim_id") @db.Uuid
+  companyId     String    @map("company_id") @db.Uuid
+  indemnity     Decimal   @default(0) @db.Decimal(14, 2)
+  reimbursement Decimal   @default(0) @db.Decimal(14, 2)
+  currency      String    @db.Char(3)
+  paidOn        DateTime? @map("paid_on") @db.Date
+  note          String?
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  company Company @relation(fields: [companyId], references: [id])
+  claim   Claim   @relation(fields: [claimId, companyId], references: [id, companyId])
+
+  @@unique([claimId, companyId])
+  @@map("claim_compensations")
+}
+
+model Proforma {
+  id                 String   @id @default(uuid(7)) @db.Uuid
+  companyId          String   @map("company_id") @db.Uuid
+  number             String
+  customerId         String   @map("customer_id") @db.Uuid
+  rateCardId         String   @map("rate_card_id") @db.Uuid
+  input              Json
+  result             Json
+  currency           String   @db.Char(3)
+  total              Decimal  @db.Decimal(14, 2)
+  validUntil         DateTime @map("valid_until") @db.Date
+  note               String?
+  convertedPackageId String?  @map("converted_package_id") @db.Uuid
+  createdBy          String?  @map("created_by") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  customer Customer @relation(fields: [customerId, companyId], references: [id, companyId])
+  rateCard RateCard @relation(fields: [rateCardId, companyId], references: [id, companyId])
+  package  Package? @relation(fields: [convertedPackageId, companyId], references: [id, companyId])
+
+  @@unique([companyId, number])
+  @@unique([id, companyId])
+  @@index([companyId, customerId, createdAt])
+  @@map("proformas")
 }

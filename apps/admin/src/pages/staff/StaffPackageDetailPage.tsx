@@ -14,6 +14,7 @@ import { FormMessage, RadioGroupField, SelectField, TextAreaField, TextField } f
 import { StatusBadge, statusLabel } from '../../components/PackageParts';
 import { FilesPanel } from '../shared/FilesPanel';
 import { HandoverPanel } from '../delivery/HandoverPanel';
+import { CarrierLink, ContactLinks } from '../../components/ContactLinks';
 import { CustomsLinesCard } from './CustomsLinesCard';
 import { staffKeys, useAgencies, useCan, useLocations, useStaffPackage, type StaffPackageDetail, type TransportMode } from './queries';
 
@@ -66,7 +67,8 @@ export function StaffPackageDetailPage() {
             <dl className="kv">
               <dt>{s.common.warehouse}</dt>
               <dd>{pkg.warehouse.name}</dd>
-              {pkg.supplierTracking ? (<><dt>{m.account.packages.detail.supplierTracking}</dt><dd className="mono">{pkg.supplierTracking}</dd></>) : null}
+              {pkg.supplierTracking ? (<><dt>{m.account.packages.detail.supplierTracking}</dt><dd><span className="mono">{pkg.supplierTracking}</span> <CarrierLink code={pkg.supplierTracking} /></dd></>) : null}
+              {pkg.recipientName ? (<><dt>{s.contact.recipient}</dt><dd>{pkg.recipientName}{pkg.recipientPhone ? ` · ${pkg.recipientPhone}` : ''} <ContactLinks phone={pkg.recipientPhone} name={pkg.recipientName} tracking={pkg.trackingNumberDisplay} statusLabel={statusLabel(m, pkg.status)} /></dd></>) : null}
               {pkg.transportMode ? (<><dt>{s.common.mode}</dt><dd>{s.common.modes[pkg.transportMode]}</dd></>) : null}
               {pkg.contentDescription ? (<><dt>{s.common.note}</dt><dd>{pkg.contentDescription}</dd></>) : null}
               {pkg.measures.actualWeightKg ? (<><dt>{m.account.packages.detail.actualWeight}</dt><dd>{formatWeight(pkg.measures.actualWeightKg, 'KG', lang)}</dd></>) : null}

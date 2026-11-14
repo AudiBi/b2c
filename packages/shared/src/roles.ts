@@ -18,6 +18,8 @@ export const ROLE_CODES = [
   'TEAM_READER',
   'TEAM_OPERATOR',
   'AUDITOR',
+  'ACCOUNTANT',
+  'PARTNER',
 ] as const;
 export type RoleCode = (typeof ROLE_CODES)[number];
 
@@ -212,6 +214,26 @@ export const ROLE_DEFINITIONS: readonly RoleDefinition[] = [
     audience: 'STAFF',
     allowedScopes: ['COMPANY'],
     permissions: STAFF_ALL.filter(isReadOnlyPermission),
+  },
+  {
+    code: 'ACCOUNTANT',
+    name: 'Comptable',
+    description: 'Lit les factures, paiements et rapports ; voit les coûts, saisit les dépenses et consulte le profit. Ne touche ni aux colis ni aux clients.',
+    audience: 'STAFF',
+    allowedScopes: ['COMPANY'],
+    permissions: [
+      'invoice:read', 'payment:read', 'report:read', 'report:export', 'report:profit', 'cost:read', 'cost:manage',
+      'expense:read', 'expense:manage', 'rate:read', 'customer:read', 'package:read',
+      'deposit:read', 'deposit:manage', 'petty_cash:read', 'petty_cash:manage', 'referrer:read', 'referrer:manage', 'claim:compensate',
+    ],
+  },
+  {
+    code: 'PARTNER',
+    name: 'Partenaire (site à l’étranger)',
+    description: 'Reçoit, pèse et enregistre les colis de SON entrepôt (par exemple Philadelphie) et crée des clients. Ne voit ni les coûts, ni les marges, ni les finances, ni les colis des autres sites.',
+    audience: 'STAFF',
+    allowedScopes: ['WAREHOUSE'],
+    permissions: ['customer:read', 'customer:create', 'package:read', 'package:receive', 'package:inspect', 'package:register', 'prealert:read', 'prealert:match', 'warehouse:read'],
   },
 ];
 

@@ -32,6 +32,8 @@ export function buildNav(user: SessionUser, m: Messages): NavGroup[] {
   if (staff && can('package:receive')) operations.push({ page: 'accountStaffReception', label: s.reception, icon: 'scan' });
   if (staff && can('rate:read')) operations.push({ page: 'accountStaffRates', label: s.rates, icon: 'wallet' });
   if (staff && can('rate:read')) operations.push({ page: 'accountStaffCustoms', label: s.customs, icon: 'receipt' });
+  if (staff && can('quote:create') && can('customer:read')) operations.push({ page: 'accountStaffProformas', label: s.proformas, icon: 'receipt' });
+  if (staff && can('package:read')) operations.push({ page: 'accountStaffDelays', label: s.delays, icon: 'history' });
   if (staff && can('package:read')) operations.push({ page: 'accountStaffPackages', label: s.packages, icon: 'box' });
   if (staff && can('warehouse:read')) operations.push({ page: 'accountStaffWarehouse', label: s.warehouse, icon: 'warehouse' });
   if (staff && can('shipment:read')) operations.push({ page: 'accountStaffShipments', label: s.shipments, icon: 'layers' });
@@ -44,6 +46,11 @@ export function buildNav(user: SessionUser, m: Messages): NavGroup[] {
   const finance: NavItem[] = [];
   if (staff && can('invoice:read')) finance.push({ page: 'accountStaffBilling', label: s.billing, icon: 'receipt' });
   if (staff && can('payment:read')) finance.push({ page: 'accountStaffPayments', label: s.payments, icon: 'wallet' });
+  if (staff && can('report:profit') && can('cost:read')) finance.push({ page: 'accountStaffProfit', label: s.profit, icon: 'chart' });
+  if (staff && can('expense:read')) finance.push({ page: 'accountStaffExpenses', label: s.expenses, icon: 'receipt' });
+  if (staff && can('petty_cash:read')) finance.push({ page: 'accountStaffPettyCash', label: s.pettyCash, icon: 'wallet' });
+  if (staff && can('deposit:read')) finance.push({ page: 'accountStaffDeposits', label: s.deposits, icon: 'building' });
+  if (staff && can('referrer:read')) finance.push({ page: 'accountStaffReferrers', label: s.referrers, icon: 'users' });
   if (finance.length) groups.push({ id: 'finance', label: n.finance, items: finance });
 
   if (staff && can('notification:read')) {

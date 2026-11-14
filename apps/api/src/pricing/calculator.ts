@@ -25,6 +25,8 @@ export interface RuleData {
   basis?: PricingBasis;
   /** Diviseur volumétrique propre à la tranche (ex. e-conteneur) ; sinon celui de la grille. */
   volumetricDivisor?: Decimal | null;
+  /** Coût d'achat par unité de base : jamais utilisé par `calculate` (rien n'en sort vers les clients), seulement par `calculateCost`. */
+  unitCost?: Decimal | null;
 }
 
 export interface SurchargeData {
@@ -252,4 +254,17 @@ export function calculate(card: CardData, input: CalcInput): CalcResult {
     subtotal: subtotalBeforeTax.toFixed(2),
     total: money(total).toFixed(2),
   };
+}
+
+/**
+ * Coût d'achat d'un colis déjà calculé : coût unitaire de la tranche appliquée × quantité facturable (poids, pied cube ou nombre d'unités).
+ * Séparé de `calculate` exprès : le résultat d'une estimation publique ne contient jamais de coût. Null si la tranche n'a pas de coût renseigné.
+ */
+export function calculateCost(card: CardData, result: CalcResult): { amount: string; currency: string } | null {
+  const rule = card.rules.find(
+    (r) => r.categoryCode === result.appliedRule.categoryCode && r.weightFrom.toString() === result.appliedRule.weightFrom && (r.weightTo?.toString() ?? null) === result.appliedRule.weightTo,
+  );
+  if (!rule?.unitCost) return null;
+  const base = result.basis === 'UNIT' ? new D(result.quantity) : new D(result.billableWeight);
+  return { amount: money(rule.unitCost.mul(base)).toFixed(2), currency: result.currency };
 }

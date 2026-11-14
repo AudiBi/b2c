@@ -43,10 +43,15 @@ export function StaffCounterPage() {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ firstName: '', lastName: '', businessName: '', phone: '', email: '' });
   const [inviteEmail, setInviteEmail] = useState('');
-  const [pkg, setPkg] = useState({ warehouseId: '', mode: 'AIR' as TransportMode, recipientName: '', recipientPhone: '', recipientCity: '', agencyId: '', description: '', legacy: '' });
+  const [pkg, setPkg] = useState({ warehouseId: '', mode: 'AIR' as TransportMode, recipientName: '', recipientPhone: '', recipientCity: '', destCountry: 'HT', agencyId: '', description: '', legacy: '' });
   const [done, setDone] = useState<StaffPackage | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const flow = useQuery({
+    queryKey: ['customer-flow', customer?.id ?? ''] as const,
+    enabled: !!customer,
+    queryFn: () => api<{ total: number; open: number }>(`/v1/admin/customers/${customer!.id}/flow`),
+  });
   const found = useQuery({
     queryKey: ['staff', 'customers', search],
     queryFn: () => api<{ items: CounterCustomer[] }>(`/v1/admin/customers?q=${encodeURIComponent(search)}&limit=8`),
@@ -96,6 +101,7 @@ export function StaffCounterPage() {
           recipientName: pkg.recipientName,
           ...(pkg.recipientPhone ? { recipientPhone: pkg.recipientPhone } : {}),
           ...(pkg.recipientCity ? { recipientCity: pkg.recipientCity } : {}),
+          ...(pkg.destCountry && pkg.destCountry !== 'HT' ? { destinationCountry: pkg.destCountry } : {}),
           ...(pkg.agencyId ? { destinationAgencyId: pkg.agencyId } : {}),
           ...(pkg.description ? { contentDescription: pkg.description } : {}),
           ...(pkg.legacy ? { legacyTrackingNumber: pkg.legacy } : {}),
@@ -134,6 +140,7 @@ export function StaffCounterPage() {
               <strong>{customerName(customer)}</strong> <span className="mono">{customer.customerCode}</span>
               <p className="muted" style={{ margin: '4px 0 0' }}>
                 {customer.phone ?? '—'} · {customer.hasAccess ? customer.email : c.noAccess}
+                {flow.data ? ` · ${format(c.flow, { open: String(flow.data.open), total: String(flow.data.total) })}` : ''}
               </p>
             </div>
             <Button variant="outline" onClick={() => { setCustomer(null); setDone(null); }}>
@@ -227,6 +234,7 @@ export function StaffCounterPage() {
               <TextField name="recipientName" label={c.recipientName} value={pkg.recipientName} onChange={(v) => setPkg({ ...pkg, recipientName: v })} />
               <TextField name="recipientPhone" label={c.recipientPhone} optional value={pkg.recipientPhone} onChange={(v) => setPkg({ ...pkg, recipientPhone: v })} />
               <TextField name="recipientCity" label={c.recipientCity} optional value={pkg.recipientCity} onChange={(v) => setPkg({ ...pkg, recipientCity: v })} />
+              <SelectField name="destCountry" label={c.destCountry} value={pkg.destCountry} onChange={(v) => setPkg({ ...pkg, destCountry: v })} options={[{ value: 'HT', label: 'Haïti' }, { value: 'US', label: 'États-Unis' }]} />
               <SelectField
                 name="agency"
                 label={c.agency}

@@ -22,6 +22,10 @@ import { PlatformModule } from './platform/platform.module';
 import { PlatformSharedModule } from './platform/platform-shared.module';
 import { PricingModule } from './pricing/pricing.module';
 import { CustomsModule } from './customs/customs.module';
+import { ProfitModule } from './profit/profit.module';
+import { CashbookModule } from './cashbook/cashbook.module';
+import { OpsModule } from './ops/ops.controller';
+import { ProformaModule } from './proforma/proforma.controller';
 import { RedisModule } from './redis/redis.module';
 import { SecurityModule } from './security/security.module';
 
@@ -61,6 +65,10 @@ export class AppModule {
         CustomersModule,
         PricingModule,
         CustomsModule,
+        ProfitModule,
+        CashbookModule,
+        OpsModule,
+        ProformaModule,
         PackagesModule,
         FilesModule,
         LogisticsModule,

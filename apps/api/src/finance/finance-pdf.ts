@@ -107,3 +107,76 @@ export function receiptPdf(r: ReceiptPdf): Promise<Buffer> {
     if (htg) doc.font('Helvetica-Oblique').fontSize(9).text(`Équivalent indicatif : ${htg} HTG (taux ${r.htgPerUsd})`);
   }, `Reçu ${r.receiptNumber}`);
 }
+
+export interface DepositSlipPdf {
+  company: string;
+  number: string;
+  depositDate: string;
+  bank: string;
+  accountLast4: string | null;
+  slipRef: string;
+  currency: string;
+  expected: string;
+  deposited: string;
+  difference: string;
+  note: string | null;
+  sessions: number;
+}
+
+/** Bordereau de dépôt bancaire : ce qui devait être déposé, ce qui l'a été, l'écart ; aucune mention légale inventée. */
+export function depositSlipPdf(d: DepositSlipPdf): Promise<Buffer> {
+  return render((doc) => {
+    const logo = drawLogo(doc);
+    doc.font('Helvetica-Bold').fontSize(18).text(d.company, { width: doc.page.width - doc.page.margins.left - doc.page.margins.right - logo - 12 });
+    doc.moveDown(0.5).fontSize(14).text(`Bordereau de dépôt ${d.number}`);
+    doc.font('Helvetica').fontSize(11).moveDown();
+    doc.text(`Date : ${d.depositDate}`);
+    doc.text(`Banque : ${d.bank}${d.accountLast4 ? ` (compte …${d.accountLast4})` : ''}`);
+    doc.text(`Référence du bordereau de la banque : ${d.slipRef}`);
+    doc.text(`Caisses rattachées : ${d.sessions}`);
+    doc.moveDown();
+    doc.text(`Montant attendu : ${d.expected} ${d.currency}`);
+    doc.font('Helvetica-Bold').text(`Montant déposé : ${d.deposited} ${d.currency}`);
+    doc.font('Helvetica').text(`Écart (déposé − attendu) : ${d.difference} ${d.currency}`);
+    if (d.note) doc.moveDown().text(`Note : ${d.note}`);
+  }, `Dépôt ${d.number}`);
+}
+
+export interface ProformaPdf {
+  company: string;
+  number: string;
+  customer: string;
+  validUntil: string;
+  currency: string;
+  total: string;
+  cardName: string;
+  lines: { label: string; amount: string }[];
+  note: string | null;
+}
+
+/** Proforma : estimation chiffrée pour un client, valable jusqu'à une date ; ce n'est pas une facture. */
+export function proformaPdf(p: ProformaPdf): Promise<Buffer> {
+  return render((doc) => {
+    const logo = drawLogo(doc);
+    doc.font('Helvetica-Bold').fontSize(18).text(p.company, { width: doc.page.width - doc.page.margins.left - doc.page.margins.right - logo - 12 });
+    doc.moveDown(0.5).fontSize(14).text(`PROFORMA ${p.number}`);
+    doc.font('Helvetica').fontSize(11).moveDown();
+    doc.text(`Client : ${p.customer}`);
+    doc.text(`Valable jusqu'au : ${p.validUntil}`);
+    doc.text(`Grille : ${p.cardName}`);
+    doc.moveDown();
+    const left = doc.page.margins.left;
+    const right = doc.page.width - doc.page.margins.right;
+    for (const line of p.lines) {
+      const y = doc.y;
+      doc.fontSize(10).text(line.label, left, y, { width: right - left - 110 });
+      doc.text(`${line.amount} ${p.currency}`, right - 105, y, { width: 105, align: 'right' });
+      doc.moveDown(0.3);
+    }
+    doc.moveTo(left, doc.y + 4).lineTo(right, doc.y + 4).lineWidth(0.5).stroke();
+    doc.moveDown();
+    doc.font('Helvetica-Bold').fontSize(12).text(`Total estimé : ${p.total} ${p.currency}`, left, doc.y, { width: right - left, align: 'right' });
+    doc.font('Helvetica').fontSize(9).moveDown().text("Estimation établie d'après la grille en vigueur et les mesures annoncées ; le montant définitif résulte de la pesée réelle.");
+    if (p.note) doc.moveDown().fontSize(10).text(`Note : ${p.note}`);
+  }, `Proforma ${p.number}`);
+}

@@ -42,6 +42,7 @@ export function toCardData(card: CardWithChildren): CardData {
       minCharge: rule.minCharge,
       basis: rule.basis,
       volumetricDivisor: rule.volumetricDivisor,
+      unitCost: rule.unitCost,
     })),
     surcharges: card.surcharges.map((s) => ({
       code: s.code,
@@ -208,7 +209,14 @@ export class PricingService {
     }
   }
 
-  private async writeChildren(tx: Tx, auth: AuthContext, cardId: string, input: CreateRateCardInput): Promise<void> {
+  /** Les coûts d'achat se règlent avec `cost:manage` ; sans ce droit, ni saisie, ni perte des coûts déjà en place (remplacement d'un brouillon). */
+  private assertCostRights(auth: AuthContext, input: CreateRateCardInput) {
+    if (input.rules.some((r) => r.unitCost !== undefined) && !auth.permissions.can('cost:manage')) {
+      throw AppException.forbidden('COST_NOT_ALLOWED', "Vous n'avez pas le droit de fixer les coûts d'achat");
+    }
+  }
+
+  private async writeChildren(tx: Tx, auth: AuthContext, cardId: string, input: CreateRateCardInput, keepCosts?: Map<string, Prisma.Decimal | null>): Promise<void> {
     const categories = await this.resolveRuleCategories(tx, input.rules.map((r) => r.categoryCode));
     try {
       await tx.rateRule.createMany({
@@ -223,6 +231,10 @@ export class PricingService {
           minCharge: new D(String(rule.minCharge)),
           basis: rule.basis,
           volumetricDivisor: rule.volumetricDivisor !== undefined ? new D(String(rule.volumetricDivisor)) : null,
+          unitCost:
+            rule.unitCost !== undefined
+              ? new D(String(rule.unitCost))
+              : (keepCosts?.get(`${rule.categoryCode?.toUpperCase() ?? ''}|${new D(String(rule.weightFrom)).toString()}`) ?? null),
         })),
       });
     } catch (error) {
@@ -269,6 +281,7 @@ export class PricingService {
 
   async createCard(auth: AuthContext, input: CreateRateCardInput) {
     this.validateSurcharges(input);
+    this.assertCostRights(auth, input);
     return this.db.run({ companyId: auth.companyId }, async (tx) => {
       const card = await tx.rateCard.create({ data: this.cardData(auth, input) });
       await this.writeChildren(tx, auth, card.id, input);
@@ -286,17 +299,20 @@ export class PricingService {
   /** Remplace entièrement une grille EN BROUILLON (une grille active n'est jamais modifiée). */
   async replaceDraft(auth: AuthContext, cardId: string, input: CreateRateCardInput) {
     this.validateSurcharges(input);
+    this.assertCostRights(auth, input);
     return this.db.run({ companyId: auth.companyId }, async (tx) => {
       const existing = await tx.rateCard.findUnique({ where: { id: cardId } });
       if (!existing) throw AppException.notFound('RATE_CARD_NOT_FOUND', 'Grille introuvable');
       if (existing.status !== 'DRAFT') {
         throw AppException.conflict('RATE_CARD_IMMUTABLE', 'Une grille active ou retirée ne se modifie pas : dupliquez-la');
       }
+      const oldRules = await tx.rateRule.findMany({ where: { rateCardId: cardId }, include: { category: { select: { code: true } } } });
+      const keepCosts = new Map(oldRules.map((r) => [`${r.category?.code ?? ''}|${r.weightFrom.toString()}`, r.unitCost]));
       await tx.rateRule.deleteMany({ where: { rateCardId: cardId } });
       await tx.rateSurcharge.deleteMany({ where: { rateCardId: cardId } });
       const { companyId: _c, createdBy: _b, ...data } = this.cardData(auth, input);
       await tx.rateCard.update({ where: { id: cardId }, data: { ...data, version: { increment: 1 } } });
-      await this.writeChildren(tx, auth, cardId, input);
+      await this.writeChildren(tx, auth, cardId, input, keepCosts);
       await this.audit.record(tx, { companyId: auth.companyId, action: 'ratecard.updated', entityType: 'rate_card', entityId: cardId });
       return cardDto(await tx.rateCard.findUniqueOrThrow({ where: { id: cardId }, include }));
     });
@@ -307,6 +323,14 @@ export class PricingService {
       tx.rateCard.findMany({ where: filter, include, orderBy: [{ originCountry: 'asc' }, { destinationCountry: 'asc' }, { validFrom: 'desc' }] }),
     );
     return { items: rows.map(cardDto) };
+  }
+
+  /** Coûts d'achat par tranche : jamais dans le détail d'une grille, seulement pour ceux qui ont `cost:read`. */
+  async listCosts(auth: AuthContext, cardId: string) {
+    const rows = await this.db.run({ companyId: auth.companyId }, (tx) =>
+      tx.rateRule.findMany({ where: { rateCardId: cardId }, include: { category: { select: { code: true } } }, orderBy: [{ weightFrom: 'asc' }] }),
+    );
+    return { items: rows.map((r) => ({ categoryCode: r.category?.code ?? null, weightFrom: r.weightFrom.toString(), basis: r.basis, unitCost: r.unitCost?.toString() ?? null })) };
   }
 
   async getCard(auth: AuthContext, cardId: string) {
@@ -396,6 +420,7 @@ export class PricingService {
           minCharge: r.minCharge,
           basis: r.basis,
           volumetricDivisor: r.volumetricDivisor,
+          unitCost: r.unitCost,
         })),
       });
       if (source.surcharges.length > 0) {

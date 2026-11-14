@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { CheckField, FormMessage, SelectField, TextAreaField, TextField } from '../../components/ui/Fields';
 import { claimTone } from '../../lib/tones';
 import { deliveryKeys, useStaffClaim, useStaffClaims, type ClaimStatus } from '../delivery/queries';
+import { CompensationCard } from './CompensationCard';
 import { useCan } from './queries';
 
 export function StaffClaimsPage() {
@@ -183,6 +184,8 @@ export function StaffClaimDetailPage() {
               </li>
             ))}
           </ol>
+
+          <CompensationCard claimId={id} />
 
           {canManage ? (
             <>
