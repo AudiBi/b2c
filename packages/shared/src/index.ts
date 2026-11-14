@@ -19,4 +19,5 @@ export * from './schemas/cashbook';
 export * from './schemas/referrers';
 export * from './carriers';
 export * from './schemas/proforma';
+export * from './setup-company';
 export * from './notifications';

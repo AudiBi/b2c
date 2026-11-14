@@ -1,6 +1,17 @@
 # Mise en place des données réelles
 
-Script : `scripts/setup-company/run.ts` (logique et valeurs : `setup.ts`). Il passe par l'API réelle : toutes les règles s'appliquent. Il est **rejouable** : ce qui existe déjà n'est ni modifié ni dupliqué.
+## Depuis le panel (méthode normale)
+
+Ouvrez **Administration → Paramètres** avec un compte administrateur de l'entreprise.
+
+- **Valeurs de départ** : un bouton crée en une fois les coordonnées publiques (si vides), les entrepôts de Miami et de Philadelphie, l'agence de Pétion-Ville, les catégories, les grilles aérienne et maritime, le taux et la table CONATEL. Ce qui existe déjà n'est jamais modifié ni dupliqué : on peut recommencer sans risque.
+- Ensuite, **tout se modifie à la main dans le panel** : coordonnées publiques, **entrepôts** (modèle d'adresse du client compris), **agences et points de retrait**, **catégories** de marchandises, **taux gourdes/dollar**, **seuils d'alerte** de la petite caisse. Les tarifs et la table CONATEL ont leurs écrans (**Grilles tarifaires**, **Frais CONATEL**).
+
+Le script ci-dessous reste disponible pour les installations automatisées ; il utilise exactement la même logique (`packages/shared/src/setup-company.ts`).
+
+## Par script (facultatif)
+
+Script : `scripts/setup-company/run.ts`. Il passe par l'API réelle : toutes les règles s'appliquent. Il est **rejouable** : ce qui existe déjà n'est ni modifié ni dupliqué.
 
 ```bash
 SETUP_ADMIN_EMAIL=... SETUP_ADMIN_PASSWORD=... npm run setup:company -- --company <slug>

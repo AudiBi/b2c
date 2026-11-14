@@ -1,5 +1,5 @@
 import { api, bearer, buildTestApp, makeTenant, type TestApp } from './helpers';
-import { runSetup, type Call } from '../../../scripts/setup-company/setup';
+import { runSetup, type Call } from '@b2c/shared';
 
 describe('Mise en place des données réelles', () => {
   let t: TestApp;

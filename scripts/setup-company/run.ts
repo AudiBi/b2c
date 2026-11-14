@@ -8,7 +8,7 @@
  */
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { runSetup, type Call } from './setup';
+import { runSetup, type Call } from '@b2c/shared';
 
 const envFile = resolve(__dirname, '../../.env');
 if (existsSync(envFile)) process.loadEnvFile(envFile);

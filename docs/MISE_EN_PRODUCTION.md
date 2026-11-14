@@ -30,7 +30,7 @@
 
 1. **Débloquer GitHub Actions** (1) et pousser les commits ; la suite doit être verte.
 2. **Environnement d'essai sur Render** (2) avec une entreprise d'essai ; courrier (3) et sauvegardes (4) configurés dès le départ.
-3. **Mise en place des données réelles** : `npm run setup:company -- --company <identifiant>` (voir `docs/SETUP_COMPANY.md`), puis contrôle des prix (5) et des coordonnées (6).
+3. **Mise en place des données réelles depuis le panel** : **Administration → Paramètres → Valeurs de départ**, puis ajustement à la main des coordonnées, entrepôts, agences, catégories, taux et seuils (voir `docs/SETUP_COMPANY.md`), puis contrôle des prix (5) et des coordonnées (6).
 4. **Simulation d'import** (7), nettoyage, import réel dans l'entreprise **vide de colis**, rapprochement des chiffres avec le prototype.
 5. **Comptes** : inviter chaque personne (jamais d'import de PIN), activer la double authentification, donner les rôles (Comptable, Partenaire, réception…).
 

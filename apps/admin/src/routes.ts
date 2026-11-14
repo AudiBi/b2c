@@ -20,6 +20,7 @@ export const paths = {
   accountStaffReferrers: '/referrers',
   accountStaffDelays: '/delays',
   accountStaffProformas: '/proformas',
+  accountStaffSettings: '/settings',
   accountStaffPackages: '/packages',
   accountStaffWarehouse: '/warehouse',
   accountStaffShipments: '/shipments',

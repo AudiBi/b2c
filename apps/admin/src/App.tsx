@@ -38,6 +38,7 @@ const StaffDepositsPage = lazy(() => import('./pages/staff/StaffDepositsPage').t
 const StaffReferrersPage = lazy(() => import('./pages/staff/StaffReferrersPage').then((m) => ({ default: m.StaffReferrersPage })));
 const StaffDelaysPage = lazy(() => import('./pages/staff/StaffDelaysPage').then((m) => ({ default: m.StaffDelaysPage })));
 const StaffProformasPage = lazy(() => import('./pages/staff/StaffProformasPage').then((m) => ({ default: m.StaffProformasPage })));
+const StaffSettingsPage = lazy(() => import('./pages/staff/StaffSettingsPage').then((m) => ({ default: m.StaffSettingsPage })));
 const CompaniesPage = lazy(() => import('./pages/admin/CompaniesPage').then((m) => ({ default: m.CompaniesPage })));
 
 export function AppRoutes() {
@@ -61,6 +62,7 @@ export function AppRoutes() {
         <Route path="referrers" element={<StaffReferrersPage />} />
         <Route path="delays" element={<StaffDelaysPage />} />
         <Route path="proformas" element={<StaffProformasPage />} />
+        <Route path="settings" element={<StaffSettingsPage />} />
         <Route path="packages" element={<StaffPackagesPage />} />
         <Route path="packages/:id" element={<StaffPackageDetailPage />} />
         <Route path="warehouse" element={<StaffWarehousePage />} />

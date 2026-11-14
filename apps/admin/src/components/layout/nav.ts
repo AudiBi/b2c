@@ -60,6 +60,7 @@ export function buildNav(user: SessionUser, m: Messages): NavGroup[] {
   const admin: NavItem[] = [];
   if (can('user:read')) admin.push({ page: 'users', label: n.users, icon: 'users' });
   if (can('role:read')) admin.push({ page: 'roles', label: n.roles, icon: 'key' });
+  if (staff && can('settings:read')) admin.push({ page: 'accountStaffSettings', label: s.settings, icon: 'key' });
   if (staff && can('audit:read')) admin.push({ page: 'accountStaffAudit', label: s.audit, icon: 'history' });
   if (admin.length) groups.push({ id: 'administration', label: n.administration, items: admin });
 
