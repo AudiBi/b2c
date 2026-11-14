@@ -59,7 +59,7 @@ function CreateDialog({ onClose, onCreated }: { onClose(): void; onCreated(): vo
           <SelectField name="defaultCurrency" label={f.currency} value={String(form.values.defaultCurrency)} onChange={(v) => form.set('defaultCurrency', v)} options={[{ value: 'USD', label: 'USD' }, { value: 'HTG', label: 'HTG' }]} />
           <SelectField name="defaultLocale" label={f.locale} value={String(form.values.defaultLocale)} onChange={(v) => form.set('defaultLocale', v)} options={(['fr', 'ht', 'en'] as const).map((l) => ({ value: l, label: m.lang[l] }))} />
         </div>
-        <SelectField name="paymentPolicy" label={f.paymentPolicy} value={String(form.values.paymentPolicy)} onChange={(v) => form.set('paymentPolicy', v)} options={[{ value: 'PAY_BEFORE_SHIPMENT', label: f.policies.PAY_BEFORE_SHIPMENT }, { value: 'PAY_BEFORE_RELEASE', label: f.policies.PAY_BEFORE_RELEASE }]} />
+        <SelectField name="paymentPolicy" label={f.paymentPolicy} value={String(form.values.paymentPolicy)} onChange={(v) => form.set('paymentPolicy', v)} options={[{ value: 'PAY_BEFORE_SHIPMENT', label: f.policies.PAY_BEFORE_SHIPMENT }, { value: 'PAY_BEFORE_RELEASE', label: f.policies.PAY_BEFORE_RELEASE }, { value: 'PAY_BEFORE_BOTH', label: f.policies.PAY_BEFORE_BOTH }]} />
         <div className="form-grid form-grid-2">
           {text('adminFirstName', f.adminFirstName)}
           {text('adminLastName', f.adminLastName)}

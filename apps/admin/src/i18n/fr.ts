@@ -1652,7 +1652,7 @@ export const fr = {
         currency: 'Devise par défaut',
         locale: 'Langue par défaut',
         paymentPolicy: 'Règle de paiement',
-        policies: { PAY_BEFORE_SHIPMENT: 'Payer avant l’expédition', PAY_BEFORE_RELEASE: 'Payer avant la remise' },
+        policies: { PAY_BEFORE_SHIPMENT: 'Payer avant l’expédition', PAY_BEFORE_BOTH: 'Payer avant l’expédition et avant la remise', PAY_BEFORE_RELEASE: 'Payer avant la remise' },
         adminEmail: 'E-mail de l’administrateur',
         adminFirstName: 'Prénom de l’administrateur',
         adminLastName: 'Nom de l’administrateur',

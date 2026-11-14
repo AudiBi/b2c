@@ -1652,7 +1652,7 @@ export const ht: Messages = {
         currency: 'Lajan pa defo',
         locale: 'Lang pa defo',
         paymentPolicy: 'Règ peman',
-        policies: { PAY_BEFORE_SHIPMENT: 'Peye anvan ekspedisyon', PAY_BEFORE_RELEASE: 'Peye anvan livrezon' },
+        policies: { PAY_BEFORE_SHIPMENT: 'Peye anvan ekspedisyon', PAY_BEFORE_BOTH: 'Peye anvan ekspedisyon ak anvan remèt', PAY_BEFORE_RELEASE: 'Peye anvan livrezon' },
         adminEmail: 'Imèl administratè a',
         adminFirstName: 'Prenom administratè a',
         adminLastName: 'Non fanmi administratè a',

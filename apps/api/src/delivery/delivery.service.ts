@@ -151,7 +151,7 @@ export class DeliveryService {
    * Solde restant sur les factures actives du colis. Selon la politique de l'entreprise, un colis jamais
    * facturé est aussi bloqué (paiement à la remise) ; sinon sa remise est possible (autorisation manuelle).
    */
-  async balanceOf(tx: Tx, packageId: string, policy: 'PAY_BEFORE_SHIPMENT' | 'PAY_BEFORE_RELEASE') {
+  async balanceOf(tx: Tx, packageId: string, policy: 'PAY_BEFORE_SHIPMENT' | 'PAY_BEFORE_RELEASE' | 'PAY_BEFORE_BOTH') {
     const links = await tx.invoicePackage.findMany({ where: { packageId, invoice: { status: { in: ['ISSUED', 'PARTIALLY_PAID', 'PAID'] } } }, include: { invoice: true } });
     let due = new D(0);
     let currency: string | null = null;
@@ -160,7 +160,7 @@ export class DeliveryService {
       if (left.gt(0)) due = due.add(left);
       currency = link.invoice.currency;
     }
-    const unbilled = links.length === 0 && policy === 'PAY_BEFORE_RELEASE';
+    const unbilled = links.length === 0 && (policy === 'PAY_BEFORE_RELEASE' || policy === 'PAY_BEFORE_BOTH');
     return { due, currency, unbilled, blocked: due.gt(0) || unbilled };
   }
 

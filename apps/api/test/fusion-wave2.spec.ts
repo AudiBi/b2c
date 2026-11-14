@@ -82,4 +82,16 @@ describe('Fusion, vagues 0 et 2 : prix convenu, MonCash, taux en gourdes', () =>
       expect((await api(t).get('/v1/me/fx-rate')).status).toBe(401);
     });
   });
+  describe('règle de paiement : l’une, l’autre ou les deux', () => {
+    it('« avant expédition et avant remise » : le colis attend le paiement après l’émission, comme « avant expédition »', async () => {
+      for (const policy of ['PAY_BEFORE_BOTH', 'PAY_BEFORE_SHIPMENT', 'PAY_BEFORE_RELEASE'] as const) {
+        const w = await world();
+        await t.admin.company.update({ where: { id: w.company.id }, data: { paymentPolicy: policy } });
+        const draft = await post(w.token, '/v1/admin/invoices', { customerId: w.customerId, packageIds: [w.pkg.packageId] });
+        expect((await post(w.token, `/v1/admin/invoices/${draft.body.id}/issue`)).status).toBe(200);
+        const pkg = await t.admin.package.findUniqueOrThrow({ where: { id: w.pkg.packageId } });
+        expect([policy, pkg.status]).toEqual([policy, policy === 'PAY_BEFORE_RELEASE' ? 'READY_TO_SHIP' : 'AWAITING_PAYMENT']);
+      }
+    });
+  });
 });

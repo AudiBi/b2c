@@ -260,7 +260,7 @@ export class InvoicesService {
       // Effet sur les colis selon la politique de paiement de l'entreprise
       for (const link of links) {
         const status = link.package.status;
-        if (company.paymentPolicy === 'PAY_BEFORE_SHIPMENT' && !zero) {
+        if ((company.paymentPolicy === 'PAY_BEFORE_SHIPMENT' || company.paymentPolicy === 'PAY_BEFORE_BOTH') && !zero) {
           if (status === 'REGISTERED_WEIGHED') await this.packages.transition(tx, auth.companyId, link.packageId, 'AWAITING_PAYMENT', { actor: { userId: auth.userId, bypassPermission: true } });
         } else if (status === 'REGISTERED_WEIGHED' || status === 'AWAITING_PAYMENT') {
           await this.packages.transition(tx, auth.companyId, link.packageId, 'READY_TO_SHIP', {

@@ -138,7 +138,7 @@ Transitions autorisées (toute paire absente est **refusée**) :
 
 `DELIVERED`, `RETURNED` et `CANCELLED` sont terminaux. Annuler après `READY_TO_SHIP` demande une permission élevée et la correction de la facture (avoir).
 
-La politique de paiement est une option de l'entreprise : `PAY_BEFORE_SHIPMENT` (le colis attend en `AWAITING_PAYMENT`) ou `PAY_BEFORE_RELEASE` (paiement à la remise ; `READY_TO_SHIP` directement, et I15 bloque la remise tant que le solde n'est pas nul).
+La politique de paiement est une option de l'entreprise : `PAY_BEFORE_SHIPMENT` (le colis attend en `AWAITING_PAYMENT`) ou `PAY_BEFORE_BOTH` (les deux : le colis attend en `AWAITING_PAYMENT` ET la remise est bloquée tant que le colis n'est pas facturé et soldé) ou `PAY_BEFORE_RELEASE` (paiement à la remise ; `READY_TO_SHIP` directement, et I15 bloque la remise tant que le solde n'est pas nul).
 
 ## 5. États des autres objets
 

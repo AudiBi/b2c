@@ -163,7 +163,7 @@ export const createCompanySchema = z.strictObject({
   customerCodePrefix: z.string().trim().toUpperCase().regex(/^[A-Z]{2,4}$/),
   defaultCurrency: z.enum(['USD', 'HTG']).default('USD'),
   defaultLocale: z.enum(LOCALES).default('fr'),
-  paymentPolicy: z.enum(['PAY_BEFORE_SHIPMENT', 'PAY_BEFORE_RELEASE']).default('PAY_BEFORE_SHIPMENT'),
+  paymentPolicy: z.enum(['PAY_BEFORE_SHIPMENT', 'PAY_BEFORE_RELEASE', 'PAY_BEFORE_BOTH']).default('PAY_BEFORE_SHIPMENT'),
   adminEmail: emailSchema,
   adminFirstName: nameSchema,
   adminLastName: nameSchema,

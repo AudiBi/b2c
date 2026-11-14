@@ -26,6 +26,8 @@ enum CompanyStatus {
 enum PaymentPolicy {
   PAY_BEFORE_SHIPMENT
   PAY_BEFORE_RELEASE
+  // Les deux à la fois : payer avant l'expédition ET avant la remise
+  PAY_BEFORE_BOTH
 }
 
 enum Locale {

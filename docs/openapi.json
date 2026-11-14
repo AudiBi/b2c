@@ -11249,7 +11249,8 @@
                     "type": "string",
                     "enum": [
                       "PAY_BEFORE_SHIPMENT",
-                      "PAY_BEFORE_RELEASE"
+                      "PAY_BEFORE_RELEASE",
+                      "PAY_BEFORE_BOTH"
                     ]
                   },
                   "adminEmail": {

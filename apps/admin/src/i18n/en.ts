@@ -1649,7 +1649,7 @@ export const en: Messages = {
         currency: 'Default currency',
         locale: 'Default language',
         paymentPolicy: 'Payment rule',
-        policies: { PAY_BEFORE_SHIPMENT: 'Pay before shipping', PAY_BEFORE_RELEASE: 'Pay before release' },
+        policies: { PAY_BEFORE_SHIPMENT: 'Pay before shipping', PAY_BEFORE_BOTH: 'Pay before shipment and before release', PAY_BEFORE_RELEASE: 'Pay before release' },
         adminEmail: 'Administrator e-mail',
         adminFirstName: 'Administrator first name',
         adminLastName: 'Administrator last name',
