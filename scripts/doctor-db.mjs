@@ -61,6 +61,11 @@ if (migrator && env.POSTGRES_MIGRATOR_PASSWORD && migrator.password !== env.POST
   bad('le mot de passe de DIRECT_URL DIFFÈRE de POSTGRES_MIGRATOR_PASSWORD', 'Dans .env, DIRECT_URL (et TEST_DIRECT_URL) doit utiliser POSTGRES_MIGRATOR_PASSWORD.');
 }
 
+const initScript = join(root, 'docker/postgres/init/01-roles.sh');
+if (existsSync(initScript) && readFileSync(initScript, 'utf8').includes('\r')) {
+  bad('docker/postgres/init/01-roles.sh a des fins de ligne Windows (CRLF) : le script qui crée le rôle b2c_app n’a pas pu s’exécuter correctement', 'Le dépôt a été copié ou cloné avec des fins de ligne Windows. Corrigez-les : « git config core.autocrlf false » puis « git checkout -- docker/postgres/init » (ou convertissez ce fichier en fins de ligne Unix avec votre éditeur), puis « npm run doctor:db -- --fix ».');
+}
+
 console.log('\n2. Variables d’environnement du système (elles passent AVANT .env)');
 for (const key of ['DATABASE_URL', 'DIRECT_URL', 'TEST_DATABASE_URL', 'TEST_DIRECT_URL']) {
   if (shellEnv[key] !== undefined && shellEnv[key] !== env[key]) {
@@ -93,7 +98,11 @@ if (pg.status !== 0 || !String(pg.stdout).trim()) {
   // Adresse du conteneur (et non 127.0.0.1) : PostgreSQL y exige le mot de passe, comme pour l'API ; en boucle locale il fait confiance sans le vérifier
   const login = docker(['exec', '-T', '-e', `PGPASSWORD=${app.password}`, 'postgres', 'sh', '-c', 'psql -h "$(hostname -i | cut -d" " -f1)" -U b2c_app -d b2c_dev -tAc "select current_user"'], {});
   if (login.status === 0) ok('b2c_app se connecte avec le mot de passe de .env : la base et .env sont d’accord');
-  else if (/password authentication failed/i.test(String(login.stderr))) {
+  else if (/not permitted to log in/i.test(String(login.stderr))) {
+    bad('le rôle b2c_app existe mais n’a PAS le droit de se connecter (NOLOGIN) : le script d’initialisation de la base ne l’a pas créé, une migration l’a créé sans connexion', 'Le rôle b2c_app est sans droit de connexion (le script docker/postgres/init n’a pas été exécuté à la création du volume). Gardez les données : « npm run doctor:db -- --fix » (donne le droit de connexion, fixe le mot de passe, recrée la base de tests si besoin). Base jetable : « docker compose -f docker/compose.dev.yml --env-file .env down -v » puis « npm run docker:up », « npm run db:migrate », « npm run db:seed ».');
+  } else if (/role "b2c_app" does not exist/i.test(String(login.stderr))) {
+    bad('le rôle b2c_app n’existe pas dans cette base', 'Le rôle b2c_app est absent : « npm run doctor:db -- --fix » le crée avec le mot de passe de .env.');
+  } else if (/password authentication failed/i.test(String(login.stderr))) {
     bad('b2c_app est REFUSÉ avec le mot de passe de .env : le volume Docker a été créé avec un autre mot de passe', 'Le volume de la base garde l’ancien mot de passe de b2c_app. Gardez les données : « npm run doctor:db -- --fix ». Base jetable : « docker compose -f docker/compose.dev.yml --env-file .env down -v » puis « npm run docker:up », « npm run db:migrate », « npm run db:seed ».');
   } else bad(`connexion impossible : ${String(login.stderr).trim().split('\n')[0]}`, 'Voir le message ci-dessus.');
 }
@@ -103,9 +112,23 @@ if (fix && app && env.POSTGRES_APP_PASSWORD) {
   if (!/^[A-Za-z0-9_-]{8,128}$/.test(env.POSTGRES_APP_PASSWORD)) {
     bad('POSTGRES_APP_PASSWORD contient des caractères que je n’injecte pas dans une commande SQL', 'Utilisez un mot de passe composé de lettres, chiffres, tirets (npm run setup:env en génère).');
   } else {
-    const alter = docker(['exec', '-T', 'postgres', 'psql', '-U', 'b2c_migrator', '-d', 'b2c_dev', '-v', 'ON_ERROR_STOP=1', '-c', `ALTER ROLE b2c_app PASSWORD '${env.POSTGRES_APP_PASSWORD}'`]);
+    const pw = env.POSTGRES_APP_PASSWORD;
+    // Rôle créé (ou rendu connectable) avec le bon mot de passe, droit de connexion aux deux bases, base de tests recréée si elle manque
+    const sqlFix = [
+      'DO $$ BEGIN',
+      "  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'b2c_app') THEN",
+      `    CREATE ROLE b2c_app LOGIN PASSWORD '${pw}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;`,
+      '  ELSE',
+      `    ALTER ROLE b2c_app LOGIN PASSWORD '${pw}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;`,
+      '  END IF;',
+      'END $$;',
+      "SELECT 'CREATE DATABASE b2c_test OWNER b2c_migrator' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'b2c_test')" + String.raw`\gexec`,
+      'GRANT CONNECT ON DATABASE b2c_dev TO b2c_app;',
+      'GRANT CONNECT ON DATABASE b2c_test TO b2c_app;',
+    ].join('\n');
+    const alter = spawnSync('docker', [...compose, 'exec', '-T', 'postgres', 'psql', '-U', 'b2c_migrator', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-q'], { input: sqlFix, encoding: 'utf8' });
     if (alter.status === 0) {
-      ok('mot de passe de b2c_app aligné sur POSTGRES_APP_PASSWORD ; relancez l’API');
+      ok('b2c_app peut se connecter avec le mot de passe de .env ; relancez l’API (puis « npm run db:migrate » si les tables n’existent pas encore)');
       problems.length = 0;
     } else bad(`échec : ${String(alter.stderr).trim().split('\n')[0]}`, 'La correction a échoué (voir ci-dessus).');
   }
