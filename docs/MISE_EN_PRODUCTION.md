@@ -17,7 +17,7 @@
 | # | Blocage | Qui | Action |
 |---|---|---|---|
 | 1 | Intégration continue GitHub arrêtée | **Vous** | GitHub → Settings → Billing and plans : lever le blocage de facturation ou le quota d'Actions. Sans cela, aucun contrôle automatique avant une mise en ligne. |
-| 2 | Déploiement jamais essayé sur Render | **Vous** puis moi | Créer le Blueprint (`render.yaml`) en suivant [RENDER.md](RENDER.md), saisir les secrets demandés, puis me donner l'adresse pour que je contrôle la santé (`/v1/health` ou `/health/live` selon le service), les pages et la connexion. |
+| 2 | Déploiement jamais essayé sur un vrai hébergeur (Render, ou **DigitalOcean** : [DIGITALOCEAN.md](DIGITALOCEAN.md)) | **Vous** puis moi | Créer le Blueprint (`render.yaml`) en suivant [RENDER.md](RENDER.md), saisir les secrets demandés, puis me donner l'adresse pour que je contrôle la santé (`/v1/health` ou `/health/live` selon le service), les pages et la connexion. |
 | 3 | Courrier : SPF, DKIM, DMARC | **Vous** (Namecheap) | Publier les trois enregistrements DNS (voir [DEPLOYMENT.md](DEPLOYMENT.md) § courrier), puis envoyer un message réel vers Gmail, Outlook et une boîte utilisée en Haïti et lire les en-têtes (`pass`). |
 | 4 | Sauvegardes hors Render | **Vous** | Créer le bucket (Backblaze B2 ou Cloudflare R2, gratuits), saisir `BACKUP_*`, **garder `BACKUP_PASSPHRASE` hors de Render**, puis faire **une restauration d'essai** complète. |
 | 5 | Prix et table CONATEL | **Vous** | Contrôler les grilles (aérien 5 $/lb, maritime 18 $/pi³, baril 220 $, e-conteneur 132) et les 21 articles CONATEL (`docs/SETUP_COMPANY.md`). L'organisme fixe ses prix « jusqu'à nouvel ordre ». |

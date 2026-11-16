@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "setup:env": "node scripts/init-env.mjs",
+    "doctor:db": "node scripts/doctor-db.mjs",
     "docker:up": "docker compose -f docker/compose.dev.yml --env-file .env up -d --wait",
     "docker:down": "docker compose -f docker/compose.dev.yml --env-file .env down",
     "build:shared": "npm -w @b2c/shared run build",

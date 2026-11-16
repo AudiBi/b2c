@@ -2,6 +2,8 @@
 
 Ce guide décrit comment installer la plateforme sur **un serveur** avec Docker, comment la sauvegarder, la restaurer et la mettre à jour. Il a été **exécuté pour de vrai sur un poste de développement** (Windows 11, Docker Desktop, conteneurs Linux) avec un domaine `localhost` et un certificat auto-signé : les commandes et résultats ci-dessous viennent de cet essai. **Rien n'a été essayé sur un serveur Linux public, avec un vrai domaine, un vrai certificat ni un vrai fournisseur d'e-mail** : voir « Ce qui n'a pas été vérifié » et [RISKS.md](RISKS.md) avant d'ouvrir le service au public.
 
+> **Hébergement sur DigitalOcean** (un droplet, cette même pile Docker Compose) : voir [DIGITALOCEAN.md](DIGITALOCEAN.md) (préparation du serveur, certificat HTTPS, sauvegardes chiffrées hors hébergeur).
+
 > **Hébergement sur Render** : voir [RENDER.md](RENDER.md) (Blueprint `render.yaml`, domaines `b2cxpress.com` et `admin.b2cxpress.com`). Le présent guide décrit le déploiement sur un serveur avec Docker Compose.
 
 ## 1. Architecture déployée
