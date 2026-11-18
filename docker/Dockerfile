@@ -10,7 +10,7 @@ ARG IMAGE_TARGET=web
 # ---------------------------------------------------------------------------------------------
 # Construction : installe tout, compile le package partagé, le client Prisma et l'API
 # ---------------------------------------------------------------------------------------------
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 RUN apk add --no-cache openssl
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json ./
@@ -33,7 +33,7 @@ CMD ["sh", "-c", "npx prisma migrate deploy --schema prisma/schema.prisma && npx
 # ---------------------------------------------------------------------------------------------
 # API : dépendances de production seulement, utilisateur sans privilège
 # ---------------------------------------------------------------------------------------------
-FROM node:22-alpine AS api
+FROM node:26-alpine AS api
 RUN apk add --no-cache openssl
 ENV NODE_ENV=production
 WORKDIR /app
