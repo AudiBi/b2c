@@ -15,7 +15,7 @@
     "@nestjs/common": "^11.1.0",
     "@nestjs/core": "^11.1.0",
     "@nestjs/platform-express": "^11.1.0",
-    "@nestjs/swagger": "^11.2.0",
+    "@nestjs/swagger": "^12.1.1",
     "@prisma/client": "6.19.3",
     "argon2": "^0.44.0",
     "cookie-parser": "^1.4.7",
