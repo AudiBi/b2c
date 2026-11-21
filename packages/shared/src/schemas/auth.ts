@@ -75,7 +75,11 @@ export const loginSchema = z
   .refine((v) => !(v.totpCode && v.recoveryCode), { path: ['recoveryCode'], message: 'one_code_only' });
 
 /** Les actions sensibles sur la double authentification exigent le mot de passe ET un code (application ou secours). */
-export const twoFactorSetupSchema = z.strictObject({ password: z.string().min(1).max(128) });
+export const twoFactorSetupSchema = z.strictObject({
+  password: z.string().min(1).max(128),
+  /** Génère une NOUVELLE clé même si une activation est déjà en cours (sinon la clé en attente est reprise : recliquer ne désaccorde pas l'application). */
+  renew: z.boolean().optional(),
+});
 export const twoFactorEnableSchema = z.strictObject({ code: totpCodeSchema });
 export const twoFactorProofSchema = z
   .strictObject({ password: z.string().min(1).max(128), totpCode: totpCodeSchema.optional(), recoveryCode: recoveryCodeSchema.optional() })

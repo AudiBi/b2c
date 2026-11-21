@@ -59,6 +59,21 @@ describe('Double authentification (TOTP)', () => {
       expect((await api(t).get('/v1/me/2fa').set(bearer(token))).body).toMatchObject({ enabled: false, pending: true });
     });
 
+    it('une activation en cours garde la même clé : recliquer ne désaccorde pas l’application ; renew demande une nouvelle clé', async () => {
+      const { user, token } = await staffWithToken();
+      const first = await post(t, '/v1/me/2fa/setup', token, { password: user.password });
+      const again = await post(t, '/v1/me/2fa/setup', token, { password: user.password });
+      expect(again.body.secret).toBe(first.body.secret);
+      const renewed = await post(t, '/v1/me/2fa/setup', token, { password: user.password, renew: true });
+      expect(renewed.body.secret).toMatch(/^[A-Z2-7]{32}$/);
+      expect(renewed.body.secret).not.toBe(first.body.secret);
+      // l'ancienne clé ne valide plus rien : seule la nouvelle active le compte
+      const wrongSecretCode = codeAt(first.body.secret);
+      const good = codeAt(renewed.body.secret);
+      if (wrongSecretCode !== good) expect(errorCode(await post(t, '/v1/me/2fa/enable', token, { code: wrongSecretCode }))).toBe('INVALID_TOTP');
+      expect((await post(t, '/v1/me/2fa/enable', token, { code: good })).status).toBe(200);
+    });
+
     it('active avec un code valide : 10 codes de secours uniques, stockés sous forme d’empreinte ; un code faux est refusé', async () => {
       const { user, token } = await staffWithToken();
       const setup = await post(t, '/v1/me/2fa/setup', token, { password: user.password });

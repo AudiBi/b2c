@@ -60,6 +60,8 @@ export function TwoFactorSection() {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [renew, setRenew] = useState(false);
+  const [codeFailed, setCodeFailed] = useState(false);
   const data = status.data;
 
   async function run(action: () => Promise<void>) {
@@ -83,7 +85,9 @@ export function TwoFactorSection() {
     event.preventDefault();
     if (password === '') return setError(m.validation.required);
     void run(async () => {
-      setSecret(await api('/v1/me/2fa/setup', { method: 'POST', body: { password } }));
+      setSecret(await api('/v1/me/2fa/setup', { method: 'POST', body: { password, ...(renew ? { renew: true } : {}) } }));
+      setRenew(false);
+      setCodeFailed(false);
       setPassword('');
       await queryClient.invalidateQueries({ queryKey: ['me', '2fa'] });
     });
@@ -93,11 +97,17 @@ export function TwoFactorSection() {
     event.preventDefault();
     if (!totpCodeSchema.safeParse(code.trim()).success) return setError(t.codeFormat);
     void run(async () => {
-      const res = await api<{ recoveryCodes: string[] }>('/v1/me/2fa/enable', { method: 'POST', body: { code: code.trim() } });
-      setCodes(res.recoveryCodes);
-      setSecret(null);
-      setCode('');
-      await refresh();
+      try {
+        const res = await api<{ recoveryCodes: string[] }>('/v1/me/2fa/enable', { method: 'POST', body: { code: code.trim() } });
+        setCodes(res.recoveryCodes);
+        setSecret(null);
+        setCode('');
+        setCodeFailed(false);
+        await refresh();
+      } catch (e) {
+        setCodeFailed(true);
+        throw e;
+      }
     });
   };
 
@@ -134,6 +144,7 @@ export function TwoFactorSection() {
       {data && !data.enabled && !secret ? (
         <form className="form" onSubmit={startSetup} noValidate aria-label={t.activate}>
           {data.required ? <Alert tone="warning">{t.requiredNotice}</Alert> : <p className="muted">{t.off}</p>}
+          {renew ? <Alert tone="info">{t.renewNotice}</Alert> : null}
           <div className="card" data-testid="twofa-steps">
             <strong>{t.stepsTitle}</strong>
             <ol>
@@ -170,10 +181,30 @@ export function TwoFactorSection() {
             </p>
           </details>
           <Alert tone="info">{t.timeHint}</Alert>
+          {codeFailed ? (
+            <Alert tone="warning" title={t.wrongTitle}>
+              <ul>
+                <li>{t.wrong1}</li>
+                <li>{t.wrong2}</li>
+                <li>{t.wrong3}</li>
+              </ul>
+            </Alert>
+          ) : null}
           <TextField name="twofaCode" label={t.code} hint={t.codeHint} inputMode="numeric" maxLength={6} autoComplete="one-time-code" value={code} onChange={setCode} />
           <div className="form-actions">
             <Button type="submit" disabled={busy}>
               {t.confirm}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSecret(null);
+                setRenew(true);
+                setCode('');
+                setCodeFailed(false);
+              }}
+            >
+              {t.newKey}
             </Button>
           </div>
         </form>

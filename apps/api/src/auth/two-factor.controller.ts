@@ -27,9 +27,9 @@ export class TwoFactorController {
   @HttpCode(200)
   @RateLimit({ name: '2fa-setup', limit: 20, windowSeconds: 3600 })
   @Validate({ body: twoFactorSetupSchema })
-  @ApiOperation({ summary: 'Commence l’activation : mot de passe exigé, renvoie le secret et l’adresse otpauth à saisir dans l’application' })
+  @ApiOperation({ summary: 'Commence l’activation : mot de passe exigé, renvoie le secret et l’adresse otpauth à saisir dans l’application (une activation déjà en cours garde la même clé, sauf renew: true)' })
   setup(@CurrentAuth() auth: AuthContext, @VBody() body: Body<typeof twoFactorSetupSchema>) {
-    return this.twoFactor.setup(auth, body.password);
+    return this.twoFactor.setup(auth, body.password, body.renew === true);
   }
 
   @Post('enable')

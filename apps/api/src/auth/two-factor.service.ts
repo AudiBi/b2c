@@ -71,13 +71,17 @@ export class TwoFactorService {
   }
 
   /** Démarre l'activation : génère un secret (non actif tant qu'un code valide n'a pas été saisi). */
-  async setup(auth: AuthContext, password: string) {
+  async setup(auth: AuthContext, password: string, renew = false) {
     await this.throttle(auth.userId);
     return this.db.run({ companyId: auth.companyId }, async (tx) => {
       const user = await this.checkPassword(tx, auth.userId, password);
       if (user.totpEnabledAt) throw AppException.conflict('TOTP_ALREADY_ENABLED', 'La double authentification est déjà active');
-      const secret = generateSecret();
-      await tx.user.update({ where: { id: user.id }, data: { totpSecretEnc: encryptSecret(secret, this.keyMaterial), totpLastStep: null } });
+      // Une activation en cours garde sa clé : recliquer sur « Activer » ou recharger la page ne doit pas désaccorder l'application déjà configurée
+      const pending = !renew && user.totpSecretEnc ? decryptSecret(user.totpSecretEnc, this.keyMaterial) : null;
+      const secret = pending ?? generateSecret();
+      if (!pending) {
+        await tx.user.update({ where: { id: user.id }, data: { totpSecretEnc: encryptSecret(secret, this.keyMaterial), totpLastStep: null } });
+      }
       const company = await tx.company.findUniqueOrThrow({ where: { id: auth.companyId }, select: { name: true } });
       await this.audit.record(tx, { companyId: auth.companyId, action: 'auth.2fa_setup_started', entityType: 'user', entityId: user.id, actorUserId: user.id });
       return { secret, otpauthUri: otpauthUri(secret, user.email, company.name) };
