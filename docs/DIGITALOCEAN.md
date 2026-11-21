@@ -45,7 +45,7 @@ ssh root@ADRESSE_DU_DROPLET
 git clone https://github.com/AudiBi/b2c.git /opt/b2c && bash /opt/b2c/scripts/digitalocean/bootstrap.sh
 ```
 
-Il installe Docker, Node 22, le pare-feu (SSH, 80, 443), fail2ban, les mises à jour de sécurité automatiques, la rotation des journaux Docker, 2 Go de mémoire d'échange, et crée l'utilisateur **`b2c`** avec votre clé SSH. Il désactive ensuite la connexion root et par mot de passe : **ouvrez un second terminal et vérifiez `ssh b2c@ADRESSE` avant de fermer la session root**. Si le dépôt est privé, utilisez une clé de déploiement ou clonez depuis votre poste (`scp`/`rsync`).
+Il installe Docker, Node 22, le pare-feu (SSH, 80, 443), fail2ban, les mises à jour de sécurité automatiques, la rotation des journaux Docker, 2 Go de mémoire d'échange, et crée l'utilisateur **`b2c`** avec votre clé SSH. Il désactive ensuite la connexion root et par mot de passe : **ouvrez un second terminal et vérifiez `ssh b2c@ADRESSE` avant de fermer la session root**. **Dépôt privé** : un `git clone` en `https://` échoue (le serveur n'a aucun identifiant GitHub). Créez une clé de déploiement **en lecture seule** : `ssh-keygen -t ed25519 -N "" -f /root/.ssh/b2c_deploy`, copiez `cat /root/.ssh/b2c_deploy.pub` dans GitHub → dépôt → Settings → Deploy keys (sans « Allow write access »), puis clonez avec `GIT_SSH_COMMAND="ssh -i /root/.ssh/b2c_deploy -o StrictHostKeyChecking=accept-new" git clone git@github.com:AudiBi/b2c.git /opt/b2c`. Pour les mises à jour faites en tant que `b2c`, copiez la clé dans `/home/b2c/.ssh/` (propriétaire `b2c`, droits 600) et ajoutez `export GIT_SSH_COMMAND="ssh -i ~/.ssh/b2c_deploy"` à son `~/.bashrc`.
 
 ```bash
 chown -R b2c:b2c /opt/b2c      # le dépôt a été cloné par root
@@ -67,13 +67,24 @@ nano .env.production
 
 ## 5. Certificat HTTPS (Let's Encrypt)
 
-Un seul certificat couvre le site et le panel. Les DNS (étape 2) doivent déjà pointer vers le serveur et le port 80 doit être libre (nginx n'est pas encore démarré) :
+Un seul certificat couvre le site et le panel. Les DNS (étape 2) doivent déjà pointer vers le serveur et le port 80 doit être libre (nginx n'est pas encore démarré).
+
+L'utilisateur `b2c` **n'a pas de mot de passe** et n'est pas dans le groupe `sudo` : `sudo` lui répond « Sorry, try again ». Utilisez donc la version qui **n'a pas besoin de sudo** (certbot s'exécute dans un conteneur Docker, et `b2c` est dans le groupe `docker`) :
 
 ```bash
-sudo bash scripts/digitalocean/cert.sh b2cxpress.com admin.b2cxpress.com vous@exemple.com
+cd /opt/b2c
+bash scripts/digitalocean/cert-docker.sh issue b2cxpress.com admin.b2cxpress.com vous@exemple.com
 ```
 
-Le script obtient le certificat, le copie dans `/opt/b2c/certs` (`fullchain.pem`, `privkey.pem`), installe le **renouvellement automatique** (minuteur système de certbot ; le conteneur `web` est arrêté quelques secondes à chaque renouvellement) et fait un essai de renouvellement. Ne continuez que si l'essai se termine sans erreur.
+Le script obtient le certificat, le copie dans `/opt/b2c/certs` (`fullchain.pem`, `privkey.pem`) et affiche sa date d'expiration. Planifiez ensuite le **renouvellement automatique** (`crontab -e`, en tant que `b2c`) :
+
+```bash
+0 4 * * *  /opt/b2c/scripts/digitalocean/cert-docker.sh renew >> /opt/b2c/cert-renew.log 2>&1
+```
+
+Il ne fait rien tant que le certificat vaut encore plus de 30 jours ; sinon il arrête le conteneur `web` quelques secondes, renouvelle, recopie les fichiers et relance `web`.
+
+> Variante avec `sudo` : `scripts/digitalocean/cert.sh` (certbot installé sur le serveur), si vous avez donné un mot de passe ou le droit `sudo` à `b2c` depuis la console DigitalOcean. Ce n'est pas nécessaire.
 
 ## 6. Démarrer
 
