@@ -152,6 +152,10 @@ describe('page Sécurité : double authentification', () => {
     await u.click(box.getByRole('button', { name: fr.account.security.twoFactor.activate }));
     expect(await box.findByTestId('twofa-secret')).toHaveTextContent('JBSW Y3DP EHPK 3PXP JBSW Y3DP EHPK 3PXP');
     expect(bodyOf(calls('POST /v1/me/2fa/setup')[0])).toEqual({ password: 'un-mot-de-passe-solide' });
+    // Code QR dessiné dans le navigateur (le secret ne quitte jamais l'écran) ; la clé à la main reste disponible en secours
+    const qr = await box.findByTestId('qr-code');
+    expect(qr.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
+    expect(box.getByText(fr.account.security.twoFactor.timeHint)).toBeInTheDocument();
 
     await u.type(box.getByLabelText(fr.account.security.twoFactor.code), '12');
     await u.click(box.getByRole('button', { name: fr.account.security.twoFactor.confirm }));
@@ -166,6 +170,18 @@ describe('page Sécurité : double authentification', () => {
     await u.click(box.getByRole('button', { name: fr.account.security.twoFactor.recoverySaved }));
     expect(box.queryByTestId('recovery-codes')).not.toBeInTheDocument();
     expect(await box.findByText(/10 code\(s\) de secours restant/)).toBeInTheDocument();
+  });
+
+  it('activation obligatoire : les étapes sont expliquées et le formulaire de changement de mot de passe ne prête pas à confusion', async () => {
+    signedIn(me({ enabled: false, required: true, enrollmentRequired: true }), {
+      'GET /v1/me/2fa': { enabled: false, pending: false, required: true, recoveryCodesLeft: 0 },
+    });
+    renderAt('/security');
+    const box = within(await section());
+    const steps = await box.findByTestId('twofa-steps');
+    expect(steps).toHaveTextContent(fr.account.security.twoFactor.step1);
+    expect(steps).toHaveTextContent('Google Authenticator');
+    expect(screen.queryByLabelText(fr.auth.fields.currentPassword)).not.toBeInTheDocument();
   });
 
   it('désactivation : mot de passe et code, format accepté (6 chiffres ou secours)', async () => {

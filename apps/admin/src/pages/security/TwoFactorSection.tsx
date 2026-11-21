@@ -5,6 +5,7 @@ import { api } from '../../api/client';
 import { useAuth } from '../../auth/AuthProvider';
 import { apiErrorMessage } from '../../forms/validation';
 import { format, useI18n } from '../../i18n';
+import { QrCode } from '../../components/QrCode';
 import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
 import { FormMessage, PasswordField, TextField } from '../../components/ui/Fields';
@@ -133,6 +134,15 @@ export function TwoFactorSection() {
       {data && !data.enabled && !secret ? (
         <form className="form" onSubmit={startSetup} noValidate aria-label={t.activate}>
           {data.required ? <Alert tone="warning">{t.requiredNotice}</Alert> : <p className="muted">{t.off}</p>}
+          <div className="card" data-testid="twofa-steps">
+            <strong>{t.stepsTitle}</strong>
+            <ol>
+              <li>{t.step1}</li>
+              <li>{t.step2}</li>
+              <li>{t.step3}</li>
+              <li>{t.step4}</li>
+            </ol>
+          </div>
           <PasswordField name="twofaPassword" label={t.password} value={password} onChange={setPassword} autoComplete="current-password" />
           <div className="form-actions">
             <Button type="submit" disabled={busy}>
@@ -147,11 +157,19 @@ export function TwoFactorSection() {
           <h3 style={{ fontSize: '1.05rem' }}>{t.scanTitle}</h3>
           <p>{t.scanLead}</p>
           <p>
-            {t.secret} : <strong className="mono" data-testid="twofa-secret">{groups(secret.secret)}</strong>
+            <QrCode value={secret.otpauthUri} alt={t.qrAlt} />
           </p>
-          <p className="muted" style={{ overflowWrap: 'anywhere' }}>
-            {t.uri} : <span className="mono">{secret.otpauthUri}</span>
-          </p>
+          <details>
+            <summary>{t.manualTitle}</summary>
+            <p>{t.manualLead}</p>
+            <p>
+              {t.secret} : <strong className="mono" data-testid="twofa-secret">{groups(secret.secret)}</strong>
+            </p>
+            <p className="muted" style={{ overflowWrap: 'anywhere' }}>
+              {t.uri} : <span className="mono">{secret.otpauthUri}</span>
+            </p>
+          </details>
+          <Alert tone="info">{t.timeHint}</Alert>
           <TextField name="twofaCode" label={t.code} hint={t.codeHint} inputMode="numeric" maxLength={6} autoComplete="one-time-code" value={code} onChange={setCode} />
           <div className="form-actions">
             <Button type="submit" disabled={busy}>
