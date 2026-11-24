@@ -524,6 +524,22 @@ describe('Rôles, permissions et administration des utilisateurs', () => {
       expect((await api(t).get('/v1/platform/companies').set(bearer(accessToken))).status).toBe(403);
     });
 
+    it("renvoie l'invitation d'un administrateur en attente (ancien lien invalidé), puis refuse une fois le compte actif", async () => {
+      const body = companyBody();
+      const created = await api(t).post('/v1/platform/companies').set(bearer(superToken)).send(body);
+      expect(created.body.invitation).toEqual({ sent: true });
+      const first = tokenFromMail(lastMailTo(t, body.adminEmail));
+      const resend = await api(t).post(`/v1/platform/companies/${created.body.id}/resend-invite`).set(bearer(superToken));
+      expect(resend.status).toBe(200);
+      expect(resend.body).toMatchObject({ sent: true, email: body.adminEmail });
+      const second = tokenFromMail(lastMailTo(t, body.adminEmail));
+      expect(second).not.toBe(first);
+      const password = strongPassword();
+      expect((await api(t).post('/v1/auth/reset-password').set('X-Forwarded-For', freshIp()).send({ token: first, newPassword: password })).status).toBeGreaterThanOrEqual(400);
+      expect((await api(t).post('/v1/auth/reset-password').set('X-Forwarded-For', freshIp()).send({ token: second, newPassword: password })).status).toBe(200);
+      expect((await api(t).post(`/v1/platform/companies/${created.body.id}/resend-invite`).set(bearer(superToken))).status).toBe(409);
+    });
+
     it("refuse un identifiant déjà pris (409), l'identifiant réservé « platform » (400) et les champs inconnus", async () => {
       const body = companyBody();
       expect((await api(t).post('/v1/platform/companies').set(bearer(superToken)).send(body)).status).toBe(201);

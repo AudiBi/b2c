@@ -31,6 +31,15 @@ export class PlatformController {
     return this.platform.listCompanies(auth);
   }
 
+  @Post(':id/resend-invite')
+  @HttpCode(200)
+  @RequirePermission('company:manage')
+  @Validate({ params: idParamSchema })
+  @ApiOperation({ summary: "Renvoie l'invitation de l'administrateur de l'entreprise (nouveau lien) ; si l'e-mail échoue, le lien est renvoyé au super administrateur" })
+  resendInvite(@CurrentAuth() auth: AuthContext, @VParams() params: z.infer<typeof idParamSchema>) {
+    return this.platform.resendAdminInvitation(auth, params.id);
+  }
+
   @Post(':id/suspend')
   @HttpCode(200)
   @RequirePermission('company:manage')

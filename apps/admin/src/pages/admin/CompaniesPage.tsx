@@ -16,7 +16,9 @@ import { adminKeys, useCompanies } from './queries';
 
 const EMPTY = { name: '', slug: '', trackingPrefix: '', customerCodePrefix: '', defaultCurrency: 'USD', defaultLocale: 'fr', paymentPolicy: 'PAY_BEFORE_SHIPMENT', adminEmail: '', adminFirstName: '', adminLastName: '' };
 
-function CreateDialog({ onClose, onCreated }: { onClose(): void; onCreated(): void }) {
+type InvitationResult = { sent: true } | { sent: false; url: string };
+
+function CreateDialog({ onClose, onCreated }: { onClose(): void; onCreated(invitation: InvitationResult | undefined): void }) {
   const { m } = useI18n();
   const c = m.admin.companies;
   const f = c.fields;
@@ -37,8 +39,8 @@ function CreateDialog({ onClose, onCreated }: { onClose(): void; onCreated(): vo
     }
     setBusy(true);
     try {
-      await api('/v1/platform/companies', { method: 'POST', body: data });
-      onCreated();
+      const created = await api<{ invitation?: InvitationResult }>('/v1/platform/companies', { method: 'POST', body: data });
+      onCreated(created?.invitation);
     } catch (e) {
       if (!form.applyServerError(e)) setError(apiErrorMessage(e, m));
     } finally {
@@ -84,8 +86,28 @@ export function CompaniesPage() {
   const [asking, setAsking] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [fallbackLink, setFallbackLink] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const items = companies.data?.items ?? [];
+
+  async function resendInvite(id: string) {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    setFallbackLink(null);
+    try {
+      const res = await api<InvitationResult & { email: string }>(`/v1/platform/companies/${id}/resend-invite`, { method: 'POST' });
+      if (res.sent) setNotice(c.inviteResent);
+      else {
+        setNotice(c.inviteFailed);
+        setFallbackLink(res.url);
+      }
+    } catch (e) {
+      setError(apiErrorMessage(e, m));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function setStatus(id: string, action: 'suspend' | 'activate') {
     setBusy(true);
@@ -105,7 +127,13 @@ export function CompaniesPage() {
   return (
     <>
       <PageHead title={c.title} lead={c.lead} actions={<Button onClick={() => setCreating(true)}><Icon name="plus" width={16} height={16} /> {c.create}</Button>} />
-      {notice ? <Alert tone="success" live>{notice}</Alert> : null}
+      {notice ? <Alert tone={fallbackLink ? 'warning' : 'success'} live>{notice}</Alert> : null}
+      {fallbackLink ? (
+        <div className="card" data-testid="invite-link">
+          <p>{c.inviteLinkLead}</p>
+          <input className="input mono" readOnly value={fallbackLink} aria-label={c.inviteLinkLabel} onFocus={(e) => e.currentTarget.select()} />
+        </div>
+      ) : null}
       {error ? <Alert tone="danger" live>{error}</Alert> : null}
       {companies.isLoading ? <p role="status">{m.common.loading}</p> : null}
       {companies.isError ? <Alert tone="danger" live>{m.common.errorLoad}</Alert> : null}
@@ -138,7 +166,10 @@ export function CompaniesPage() {
                         <Button size="sm" variant="outline" onClick={() => setAsking(null)}>{c.cancel}</Button>
                       </div>
                     ) : item.status === 'ACTIVE' ? (
-                      <Button size="sm" variant="outline" onClick={() => setAsking(item.id)}>{c.suspend}</Button>
+                      <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
+                        <Button size="sm" variant="outline" disabled={busy} onClick={() => void resendInvite(item.id)}>{c.resendInvite}</Button>
+                        <Button size="sm" variant="outline" onClick={() => setAsking(item.id)}>{c.suspend}</Button>
+                      </div>
                     ) : (
                       <Button size="sm" variant="outline" disabled={busy} onClick={() => void setStatus(item.id, 'activate')}>{c.activate}</Button>
                     )}
@@ -153,9 +184,10 @@ export function CompaniesPage() {
       {creating ? (
         <CreateDialog
           onClose={() => setCreating(false)}
-          onCreated={() => {
+          onCreated={(invitation) => {
             setCreating(false);
-            setNotice(c.created);
+            setNotice(invitation && !invitation.sent ? c.createdNoMail : c.created);
+            setFallbackLink(invitation && !invitation.sent ? invitation.url : null);
             void queryClient.invalidateQueries({ queryKey: adminKeys.companies });
           }}
         />

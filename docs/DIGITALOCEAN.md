@@ -160,3 +160,17 @@ node scripts/prod-smoke.mjs                      # 4. contrôle de fumée (avec 
 
 - Un droplet unique est un **point de défaillance unique** : prévoyez les sauvegardes externes, les instantanés hebdomadaires et un plan de reconstruction (ce guide, ré-exécuté, plus la restauration).
 - La charge réelle n'a pas été mesurée sur un serveur : surveillez la mémoire et le disque les premières semaines et agrandissez le droplet au besoin (redimensionnement dans le panneau DigitalOcean).
+
+## E-mails (invitations, mots de passe oubliés) : port SMTP bloqué
+
+DigitalOcean bloque par défaut les connexions sortantes SMTP (ports 25, 465, 587). Symptôme dans les journaux de l'API :
+`Envoi de l'e-mail « invite » échoué : Connection timeout`.
+
+Test depuis le serveur : `timeout 5 bash -c '</dev/tcp/mail.privateemail.com/465' && echo ouvert || echo bloque`
+
+Solutions : (1) demander le déblocage au support DigitalOcean ; (2) utiliser un fournisseur d'envoi qui accepte un port alternatif
+(2525, 2465 ou 2587 : Brevo, Mailjet, Resend, SendGrid…) en modifiant `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`
+dans `.env.production`, puis `npm run prod:up`.
+
+En attendant, la création d'une entreprise réussit quand même : le panel affiche le lien d'invitation à transmettre, et le bouton
+« Renvoyer l'invitation » génère un nouveau lien à tout moment.

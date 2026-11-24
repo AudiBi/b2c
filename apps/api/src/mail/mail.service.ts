@@ -30,6 +30,11 @@ export class MailService {
         port: env.SMTP_PORT,
         secure: env.SMTP_SECURE,
         auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASSWORD } : undefined,
+        // Délais courts : sans eux, un serveur SMTP injoignable (port bloqué par l'hébergeur) garde la requête ouverte ~2 minutes
+        // et le navigateur affiche une erreur alors que l'action a eu lieu.
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 20_000,
       });
     }
   }

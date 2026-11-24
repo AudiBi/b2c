@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PLATFORM_COMPANY_ID, type CreateCompanyInput } from '@b2c/shared';
+import { PLATFORM_COMPANY_ID, type CreateCompanyInput, type Locale } from '@b2c/shared';
 import { v7 as uuidv7 } from 'uuid';
 import { AuditService } from '../audit/audit.service';
 import { AppException, isUniqueViolation } from '../common/errors';
@@ -88,11 +88,32 @@ export class PlatformService {
       throw error;
     }
 
-    await this.mail.sendAuthMail('invite', input.adminEmail, input.defaultLocale, {
-      firstName: input.adminFirstName,
-      url: `${this.config.env.ADMIN_PUBLIC_URL}/accept-invite?token=${encodeURIComponent(created.rawToken)}`,
+    const url = `${this.config.env.ADMIN_PUBLIC_URL}/accept-invite?token=${encodeURIComponent(created.rawToken)}`;
+    const sent = await this.mail.sendAuthMail('invite', input.adminEmail, input.defaultLocale, { firstName: input.adminFirstName, url });
+    // L'entreprise EXISTE dans tous les cas. Si l'e-mail n'est pas parti, le super administrateur (de confiance) reçoit le lien pour le transmettre.
+    return { ...this.toDto(created.company), invitation: sent ? { sent: true } : { sent: false, url } };
+  }
+
+  /** Renvoie l'invitation de l'administrateur d'une entreprise qui n'a pas encore activé son compte (nouveau lien, l'ancien est invalidé). */
+  async resendAdminInvitation(auth: AuthContext, companyId: string) {
+    if (companyId === PLATFORM_COMPANY_ID) throw AppException.badRequest('PLATFORM_COMPANY_PROTECTED', "L'entreprise plateforme n'a pas d'invitation à renvoyer");
+    const prepared = await this.db.run({ companyId: PLATFORM_COMPANY_ID, platform: true }, async (tx) => {
+      const company = await tx.company.findUnique({ where: { id: companyId } });
+      if (!company) throw AppException.notFound('COMPANY_NOT_FOUND', 'Entreprise introuvable');
+      return this.db.withCompany(tx, PLATFORM_COMPANY_ID, companyId, async () => {
+        const admin = await tx.user.findFirst({
+          where: { companyId, kind: 'STAFF', status: 'PENDING', userRoles: { some: { role: { code: 'COMPANY_ADMIN' } } } },
+          orderBy: { createdAt: 'asc' },
+        });
+        if (!admin) throw AppException.conflict('NO_PENDING_ADMIN', "Aucun administrateur en attente d'activation : son compte est déjà actif");
+        const rawToken = await this.oneTime.issue(tx, { companyId, userId: admin.id, purpose: 'INVITE' });
+        await this.audit.record(tx, { companyId, action: 'company.invitation_resent', entityType: 'user', entityId: admin.id, actorUserId: auth.userId });
+        return { admin, rawToken, locale: company.defaultLocale as Locale };
+      });
     });
-    return this.toDto(created.company);
+    const url = `${this.config.env.ADMIN_PUBLIC_URL}/accept-invite?token=${encodeURIComponent(prepared.rawToken)}`;
+    const sent = await this.mail.sendAuthMail('invite', prepared.admin.email, prepared.locale, { firstName: prepared.admin.firstName, url });
+    return sent ? { sent: true, email: prepared.admin.email } : { sent: false, email: prepared.admin.email, url };
   }
 
   async listCompanies(auth: AuthContext) {
